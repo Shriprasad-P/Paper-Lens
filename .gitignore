@@ -13,3 +13,5 @@ evaluation-results/
 node_modules/
 .next/
 out/
+frontend/playwright-report/
+frontend/test-results/

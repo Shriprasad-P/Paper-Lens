@@ -23,7 +23,11 @@ cp .env.example .env
 .venv/bin/uvicorn app.main:app --app-dir backend --reload
 ```
 
-The health endpoint is available at `http://localhost:8000/health`.
+Health endpoints are available at `http://localhost:8000/health/live` and
+`http://localhost:8000/health/ready`; `/metrics` exposes bounded local metrics.
+Production configuration and migration guidance live in
+[docs/production.md](docs/production.md), [docs/operations.md](docs/operations.md),
+and [docs/security.md](docs/security.md).
 
 The API accepts a supported arXiv URL or identifier:
 
@@ -105,6 +109,13 @@ npm run dev
 The reader shell is available at `http://localhost:3000`.
 The workspace shell is available at `http://localhost:3000/workspaces`.
 
+Next.js is pinned to the validated 16.3.x line. The deterministic browser smoke
+suite uses Playwright with local API mocks:
+
+```bash
+npm run test:e2e
+```
+
 ### Phase 9 Research Agent
 
 The research shell is available at `http://localhost:3000/research`. It creates a persistent, bounded run and reports observable planning, official arXiv discovery, candidate normalization/ranking, ingestion, extraction, synthesis, and verification events.
@@ -145,4 +156,5 @@ cd frontend
 npm run typecheck
 npm run lint
 npm run build
+npm run test:e2e
 ```

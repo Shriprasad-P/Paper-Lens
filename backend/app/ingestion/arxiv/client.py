@@ -52,6 +52,8 @@ class ArxivClient:
             raise ArxivNotFoundError("The arXiv paper was not found.")
         if response.status_code >= 400:
             raise ArxivMetadataError("Unable to retrieve metadata from arXiv.")
+        if response.url.host and response.url.host.lower() not in {"export.arxiv.org", "arxiv.org"}:
+            raise ArxivMetadataError("The arXiv metadata request redirected to an untrusted host.")
 
         try:
             root = ET.fromstring(response.text)
@@ -94,23 +96,30 @@ class ArxivClient:
 
         try:
             async with self._client() as client:
-                response = await client.get(metadata.pdf_url)
+                async with client.stream("GET", metadata.pdf_url) as response:
+                    if response.status_code >= 400:
+                        raise PdfDownloadError("Unable to retrieve the paper PDF.")
+                    if response.url.host and response.url.host.lower() not in {"arxiv.org", "export.arxiv.org"}:
+                        raise PdfDownloadError("The paper PDF redirected to an untrusted host.")
+                    content_length = response.headers.get("content-length")
+                    if content_length:
+                        try:
+                            if int(content_length) > max_bytes:
+                                raise PdfValidationError("The paper PDF exceeds the configured size limit.")
+                        except ValueError:
+                            pass
+                    chunks: list[bytes] = []
+                    total = 0
+                    async for chunk in response.aiter_bytes():
+                        total += len(chunk)
+                        if total > max_bytes:
+                            raise PdfValidationError("The paper PDF exceeds the configured size limit.")
+                        chunks.append(chunk)
+                    body = b"".join(chunks)
         except httpx.HTTPError as exc:
             raise PdfDownloadError("Unable to retrieve the paper PDF.") from exc
-
-        if response.status_code >= 400:
-            raise PdfDownloadError("Unable to retrieve the paper PDF.")
-        content_length = response.headers.get("content-length")
-        if content_length:
-            try:
-                if int(content_length) > max_bytes:
-                    raise PdfValidationError("The paper PDF exceeds the configured size limit.")
-            except ValueError:
-                pass
-
-        body = response.content
         content_type = response.headers.get("content-type", "").lower()
-        if not body or len(body) > max_bytes or not body.startswith(b"%PDF-"):
+        if not body or not body.startswith(b"%PDF-"):
             raise PdfValidationError("The downloaded paper is not a usable PDF.")
         if content_type.startswith("text/html"):
             raise PdfValidationError("The downloaded paper is not a usable PDF.")

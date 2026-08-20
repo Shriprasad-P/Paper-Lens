@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import asyncio
+import logging
+import random
 from abc import ABC, abstractmethod
 from typing import Any, TypeVar
 
@@ -12,14 +15,16 @@ from pydantic import BaseModel, ValidationError
 from ..core.config import Settings
 
 T = TypeVar("T", bound=BaseModel)
+logger = logging.getLogger("paperlens.provider")
 
 
 class AIProviderError(Exception):
     """Safe provider failure without credentials or response contents."""
 
-    def __init__(self, message: str, *, retryable: bool = True) -> None:
+    def __init__(self, message: str, *, retryable: bool = True, code: str = "UNAVAILABLE") -> None:
         super().__init__(message)
         self.retryable = retryable
+        self.code = code
 
 
 class AIProvider(ABC):
@@ -54,7 +59,7 @@ class OpenAICompatibleProvider(AIProvider):
 
     async def generate(self, prompt: str, system_prompt: str | None = None) -> str:
         if not self.api_key:
-            raise AIProviderError("AI provider credentials are unavailable.", retryable=False)
+            raise AIProviderError("AI provider credentials are unavailable.", retryable=False, code="AUTHENTICATION")
         messages: list[dict[str, str]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -82,10 +87,16 @@ class OpenAICompatibleProvider(AIProvider):
                     raise ValueError("empty provider content")
                 return content
         except httpx.HTTPStatusError as exc:
-            retryable = exc.response.status_code == 429 or exc.response.status_code >= 500
-            raise AIProviderError("The AI provider request failed.", retryable=retryable) from exc
-        except (httpx.RequestError, KeyError, IndexError, TypeError, ValueError) as exc:
-            raise AIProviderError("The AI provider request failed.") from exc
+            status_code = exc.response.status_code
+            retryable = status_code == 429 or status_code >= 500 or status_code == 408
+            code = "RATE_LIMIT" if status_code == 429 else "TIMEOUT" if status_code == 408 else "UNAVAILABLE" if retryable else "AUTHENTICATION" if status_code in {401, 403} else "INVALID_RESPONSE"
+            raise AIProviderError("The AI provider request failed.", retryable=retryable, code=code) from exc
+        except httpx.TimeoutException as exc:
+            raise AIProviderError("The AI provider request timed out.", code="TIMEOUT") from exc
+        except httpx.RequestError as exc:
+            raise AIProviderError("The AI provider is unavailable.", code="UNAVAILABLE") from exc
+        except (KeyError, IndexError, TypeError, ValueError) as exc:
+            raise AIProviderError("The AI provider returned an invalid response.", retryable=False, code="INVALID_RESPONSE") from exc
 
     async def generate_structured(self, prompt: str, schema: type[T]) -> T:
         last_error: Exception | None = None
@@ -99,6 +110,8 @@ class OpenAICompatibleProvider(AIProvider):
                     raise
                 last_error = exc
                 if attempt < self.max_retries:
+                    logger.warning("provider_retry code=%s attempt=%d", exc.code, attempt + 1)
+                    await asyncio.sleep(min(4.0, (2**attempt) * 0.25 + random.uniform(0, 0.1)))
                     request_prompt = (
                         f"{prompt}\n\nThe provider request failed transiently. Retry and return only valid JSON "
                         f"matching this schema:\n{json.dumps(schema.model_json_schema())}"
@@ -106,21 +119,23 @@ class OpenAICompatibleProvider(AIProvider):
             except (ValidationError, ValueError, TypeError, json.JSONDecodeError) as exc:
                 last_error = exc
                 if attempt < self.max_retries:
+                    logger.warning("provider_retry code=INVALID_RESPONSE attempt=%d", attempt + 1)
+                    await asyncio.sleep(min(4.0, (2**attempt) * 0.25 + random.uniform(0, 0.1)))
                     request_prompt = (
                         f"{prompt}\n\nYour previous output failed schema validation. "
                         f"Return only valid JSON matching this schema:\n{json.dumps(schema.model_json_schema())}"
                     )
-        raise AIProviderError("The AI provider returned invalid structured output.") from last_error
+        raise AIProviderError("The AI provider returned invalid structured output.", retryable=False, code="INVALID_RESPONSE") from last_error
 
 
 class UnavailableAIProvider(AIProvider):
     """Explicit provider used when extraction is requested without configuration."""
 
     async def generate(self, prompt: str, system_prompt: str | None = None) -> str:
-        raise AIProviderError("AI provider credentials are unavailable.", retryable=False)
+        raise AIProviderError("AI provider credentials are unavailable.", retryable=False, code="AUTHENTICATION")
 
     async def generate_structured(self, prompt: str, schema: type[T]) -> T:
-        raise AIProviderError("AI provider credentials are unavailable.", retryable=False)
+        raise AIProviderError("AI provider credentials are unavailable.", retryable=False, code="AUTHENTICATION")
 
 
 def create_ai_provider(settings: Settings) -> AIProvider:

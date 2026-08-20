@@ -129,6 +129,7 @@ class ResearchRunStatus(str, Enum):
     PARTIAL = "PARTIAL"
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
+    INTERRUPTED = "INTERRUPTED"
 
 
 class ResearchDepth(str, Enum):

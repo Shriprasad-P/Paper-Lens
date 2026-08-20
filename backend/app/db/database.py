@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Protocol
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, JSON, String, Text, UniqueConstraint, create_engine, select
+from sqlalchemy import DateTime, ForeignKey, JSON, String, Text, UniqueConstraint, create_engine, event, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, selectinload, sessionmaker
@@ -261,6 +261,7 @@ class ResearchRunQueryRecord(Base):
 
 class ResearchRunCandidateRecord(Base):
     __tablename__ = "research_run_candidates"
+    __table_args__ = (UniqueConstraint("run_id", "candidate_id", name="uq_research_run_candidate"),)
 
     id: Mapped[str] = mapped_column(String(128), primary_key=True)
     run_id: Mapped[str] = mapped_column(ForeignKey("research_runs.id", ondelete="CASCADE"), index=True)
@@ -364,17 +365,31 @@ class ChatMessageRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class IdempotencyRecord(Base):
+    """Small durable response cache for safe client retries on mutating routes."""
+
+    __tablename__ = "idempotency_records"
+
+    scope_key: Mapped[str] = mapped_column(String(256), primary_key=True)
+    idempotency_key: Mapped[str] = mapped_column(String(128), index=True)
+    response_payload: Mapped[dict[str, object]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 class SQLDatabase:
     """Synchronous SQLAlchemy adapter used by the async service boundary."""
 
-    def __init__(self, database_url: str = "sqlite:///./paperlens.db", *, engine: Engine | None = None) -> None:
+    def __init__(self, database_url: str = "sqlite:///./paperlens.db", *, engine: Engine | None = None, create_schema: bool = True) -> None:
         connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
-        engine_kwargs: dict[str, object] = {"future": True, "connect_args": connect_args}
+        engine_kwargs: dict[str, object] = {"future": True, "connect_args": connect_args, "pool_pre_ping": True}
         if database_url in {"sqlite://", "sqlite:///:memory:"}:
             engine_kwargs["poolclass"] = StaticPool
         self.engine = engine or create_engine(database_url, **engine_kwargs)
+        if self.engine.dialect.name == "sqlite":
+            event.listen(self.engine, "connect", _configure_sqlite_connection)
         self.session_factory = sessionmaker(self.engine, expire_on_commit=False)
-        self.create_tables()
+        if create_schema:
+            self.create_tables()
 
     def create_tables(self) -> None:
         Base.metadata.create_all(self.engine)
@@ -385,6 +400,50 @@ class SQLDatabase:
                 return session.execute(select(1)).scalar_one() == 1
         except SQLAlchemyError:
             return False
+
+    def recover_incomplete_work(self) -> dict[str, int]:
+        """Make process-interrupted work diagnosable without silently rerunning it."""
+
+        interrupted_papers = 0
+        interrupted_runs = 0
+        active_paper_states = {"PENDING", "FETCHING_METADATA", "DOWNLOADING", "PARSING"}
+        active_run_states = {
+            ResearchRunStatus.CREATED.value,
+            ResearchRunStatus.PLANNING.value,
+            ResearchRunStatus.DISCOVERING.value,
+            ResearchRunStatus.SELECTING.value,
+            ResearchRunStatus.INGESTING.value,
+            ResearchRunStatus.ANALYZING.value,
+            ResearchRunStatus.SYNTHESIZING.value,
+            ResearchRunStatus.VERIFYING.value,
+        }
+        try:
+            with self.session_factory.begin() as session:
+                papers = session.scalars(select(PaperRecord).where(PaperRecord.status.in_(active_paper_states))).all()
+                for paper in papers:
+                    paper.status = "FAILED"
+                    paper.error_message = "Ingestion was interrupted before completion; retry explicitly."
+                    interrupted_papers += 1
+                runs = session.scalars(select(ResearchRunRecord).where(ResearchRunRecord.status.in_(active_run_states))).all()
+                now = datetime.now(timezone.utc)
+                for run in runs:
+                    run.status = ResearchRunStatus.INTERRUPTED.value
+                    run.updated_at = now
+                    run.completed_at = None
+                    session.add(
+                        ResearchRunEventRecord(
+                            id=f"event_{uuid4().hex}",
+                            run_id=run.id,
+                            event_type="RUN_INTERRUPTED",
+                            message="The process restarted before this run completed; resume explicitly.",
+                            event_metadata={"recoverable": True},
+                            created_at=now,
+                        )
+                    )
+                    interrupted_runs += 1
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("Interrupted work could not be recovered safely.") from exc
+        return {"papers": interrupted_papers, "research_runs": interrupted_runs}
 
     def get_by_source_identity(self, source_identity: str) -> IngestedPaper | None:
         with self.session_factory() as session:
@@ -714,6 +773,24 @@ class SQLDatabase:
             ).all()
             return [_to_chat_message(record) for record in records]
 
+    def get_idempotent_response(self, scope: str, key: str) -> dict[str, object] | None:
+        scope_key = f"{scope}:{key}"
+        with self.session_factory() as session:
+            record = session.get(IdempotencyRecord, scope_key)
+            return dict(record.response_payload) if record else None
+
+    def save_idempotent_response(self, scope: str, key: str, payload: dict[str, object]) -> None:
+        scope_key = f"{scope}:{key}"
+        try:
+            with self.session_factory.begin() as session:
+                record = session.get(IdempotencyRecord, scope_key)
+                if record is None:
+                    session.add(IdempotencyRecord(scope_key=scope_key, idempotency_key=key, response_payload=payload))
+                else:
+                    record.response_payload = payload
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The idempotency record could not be saved.") from exc
+
     def create_workspace(self, name: str) -> Workspace:
         now = datetime.now(timezone.utc)
         workspace = Workspace(id=f"workspace_{uuid4().hex}", name=name.strip(), created_at=now, updated_at=now)
@@ -1029,6 +1106,18 @@ class SQLiteDatabase(SQLDatabase):
         if not database_url.startswith("sqlite:"):
             raise ValueError("SQLiteDatabase requires a sqlite database URL")
         super().__init__(database_url)
+
+
+def _configure_sqlite_connection(dbapi_connection: object, connection_record: object) -> None:
+    """Enable constraints and bounded lock waits for SQLite development databases."""
+
+    cursor = dbapi_connection.cursor()
+    try:
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA busy_timeout=5000")
+        cursor.execute("PRAGMA journal_mode=WAL")
+    finally:
+        cursor.close()
 
 
 def _namespace_colliding_ids(session: object, document: StructuredDocument, evidence: list[Evidence]) -> None:

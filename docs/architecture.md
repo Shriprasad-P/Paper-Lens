@@ -198,3 +198,36 @@ versioned manifest + annotations + frozen predictions
 ```
 
 `backend/evaluation/` contains Pydantic schemas, identifier-only corpus metadata, JSONL annotation import/export, parser/extraction/retrieval/verification/chat/research-agent/synthesis runners, a failure taxonomy, and report writers. The standard runner is deterministic and offline; live mode is explicit and recorded in reproducibility metadata. Missing annotations or predictions produce `not measured`, not fabricated quality values. BM25, semantic, and hybrid lanes use the same retrieval cases; the production default remains unchanged.
+
+## Production hardening (Phase 11)
+
+The API now has a typed, validated runtime boundary. `Settings.validate()` checks
+environment, database/provider URLs, explicit CORS origins, production
+migration policy, and positive resource limits. Request middleware generates or
+propagates safe `X-Request-ID` values, records bounded process-local metrics,
+and emits one-line structured request events. Security headers, credentialed
+explicit CORS, JSON body limits, and stable error envelopes are applied before
+routes. `/health/live`, `/health/ready`, and `/metrics` are separate operational
+surfaces.
+
+The arXiv client streams PDF bytes, caps content length, validates the PDF
+signature/content type, bounds redirects to official hosts, and the parser
+rejects papers over configured page/text limits. Storage endpoints resolve paths
+under the configured paper root. AI provider failures have normalized codes and
+bounded exponential jittered retries only for transient failures; missing
+credentials preserve safe degraded behavior.
+
+Startup recovery is explicit: unfinished paper ingestion becomes diagnosable
+`FAILED`, while active research runs become recoverable `INTERRUPTED` records
+with an append-only event. No expensive work is automatically rerun. SQLite
+enables foreign keys, busy timeouts, WAL, and pre-ping; PostgreSQL remains the
+production target. Production disables automatic schema creation and uses
+`alembic upgrade head` from the migration scaffold. Critical document/evidence,
+analysis, verification, workspace, and research writes remain transactionally
+bounded and idempotent.
+
+Browser hardening uses Playwright with deterministic API mocks for reader/source
+PDF, evidence drawer, Paper Chat entry, workspaces, research entry, and
+ingestion failure states. CI separates backend, evaluation smoke, frontend, and
+browser gates. See `docs/production.md`, `docs/operations.md`, and
+`docs/security.md` for deployment and incident guidance.

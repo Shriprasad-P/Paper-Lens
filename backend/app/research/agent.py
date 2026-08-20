@@ -62,7 +62,10 @@ class ResearchAgent:
         failures = 0
         try:
             run = await self._status(run, ResearchRunStatus.PLANNING, "Planning bounded literature searches.")
-            plan = await self.planner.plan(run.research_question, desired_paper_count=run.max_ingested_papers)
+            plan = await asyncio.wait_for(
+                self.planner.plan(run.research_question, desired_paper_count=run.max_ingested_papers),
+                timeout=self.settings.research_step_timeout,
+            )
             self.database.save_research_plan(run.id, plan)
             for query in plan.search_queries:
                 self.database.add_research_query(run.id, query, 1)
@@ -85,7 +88,12 @@ class ResearchAgent:
                     if provider_calls >= min(self.settings.research_max_provider_calls, run.max_candidates):
                         break
                     try:
-                        discovered.extend(await self.discovery.search(query, min(run.max_candidates, self.settings.research_max_candidates)))
+                        discovered.extend(
+                            await asyncio.wait_for(
+                                self.discovery.search(query, min(run.max_candidates, self.settings.research_max_candidates)),
+                                timeout=self.settings.research_step_timeout,
+                            )
+                        )
                     except LiteratureDiscoveryError as exc:
                         failures += 1
                         self._event(run.id, "DISCOVERY_FAILED", str(exc), {"query": query, "iteration": iteration})
@@ -131,7 +139,7 @@ class ResearchAgent:
                 run = await self._status(run, ResearchRunStatus.ANALYZING, "Extracting evidence-grounded paper analyses.")
                 for paper_id in list(ingested_ids):
                     try:
-                        await self.extraction.extract(paper_id)
+                        await asyncio.wait_for(self.extraction.extract(paper_id), timeout=self.settings.research_step_timeout)
                         self._event(run.id, "PAPER_ANALYZED", f"Analyzed paper {paper_id}.", {"paper_id": paper_id})
                     except Exception as exc:
                         failures += 1
@@ -157,7 +165,16 @@ class ResearchAgent:
             if self._cancelled(run.id):
                 return self.database.get_research_run(run.id) or run
             run = await self._status(run, ResearchRunStatus.SYNTHESIZING, "Constructing a citation-valid research report.")
-            report = await self.synthesizer.synthesize(run.research_question, ingested_ids, queries=self.database.get_research_queries(run.id), coverage=coverage, selected_candidates=selected)
+            report = await asyncio.wait_for(
+                self.synthesizer.synthesize(
+                    run.research_question,
+                    ingested_ids,
+                    queries=self.database.get_research_queries(run.id),
+                    coverage=coverage,
+                    selected_candidates=selected,
+                ),
+                timeout=self.settings.research_step_timeout,
+            )
             validate_research_report(report, self.database, set(ingested_ids))
             self.database.save_research_report(run.id, report)
             self._event(run.id, "REPORT_CREATED", "Saved a report containing only registry-grounded citations.", {"claim_count": len(report.executive_summary)})
@@ -184,7 +201,9 @@ class ResearchAgent:
         return run
 
     async def _ingest_selected(self, run: ResearchRun, selected: list[PaperCandidate]) -> list[tuple[PaperCandidate, str | None]]:
-        semaphore = asyncio.Semaphore(max(1, min(self.settings.research_ingestion_concurrency, 4)))
+        semaphore = asyncio.Semaphore(
+            max(1, min(self.settings.research_ingestion_concurrency, self.settings.max_concurrent_ingestions, 4))
+        )
         existing = {normalize_arxiv_id(item.metadata.arxiv_id): item.id for item in self.database.list_papers()}
 
         async def one(candidate: PaperCandidate) -> tuple[PaperCandidate, str | None]:
@@ -199,7 +218,7 @@ class ResearchAgent:
                     self._event(run.id, "PAPER_REUSED", f"Reused ingested paper {existing[arxiv_id]}.", {"paper_id": existing[arxiv_id]})
                     return updated, None
                 try:
-                    paper = await self.ingestion.ingest(arxiv_id)
+                    paper = await asyncio.wait_for(self.ingestion.ingest(arxiv_id), timeout=self.settings.research_step_timeout)
                     updated = candidate.model_copy(update={"paper_id": paper.id, "ingestion_status": "COMPLETED"})
                     self._event(run.id, "PAPER_INGESTED", f"Ingested paper {paper.id}.", {"paper_id": paper.id})
                     return updated, None

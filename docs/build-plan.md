@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 10 — Evaluation & Benchmarking
+Phase 11 — Production Hardening
 
 ## Current Milestone
 
-Reproducible offline evaluation architecture, versioned benchmark corpus/annotations, metric implementations, component runners, and report generation.
+Production runtime hardening, deterministic browser coverage, dependency migration, observability, recovery, and operational documentation.
 
 ## Completed
 
@@ -75,6 +75,13 @@ Reproducible offline evaluation architecture, versioned benchmark corpus/annotat
 - [x] Add parser/artifact/extraction/verification/retrieval/chat/research-agent/synthesis runner boundaries and failure taxonomy.
 - [x] Add offline CLI (`smoke`, component commands, `all`, explicit `--live`) with reproducibility metadata and JSON/Markdown reports.
 - [x] Document preliminary benchmark policy, corpus limitations, annotation workflow, safety cases, and recommendations.
+- [x] Migrate Next.js/eslint-config-next to 16.3.1 and validate the production dependency audit.
+- [x] Add typed runtime validation, explicit CORS, security headers, request limits, stable error envelopes, request IDs, metrics, and live/ready probes.
+- [x] Stream and bound PDF downloads, enforce page/text limits, harden artifact paths, and add SSRF redirect regression coverage.
+- [x] Add SQLite constraint/lock hardening, explicit Alembic migration scaffold, idempotent recovery, and `INTERRUPTED` research-run state.
+- [x] Add bounded provider error codes and jittered transient retries while preserving no-key degraded behavior.
+- [x] Add deterministic Playwright reader/evidence/PDF/chat/workspace/research/failure smoke tests and CI quality gates.
+- [x] Add production, operations, and security guides and document deployment limitations.
 
 ## Current
 
@@ -82,15 +89,15 @@ Reproducible offline evaluation architecture, versioned benchmark corpus/annotat
 
 ## Later
 
-- [ ] Begin Phase 11 — Production Hardening.
+- [ ] Begin Phase 12 — Deployment & Public Beta.
 - [ ] Consider animation only after the reader is stable.
 
 ## Blockers
 
-- Frontend dependency audit reports 3 high-severity transitive findings; review before deployment.
+- PostgreSQL integration and target-environment security scans remain deployment-specific.
 
 ## Explicitly Out of Scope for Current Phase
 
-- Production hardening, comprehensive browser automation, and unrelated feature expansion.
+- Deployment/public beta, external queues, and unrelated feature expansion.
 - Image understanding or arbitrary image/file serving; artifacts remain caption/table/equation/reference evidence.
 - Live external AI extraction without configured credentials.

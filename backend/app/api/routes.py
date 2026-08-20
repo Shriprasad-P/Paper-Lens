@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 import mimetypes
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 
 from ..ingestion.errors import (
     ArxivMetadataError,
@@ -56,12 +57,49 @@ async def health(request: Request) -> dict[str, Any]:
     }
 
 
+@router.get("/health/live")
+async def health_live() -> dict[str, str]:
+    """Process liveness probe; it intentionally does not call dependencies."""
+
+    return {"status": "ok", "service": "paperlens-api"}
+
+
+@router.get("/health/ready")
+async def health_ready(request: Request) -> dict[str, Any]:
+    """Readiness probe for the database and required local paper storage."""
+
+    database_ok = request.app.state.database.healthcheck()
+    storage_root = Path(request.app.state.settings.paper_storage_path).expanduser()
+    storage_ok = storage_root.is_dir() and storage_root.exists()
+    if not database_ok or not storage_ok:
+        raise HTTPException(status_code=503, detail="The service is not ready.")
+    return {"status": "ready", "database": "ok", "storage": "ok"}
+
+
+@router.get("/metrics", response_class=PlainTextResponse)
+async def metrics(request: Request) -> PlainTextResponse:
+    """Expose bounded process metrics without paper content or user labels."""
+
+    if not request.app.state.settings.metrics_enabled:
+        raise HTTPException(status_code=404, detail="Metrics are disabled.")
+    return PlainTextResponse(request.app.state.metrics.prometheus(), media_type="text/plain; version=0.0.4")
+
+
 @router.post("/api/papers/ingest", response_model=IngestedPaper, status_code=status.HTTP_200_OK)
 async def ingest_paper(payload: IngestRequest, request: Request) -> IngestedPaper:
     """Ingest an arXiv paper and return its normalized document structure."""
 
+    idempotency_key = _idempotency_key(request)
+    scope = f"ingest:{_scope_digest(payload.source.strip())}"
+    if idempotency_key:
+        cached = request.app.state.database.get_idempotent_response(scope, idempotency_key)
+        if cached is not None:
+            return IngestedPaper.model_validate(cached)
     try:
-        return await request.app.state.ingestion_service.ingest(payload.source)
+        result = await request.app.state.ingestion_service.ingest(payload.source)
+        if idempotency_key:
+            request.app.state.database.save_idempotent_response(scope, idempotency_key, result.model_dump(mode="json"))
+        return result
     except InvalidArxivIdentifierError as exc:
         raise HTTPException(status_code=422, detail="Invalid arXiv identifier.") from exc
     except ArxivNotFoundError as exc:
@@ -280,16 +318,25 @@ async def get_chat_session(paper_id: str, session_id: str, request: Request) -> 
 
 @router.post("/api/papers/{paper_id}/chat/sessions/{session_id}/messages", response_model=ChatAnswerResponse)
 async def send_chat_message(paper_id: str, session_id: str, payload: ChatQuestion, request: Request) -> ChatAnswerResponse:
+    idempotency_key = _idempotency_key(request)
+    scope = f"chat:{_scope_digest(f'{paper_id}:{session_id}:{payload.question.strip()}')}"
+    if idempotency_key:
+        cached = request.app.state.database.get_idempotent_response(scope, idempotency_key)
+        if cached is not None:
+            return ChatAnswerResponse.model_validate(cached)
     try:
         message = await request.app.state.chat_service.answer(paper_id, session_id, payload.question)
         assert message.status is not None
-        return ChatAnswerResponse(
+        response = ChatAnswerResponse(
             message_id=message.id,
             answer=message.content,
             status=message.status,
             sufficient_evidence=bool(message.sufficient_evidence),
             citations=message.citations,
         )
+        if idempotency_key:
+            request.app.state.database.save_idempotent_response(scope, idempotency_key, response.model_dump(mode="json"))
+        return response
     except ChatSessionNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ChatDocumentChanged as exc:
@@ -444,6 +491,21 @@ def _safe_source_path(request: Request, source_path: object) -> Path | None:
     except ValueError:
         return None
     return candidate if candidate.is_file() else None
+
+
+def _idempotency_key(request: Request) -> str | None:
+    """Accept only bounded opaque retry keys; never use arbitrary header text in SQL."""
+
+    value = request.headers.get("idempotency-key", "").strip()
+    if not value:
+        return None
+    if len(value) > 128 or any(char not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_." for char in value):
+        raise HTTPException(status_code=422, detail="Invalid Idempotency-Key header.")
+    return value
+
+
+def _scope_digest(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
 def _research_response(request: Request, run_id: str) -> ResearchRunResponse:

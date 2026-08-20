@@ -56,13 +56,25 @@ Phase 10 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/Evi
 - Separate `backend/evaluation` package with versioned manifest, annotation schemas/import-export, deterministic fixture expansion, metric implementations, component runners, failure taxonomy, and JSON/Markdown reports.
 - Offline CLI commands for smoke, parsing, extraction, verification, retrieval, chat, research-agent, synthesis, and all; live mode is explicit and never implicit.
 
+## Phase 11 Additions
+
+- Next.js and `eslint-config-next` migrated from the Phase 10 15.x line to 16.3.1; the lockfile's production audit is clean.
+- Typed configuration validation rejects malformed URLs, wildcard credentialed CORS, unsafe production schema auto-creation, and invalid limits.
+- Request IDs, structured bounded request logs, Prometheus text metrics, `/health/live`, `/health/ready`, conservative security headers, typed error envelopes, and JSON request limits are active.
+- arXiv PDF downloads stream under byte limits, validate final redirect hosts, and parser page/text limits prevent hostile documents from expanding memory.
+- SQLite enables foreign keys/WAL/busy timeout/pre-ping; an Alembic scaffold provides explicit production migrations; candidate/workspace/cache identities remain idempotent.
+- Restart recovery marks unfinished ingestion `FAILED` and active research runs `INTERRUPTED` with an append-only event; cancellation remains persisted and does not delete valid artifacts.
+- AI provider failures have normalized codes and bounded jittered retries for transient failures only; no-key reader/retrieval behavior remains safe.
+- Playwright deterministic mocks cover reader, source PDF, evidence drawer, Paper Chat entry, workspaces, research entry, and ingestion failure; CI runs backend/evaluation/frontend/E2E gates.
+- Production, operations, security, migration, retention, and known-risk guidance is documented.
+
 ## Current Phase
 
-Phase 10 — Evaluation & Benchmarking
+Phase 11 — Production Hardening
 
 ## Current Task
 
-Complete and validate reproducible evaluation infrastructure for parsing, artifacts, extraction, evidence attribution, retrieval, verification, Paper Chat, discovery, synthesis, safety, and performance.
+Complete and validate production hardening without changing Phase 1–10 semantic behavior.
 
 ## Validation
 
@@ -72,7 +84,7 @@ Complete and validate reproducible evaluation infrastructure for parsing, artifa
 - `npm run lint` — passed.
 - `npm run build` — passed.
 - Live arXiv service and FastAPI endpoint checks for `1706.03762` — completed successfully.
-- `.venv/bin/python -m unittest discover -s backend/tests` — 15 tests passed.
+- `.venv/bin/python -m unittest discover -s backend/tests` — 62 tests passed, including Phase 11 security/recovery/idempotency coverage.
 - Live Phase 3 check for `1706.03762` — Phase 2 response remained 17 sections; normalized document returned 22 sections, 538 paragraphs, and evidence API returned HTTP 200.
 - Frontend typecheck/lint/build — passed after evidence drawer integration.
 - `.venv/bin/python -m unittest discover -s backend/tests` — 23 tests passed.
@@ -104,11 +116,15 @@ Complete and validate reproducible evaluation infrastructure for parsing, artifa
 - Live discovery and live AI synthesis — not run; tests use bounded arXiv Atom mocks and deterministic no-credential behavior.
 - Phase 10 metric/schema/fixture tests — passed with deterministic offline runners; generated reports are marked `PRELIMINARY`.
 - Full live benchmark — not run; no external AI, embedding, arXiv acquisition, or paid evaluation is invoked by default.
+- Phase 11 dependency audit — `npm audit --omit=dev` clean after Next.js 16.3.1 migration (network audit rerun with registry access).
+- Phase 11 frontend gates — `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run test:e2e` passed.
+- Phase 11 compile/evaluation smoke — passed after middleware, migration, recovery, provider, and resource-limit changes.
 
 ## Known Problems
 
-- `npm install` reports 3 high-severity transitive audit findings; no automatic force-fix was applied.
-- Frontend browser-level interaction has not been automated; no Playwright setup existed and build/typecheck/lint plus API tests cover the reader boundary.
+- Metrics are process-local and should be scraped per worker or replaced with a shared collector before horizontal scaling.
+- PostgreSQL compatibility remains SQLAlchemy-portable but a live PostgreSQL integration run is environment dependent.
+- Browser tests use deterministic API mocks; deployment-specific origin/proxy/PDF smoke tests remain required.
 - Figure/table/equation/reference extraction is deterministic and source-first; image bytes and visual interpretation remain unavailable.
 - No AI credentials are configured, so live external model extraction was not run.
 - Source-region PDF highlighting is intentionally deferred; page navigation is supported.
@@ -141,4 +157,4 @@ Complete and validate reproducible evaluation infrastructure for parsing, artifa
 
 ## Next Recommended Task
 
-Phase 11 — Production Hardening.
+Phase 12 — Deployment & Public Beta.

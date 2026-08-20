@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { createWorkspace, listWorkspaces } from "../reader-api";
 import type { Workspace } from "../reader-models";
 
 export default function WorkspacesPage() {
+  const router = useRouter();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -32,7 +34,7 @@ export default function WorkspacesPage() {
     try {
       const workspace = await createWorkspace(name.trim());
       setName("");
-      window.location.href = `/workspaces/${workspace.id}`;
+      router.push(`/workspaces/${workspace.id}`);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Workspace could not be created.");
     }
