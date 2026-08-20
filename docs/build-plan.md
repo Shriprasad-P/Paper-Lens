@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 3 — Structured Document + Evidence Registry
+Phase 4 — Evidence-Grounded Research Extraction
 
 ## Current Milestone
 
-Source-preserving structured document, paragraph evidence, persistence, APIs, and minimal traceability UI.
+Provider-neutral, evidence-validated research extraction and persisted PaperIR.
 
 ## Completed
 
@@ -28,6 +28,14 @@ Source-preserving structured document, paragraph evidence, persistence, APIs, an
 - [x] Persist and retrieve documents, paragraphs, and evidence transactionally.
 - [x] Add document/evidence APIs and frontend evidence drawer.
 - [x] Validate Phase 2 regression and live Phase 3 structure/evidence flow.
+- [x] Add AIProvider abstraction and OpenAI-compatible adapter with bounded retries.
+- [x] Add prompt registry and untrusted-source prompt rules.
+- [x] Add deterministic section classification and focused evidence selection.
+- [x] Add independent problem, motivation, gap, contribution, method, equation, experiment, result, limitation, and future-work extractors.
+- [x] Add schema/evidence validation, explicit/inferred origins, partial failure states, and cache keys.
+- [x] Persist PaperIR and expose extraction/analysis APIs.
+- [x] Add minimal analysis UI with evidence interaction.
+- [x] Validate mocked provider grounding/retry/cache tests and safe no-credential live path.
 
 ## Current
 
@@ -35,7 +43,6 @@ Source-preserving structured document, paragraph evidence, persistence, APIs, an
 
 ## Later
 
-- [ ] Add semantic extraction with typed PaperIR components.
 - [ ] Add deterministic visual reader and evidence drawer.
 - [ ] Add verification, retrieval, and paper-grounded chat.
 - [ ] Consider animation only after the reader is stable.
@@ -46,5 +53,6 @@ Source-preserving structured document, paragraph evidence, persistence, APIs, an
 
 ## Explicitly Out of Scope for Current Phase
 
-- Semantic extraction, vector search, chat, generated code, animations, and distributed workers.
-- Figure/table/equation/reference extraction beyond typed empty models.
+- Vector search, paper-grounded chat, generated code, animations, and distributed workers.
+- Reliable parser-level figure/table/equation/reference extraction beyond the typed source models.
+- Live external AI extraction without configured credentials.

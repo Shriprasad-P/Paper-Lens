@@ -40,7 +40,16 @@ GET /api/papers/{paper_id}/document
 GET /api/papers/{paper_id}/evidence/{evidence_id}
 ```
 
-The document layer preserves source text, section/paragraph ordering, page numbers, and parser-provided coordinates. It does not generate research interpretations yet.
+The document layer preserves source text, section/paragraph ordering, page numbers, and parser-provided coordinates. Phase 4 adds optional evidence-grounded research interpretation through the analysis endpoints below.
+
+Phase 4 analysis endpoints are:
+
+```text
+POST /api/papers/{paper_id}/extract
+GET  /api/papers/{paper_id}/analysis
+```
+
+Extraction is provider-neutral and evidence-grounded. Configure an OpenAI-compatible provider with the `AI_*` variables in `.env.example`. Without credentials, the API records safe `FAILED`/`NO_EVIDENCE` component states rather than fabricating analysis.
 
 Relevant environment variables are documented in `.env.example`: database URL, arXiv timeout, local PDF storage path, PDF size limit, and frontend origin.
 

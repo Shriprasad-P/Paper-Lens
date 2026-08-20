@@ -1,6 +1,6 @@
 # PaperLens Architecture
 
-Phase 3 extends the Phase 2 vertical slice with a source-preserving document layer while keeping semantic stages separate:
+Phase 4 extends the Phase 2/3 vertical slice with source-preserving documents and evidence-grounded semantic extraction while keeping parser and semantic stages separate:
 
 ```text
 arXiv input
@@ -21,7 +21,9 @@ normalized paper/document + SQLAlchemy persistence
         ↓
 FastAPI + Next.js reader shell
         ↓
-PaperIR and verification (later phase)
+Evidence-grounded extractors → PaperIR
+        ↓
+verification (later phase)
         ↓
 VisualizationSpec and deterministic reader (later phase)
 ```
@@ -43,4 +45,34 @@ Paragraph IDs are deterministic within a document (`sec_001`, `para_0001`) and e
 
 The database stores `structured_documents`, `structured_document_sections`, `structured_document_paragraphs`, and `evidence` as related tables. A paper has one active normalized document: re-normalization transactionally replaces the previous document and all of its evidence, preventing stale mappings or orphan records. Phase 4 semantic claims can reference evidence IDs without coupling to parser objects.
 
-Figures, tables, equations, and references have typed models but remain empty in the current parser because reliable extraction is not yet implemented. `PaperIR` is an empty typed semantic shell with explicit extraction states; no AI-generated content is created in Phase 3.
+Figures, tables, equations, and references have typed models but remain empty in the current parser because reliable source extraction is not yet implemented. Phase 4 now populates the semantic portions of `PaperIR` through the evidence-grounded extraction flow below; parser output itself remains source-preserving and non-interpretive.
+
+## Evidence-grounded extraction
+
+Phase 4 adds the following bounded flow:
+
+```text
+StructuredDocument
+        ↓
+SectionClassifier (deterministic headings first)
+        ↓
+EvidenceSelector (target section subsets)
+        ↓
+Focused Extractors + AIProvider
+        ↓
+Pydantic schema validation
+        ↓
+Evidence ID validation
+        ↓
+PaperIR + extraction states
+        ↓
+SQLAlchemy analysis cache
+```
+
+`AIProvider` is vendor-neutral; `OpenAICompatibleProvider` owns HTTP, authentication, model, timeout, and bounded schema-retry behavior. Runtime configuration comes from `AI_PROVIDER`, `AI_MODEL`, `AI_API_KEY`, `AI_BASE_URL`, `AI_REQUEST_TIMEOUT`, and `AI_MAX_RETRIES`. No credentials are returned to the frontend or written to logs.
+
+The section classifier uses heading rules for obvious labels and only invokes AI for ambiguous headings. Evidence selection limits each extractor to relevant paragraph evidence rather than sending the complete document. Prompt files under `backend/app/prompts/` explicitly treat paper text as untrusted source material and forbid following instructions embedded in it.
+
+Every semantic payload is validated against supplied evidence IDs after provider parsing. Missing or unknown IDs fail that component; they never become normal PaperIR claims. `AUTHOR_EXPLICIT` and `MODEL_INFERRED` origins are preserved in the models and frontend. Extractors run independently, so a failed component records `FAILED` while successful components remain persisted. Empty relevant evidence is recorded as `NO_EVIDENCE`.
+
+Analysis cache keys hash document hash, extractor prompt/schema versions, provider, and model. One active analysis is stored per paper and replaced when the cache key changes. Without configured credentials, extraction safely persists failure/no-evidence states; no fake semantic content is generated.

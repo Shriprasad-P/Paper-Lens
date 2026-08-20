@@ -17,6 +17,12 @@ class Settings:
     arxiv_request_timeout: float = 30.0
     paper_storage_path: str = "data/papers"
     max_pdf_size: int = 50 * 1024 * 1024
+    ai_provider: str = "openai_compatible"
+    ai_model: str = "gpt-4o-mini"
+    ai_api_key: str | None = None
+    ai_base_url: str = "https://api.openai.com/v1"
+    ai_request_timeout: float = 60.0
+    ai_max_retries: int = 2
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -33,4 +39,10 @@ class Settings:
             ),
             paper_storage_path=os.getenv("PAPERLENS_STORAGE_PATH", defaults.paper_storage_path),
             max_pdf_size=int(os.getenv("PAPERLENS_MAX_PDF_SIZE", str(defaults.max_pdf_size))),
+            ai_provider=os.getenv("AI_PROVIDER", defaults.ai_provider),
+            ai_model=os.getenv("AI_MODEL", defaults.ai_model),
+            ai_api_key=os.getenv("AI_API_KEY") or None,
+            ai_base_url=os.getenv("AI_BASE_URL", defaults.ai_base_url),
+            ai_request_timeout=float(os.getenv("AI_REQUEST_TIMEOUT", str(defaults.ai_request_timeout))),
+            ai_max_retries=int(os.getenv("AI_MAX_RETRIES", str(defaults.ai_max_retries))),
         )

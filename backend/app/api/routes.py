@@ -15,7 +15,8 @@ from ..ingestion.errors import (
     PaperPersistenceError,
     PdfDownloadError,
 )
-from ..models.document import Evidence, StructuredDocument
+from ..extraction.service import ResearchExtractionError
+from ..models.document import Evidence, PaperIR, StructuredDocument
 from ..models.paper import IngestRequest, IngestedPaper
 
 router = APIRouter()
@@ -83,3 +84,23 @@ async def get_evidence(paper_id: str, evidence_id: str, request: Request) -> Evi
     if evidence is None:
         raise HTTPException(status_code=404, detail="Evidence not found.")
     return evidence
+
+
+@router.post("/api/papers/{paper_id}/extract", response_model=PaperIR)
+async def extract_paper(paper_id: str, request: Request) -> PaperIR:
+    """Run focused evidence-grounded research extraction for a document."""
+
+    try:
+        return await request.app.state.extraction_service.extract(paper_id)
+    except ResearchExtractionError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/api/papers/{paper_id}/analysis", response_model=PaperIR)
+async def get_analysis(paper_id: str, request: Request) -> PaperIR:
+    """Return the persisted PaperIR for a paper."""
+
+    analysis = request.app.state.database.get_analysis_record(paper_id)
+    if analysis is None:
+        raise HTTPException(status_code=404, detail="Paper analysis not found.")
+    return analysis[0]

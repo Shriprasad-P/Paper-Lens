@@ -1,7 +1,8 @@
-"""Normalized Phase 2 paper models.
+"""Normalized paper and ingestion request models.
 
-These models intentionally stop at document structure. Evidence IDs and semantic
-PaperIR components belong to Phase 3 and later.
+These models cover the ingestion boundary. Structured documents and semantic
+PaperIR components are defined in ``document.py`` so their provenance contracts
+remain together.
 """
 
 from __future__ import annotations

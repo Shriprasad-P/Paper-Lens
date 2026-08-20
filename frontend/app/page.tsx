@@ -58,6 +58,21 @@ type IngestedPaper = {
   };
   sections: ParsedSection[];
 };
+type ExtractionState = { status: string; error: string | null };
+type ResearchClaim = { id: string; statement: string; evidence_ids: string[]; origin: string; confidence: number | null };
+type Analysis = {
+  problem: { id: string; statement: string; context: string | null; evidence_ids: string[]; origin: string; confidence: number | null } | null;
+  motivation: ResearchClaim | null;
+  research_gap: ResearchClaim[];
+  contributions: ResearchClaim[];
+  method: { summary: string; evidence_ids: string[]; origin: string; steps: { id: string; label: string; description: string; evidence_ids: string[]; origin: string }[] } | null;
+  equations: { id: string; expression: string; explanation: string | null; interpretation: string | null; evidence_ids: string[]; origin: string }[];
+  experiments: { id: string; name: string | null; datasets: string[]; models: string[]; baselines: string[]; metrics: string[]; setup: string | null; evidence_ids: string[]; origin: string }[];
+  results: { id: string; statement: string; metric: string | null; value: number | string | null; evidence_ids: string[]; origin: string }[];
+  limitations: ResearchClaim[];
+  future_work: ResearchClaim[];
+  extraction: Record<string, ExtractionState>;
+};
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -65,6 +80,7 @@ export default function HomePage() {
   const [paperUrl, setPaperUrl] = useState("");
   const [paper, setPaper] = useState<IngestedPaper | null>(null);
   const [document, setDocument] = useState<StructuredDocument | null>(null);
+  const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,6 +90,7 @@ export default function HomePage() {
     setError(null);
     setPaper(null);
     setDocument(null);
+    setAnalysis(null);
 
     try {
       const ingested = await requestJson<IngestedPaper>("/api/papers/ingest", {
@@ -81,8 +98,10 @@ export default function HomePage() {
         body: JSON.stringify({ source: paperUrl.trim() }),
       });
       const normalized = await requestJson<StructuredDocument>(`/api/papers/${ingested.id}/document`);
+      const extracted = await requestJson<Analysis>(`/api/papers/${ingested.id}/extract`, { method: "POST" });
       setPaper(ingested);
       setDocument(normalized);
+      setAnalysis(extracted);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to ingest this paper.");
     } finally {
@@ -131,7 +150,7 @@ export default function HomePage() {
         ) : null}
       </section>
 
-      {paper && document ? <PaperView paper={paper} document={document} /> : null}
+      {paper && document && analysis ? <PaperView paper={paper} document={document} analysis={analysis} /> : null}
 
       <footer>
         <span>Evidence first.</span>
@@ -153,7 +172,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
-function PaperView({ paper, document }: { paper: IngestedPaper; document: StructuredDocument }) {
+function PaperView({ paper, document, analysis }: { paper: IngestedPaper; document: StructuredDocument; analysis: Analysis }) {
   const { metadata } = paper;
   const [selectedEvidence, setSelectedEvidence] = useState<Evidence | null>(null);
   const [evidenceError, setEvidenceError] = useState<string | null>(null);
@@ -215,6 +234,7 @@ function PaperView({ paper, document }: { paper: IngestedPaper; document: Struct
             </div>
           </article>
         </div>
+        <AnalysisView analysis={analysis} onEvidence={openEvidence} />
       </section>
 
       {evidenceError ? <div className="status-card error-card" role="alert"><p>{evidenceError}</p></div> : null}
@@ -240,4 +260,123 @@ function PaperView({ paper, document }: { paper: IngestedPaper; document: Struct
       ) : null}
     </>
   );
+}
+
+function AnalysisView({ analysis, onEvidence }: { analysis: Analysis; onEvidence: (evidenceId: string) => void }) {
+  const completed = Object.values(analysis.extraction).filter((state) => state.status === "COMPLETED").length;
+  return (
+    <section className="analysis-view" aria-labelledby="analysis-title">
+      <div className="analysis-header">
+        <div>
+          <div className="eyebrow">PAPERLENS INTERPRETATION</div>
+          <h3 id="analysis-title">Research extraction</h3>
+        </div>
+        <span className="paper-status">{completed} / {Object.keys(analysis.extraction).length} stages</span>
+      </div>
+      <p className="analysis-note">Semantic statements are labeled by origin and remain linked to paper evidence.</p>
+
+      <ClaimCard title="Research Problem" claim={analysis.problem} onEvidence={onEvidence} missing="Not explicitly identified in the paper." />
+      <ClaimCard title="Motivation" claim={analysis.motivation} onEvidence={onEvidence} missing="Not explicitly identified in the paper." />
+      <ClaimList title="Research Gap" claims={analysis.research_gap} onEvidence={onEvidence} />
+      <ClaimList title="Contributions" claims={analysis.contributions} onEvidence={onEvidence} />
+
+      {analysis.method ? (
+        <article className="analysis-card">
+          <div className="card-label">Method</div>
+          <p>{analysis.method.summary}</p>
+          <OriginBadge origin={analysis.method.origin} />
+          <div className="method-steps">
+            {analysis.method.steps.map((step) => (
+              <div key={step.id} className="method-step">
+                <strong>{step.label}</strong>
+                <span>{step.description}</span>
+                <EvidenceButton evidenceIds={step.evidence_ids} onEvidence={onEvidence} />
+              </div>
+            ))}
+          </div>
+          <EvidenceButton evidenceIds={analysis.method.evidence_ids} onEvidence={onEvidence} />
+        </article>
+      ) : <ExtractionStatusCard title="Method" state={analysis.extraction.method} />}
+
+      <article className="analysis-card compact-analysis">
+        <div className="card-label">Equations</div>
+        {analysis.equations.length ? analysis.equations.map((equation) => (
+          <div key={equation.id} className="equation-row">
+            <code>{equation.expression}</code>
+            {(equation.explanation ?? equation.interpretation) ? <span>{equation.explanation ?? equation.interpretation}</span> : null}
+            <OriginBadge origin={equation.origin} />
+            <EvidenceButton evidenceIds={equation.evidence_ids} onEvidence={onEvidence} />
+          </div>
+        )) : <ExtractionStatusCard title="Equations" state={analysis.extraction.equations} nested />}
+      </article>
+
+      <ClaimList title="Limitations" claims={analysis.limitations} onEvidence={onEvidence} state={analysis.extraction.limitations} />
+      <ClaimList title="Future Work" claims={analysis.future_work} onEvidence={onEvidence} state={analysis.extraction.future_work} />
+
+      <article className="analysis-card compact-analysis">
+        <div className="card-label">Experiments & Results</div>
+        {analysis.experiments.length ? analysis.experiments.map((experiment) => (
+          <div key={experiment.id} className="experiment-row">
+            <strong>{experiment.name || "Experiment"}</strong>
+            <span>{experiment.datasets.join(" · ") || "Dataset not explicitly identified"}</span>
+            <EvidenceButton evidenceIds={experiment.evidence_ids} onEvidence={onEvidence} />
+          </div>
+        )) : <ExtractionStatusCard title="Experiments" state={analysis.extraction.experiments} nested />}
+        {analysis.results.length ? analysis.results.map((result) => (
+          <div key={result.id} className="experiment-row">
+            <strong>{result.metric || "Result"}</strong>
+            <span>{result.statement}{result.value !== null ? ` (${result.value})` : ""}</span>
+            <EvidenceButton evidenceIds={result.evidence_ids} onEvidence={onEvidence} />
+          </div>
+        )) : <ExtractionStatusCard title="Results" state={analysis.extraction.results} nested />}
+      </article>
+
+      <ExtractionSummary analysis={analysis} />
+    </section>
+  );
+}
+
+function ClaimCard({ title, claim, onEvidence, missing }: { title: string; claim: ResearchClaim | Analysis["problem"]; onEvidence: (evidenceId: string) => void; missing: string }) {
+  return claim ? (
+    <article className="analysis-card">
+      <div className="card-label">{title}</div>
+      <p>{claim.statement}</p>
+      <OriginBadge origin={claim.origin} />
+      {"context" in claim && claim.context ? <p className="claim-context">{claim.context}</p> : null}
+      <EvidenceButton evidenceIds={claim.evidence_ids} onEvidence={onEvidence} />
+    </article>
+  ) : <ExtractionStatusCard title={title} state={undefined} missing={missing} />;
+}
+
+function ClaimList({ title, claims, onEvidence, state }: { title: string; claims: ResearchClaim[]; onEvidence: (evidenceId: string) => void; state?: ExtractionState }) {
+  return (
+    <article className="analysis-card">
+      <div className="card-label">{title}</div>
+      {claims.length ? claims.map((claim) => (
+        <div key={claim.id} className="claim-row">
+          <p>{claim.statement}</p>
+          <OriginBadge origin={claim.origin} />
+          <EvidenceButton evidenceIds={claim.evidence_ids} onEvidence={onEvidence} />
+        </div>
+      )) : <ExtractionStatusCard title={title} state={state} nested />}
+    </article>
+  );
+}
+
+function ExtractionStatusCard({ title, state, missing, nested = false }: { title: string; state?: ExtractionState; missing?: string; nested?: boolean }) {
+  const message = state?.status === "FAILED" ? "Extraction failed for this component." : state?.status === "NO_EVIDENCE" ? "Not explicitly identified in the paper." : missing ?? "Not extracted.";
+  return <div className={nested ? "extraction-status nested-status" : "analysis-card"}><div className="card-label">{title}</div><p>{message}</p></div>;
+}
+
+function EvidenceButton({ evidenceIds, onEvidence }: { evidenceIds: string[]; onEvidence: (evidenceId: string) => void }) {
+  const first = evidenceIds[0];
+  return first ? <button type="button" className="evidence-button" onClick={() => onEvidence(first)}>View Evidence{evidenceIds.length > 1 ? ` (${evidenceIds.length})` : ""}</button> : null;
+}
+
+function OriginBadge({ origin }: { origin: string }) {
+  return <span className="origin-badge">{origin === "AUTHOR_EXPLICIT" ? "Explicit in paper" : "PaperLens interpretation"}</span>;
+}
+
+function ExtractionSummary({ analysis }: { analysis: Analysis }) {
+  return <div className="extraction-summary">{Object.entries(analysis.extraction).map(([name, state]) => <span key={name} data-status={state.status}>{name}: {state.status}</span>)}</div>;
 }

@@ -21,6 +21,7 @@ from ..models.document import (
     SourceRegion,
     StructuredDocument,
 )
+from ..models.document import PaperIR
 from ..models.paper import IngestedPaper, PaperMetadata, ParsedSection
 
 
@@ -148,6 +149,27 @@ class EvidenceRecord(Base):
     y1: Mapped[float | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     document: Mapped[DocumentRecord] = relationship(back_populates="evidence")
+
+
+class AnalysisRecord(Base):
+    __tablename__ = "paper_analyses"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    paper_id: Mapped[str] = mapped_column(ForeignKey("papers.id", ondelete="CASCADE"), unique=True, index=True)
+    document_id: Mapped[str] = mapped_column(String(64))
+    document_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    provider: Mapped[str] = mapped_column(String(64))
+    model: Mapped[str] = mapped_column(String(128))
+    prompt_version: Mapped[str] = mapped_column(String(32))
+    schema_version: Mapped[str] = mapped_column(String(32))
+    cache_key: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    payload: Mapped[dict[str, object]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
 
 class SQLDatabase:
@@ -340,6 +362,47 @@ class SQLDatabase:
                 )
             )
             return _to_evidence(record) if record else None
+
+    def get_analysis_record(self, paper_id: str) -> tuple[PaperIR, str] | None:
+        with self.session_factory() as session:
+            record = session.scalar(select(AnalysisRecord).where(AnalysisRecord.paper_id == paper_id))
+            if record is None:
+                return None
+            try:
+                return PaperIR.model_validate(record.payload), record.cache_key
+            except ValueError as exc:
+                raise PaperPersistenceError("The stored paper analysis is invalid.") from exc
+
+    def save_analysis(
+        self,
+        paper_ir: PaperIR,
+        *,
+        cache_key: str,
+        provider: str,
+        model: str,
+        prompt_version: str,
+        schema_version: str,
+    ) -> None:
+        try:
+            with self.session_factory.begin() as session:
+                record = session.scalar(select(AnalysisRecord).where(AnalysisRecord.paper_id == paper_ir.paper_id))
+                values = {
+                    "document_id": paper_ir.document_id,
+                    "document_hash": paper_ir.document_hash,
+                    "provider": provider,
+                    "model": model,
+                    "prompt_version": prompt_version,
+                    "schema_version": schema_version,
+                    "cache_key": cache_key,
+                    "payload": paper_ir.model_dump(mode="json"),
+                }
+                if record is None:
+                    session.add(AnalysisRecord(paper_id=paper_ir.paper_id, **values))
+                else:
+                    for key, value in values.items():
+                        setattr(record, key, value)
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The paper analysis could not be saved.") from exc
 
     def update_status(self, paper_id: str, status: str, *, error_message: str | None = None) -> None:
         try:

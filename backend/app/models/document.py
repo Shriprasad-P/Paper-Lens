@@ -139,42 +139,151 @@ class ExtractionStatus(str, Enum):
     RUNNING = "RUNNING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
+    NO_EVIDENCE = "NO_EVIDENCE"
+
+
+class StatementOrigin(str, Enum):
+    AUTHOR_EXPLICIT = "AUTHOR_EXPLICIT"
+    MODEL_INFERRED = "MODEL_INFERRED"
 
 
 class ExtractionState(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     status: ExtractionStatus = ExtractionStatus.NOT_STARTED
     error: str | None = None
+    cache_key: str | None = None
+    provider: str | None = None
+    model: str | None = None
+    prompt_version: str | None = None
+    schema_version: str | None = None
 
 
-class ClaimIR(BaseModel):
-    text: str
-    evidence_ids: list[str] = Field(default_factory=list)
+class ResearchClaim(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    statement: str = Field(min_length=1)
+    evidence_ids: list[str] = Field(min_length=1)
+    origin: StatementOrigin
+    confidence: float | None = Field(default=None, ge=0, le=1)
+
+
+# Compatibility name retained for callers that imported the Phase 3 shell.
+ClaimIR = ResearchClaim
 
 
 class ProblemIR(BaseModel):
-    statements: list[ClaimIR] = Field(default_factory=list)
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    statement: str = Field(min_length=1)
+    context: str | None = None
+    evidence_ids: list[str] = Field(min_length=1)
+    origin: StatementOrigin
+    confidence: float | None = Field(default=None, ge=0, le=1)
+
+
+class MotivationIR(ResearchClaim):
+    pass
+
+
+class ResearchGapIR(ResearchClaim):
+    pass
+
+
+class ContributionIR(ResearchClaim):
+    pass
+
+
+class MethodStepIR(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    label: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    order: int = Field(ge=0)
+    evidence_ids: list[str] = Field(min_length=1)
+    origin: StatementOrigin
+
+
+class MethodRelationIR(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_step_id: str = Field(min_length=1)
+    target_step_id: str = Field(min_length=1)
+    relationship: str = Field(min_length=1)
 
 
 class MethodIR(BaseModel):
-    nodes: list[dict[str, object]] = Field(default_factory=list)
-    edges: list[dict[str, object]] = Field(default_factory=list)
+    model_config = ConfigDict(extra="forbid")
+
+    summary: str = Field(min_length=1)
+    evidence_ids: list[str] = Field(min_length=1)
+    origin: StatementOrigin
+    steps: list[MethodStepIR] = Field(default_factory=list)
+    relations: list[MethodRelationIR] = Field(default_factory=list)
+
+
+class EquationVariableIR(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    symbol: str = Field(min_length=1)
+    meaning: str | None = None
 
 
 class EquationIR(BaseModel):
-    equation_id: str
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    equation_id: str | None = None
+    expression: str = Field(min_length=1)
+    explanation: str | None = None
+    # Kept as a compatibility alias for the Phase 3 typed model.
     interpretation: str | None = None
+    role: str | None = None
+    variables: list[EquationVariableIR] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(min_length=1)
+    origin: StatementOrigin
 
 
 class ExperimentIR(BaseModel):
-    items: list[dict[str, object]] = Field(default_factory=list)
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    name: str | None = None
+    datasets: list[str] = Field(default_factory=list)
+    models: list[str] = Field(default_factory=list)
+    baselines: list[str] = Field(default_factory=list)
+    metrics: list[str] = Field(default_factory=list)
+    setup: str | None = None
+    evidence_ids: list[str] = Field(min_length=1)
+    origin: StatementOrigin
 
 
 class ResultIR(BaseModel):
-    items: list[dict[str, object]] = Field(default_factory=list)
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    statement: str = Field(min_length=1)
+    metric: str | None = None
+    value: float | str | None = None
+    unit: str | None = None
+    comparison_target: str | None = None
+    evidence_ids: list[str] = Field(min_length=1)
+    origin: StatementOrigin
+
+
+class LimitationIR(ResearchClaim):
+    pass
+
+
+class FutureWorkIR(ResearchClaim):
+    pass
 
 
 class PaperIR(BaseModel):
-    """Empty semantic shell; Phase 4 owns populating these fields."""
+    """Evidence-grounded semantic representation produced by Phase 4."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -182,12 +291,19 @@ class PaperIR(BaseModel):
     document_id: str
     metadata: PaperMetadata
     problem: ProblemIR | None = None
-    research_gap: list[ClaimIR] = Field(default_factory=list)
-    contributions: list[ClaimIR] = Field(default_factory=list)
+    motivation: MotivationIR | None = None
+    research_gap: list[ResearchGapIR] = Field(default_factory=list)
+    contributions: list[ContributionIR] = Field(default_factory=list)
     method: MethodIR | None = None
     equations: list[EquationIR] = Field(default_factory=list)
     experiments: list[ExperimentIR] = Field(default_factory=list)
     results: list[ResultIR] = Field(default_factory=list)
-    limitations: list[ClaimIR] = Field(default_factory=list)
-    future_work: list[ClaimIR] = Field(default_factory=list)
+    limitations: list[LimitationIR] = Field(default_factory=list)
+    future_work: list[FutureWorkIR] = Field(default_factory=list)
+    section_classifications: list[dict[str, object]] = Field(default_factory=list)
     extraction: dict[str, ExtractionState] = Field(default_factory=dict)
+    provider: str | None = None
+    model: str | None = None
+    prompt_version: str | None = None
+    schema_version: str | None = None
+    document_hash: str | None = None

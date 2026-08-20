@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Phase 3 vertical slice: Phase 2 arXiv ingestion plus a parser-neutral raw representation, deterministic StructuredDocument normalization, paragraph-level EvidenceRegistry, SQLAlchemy document/evidence persistence, retrieval APIs, and a frontend evidence drawer. Semantic extraction remains Phase 4+.
+Phase 4 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/EvidenceRegistry, and focused provider-neutral research extraction with schema/evidence validation, PaperIR persistence, analysis APIs, and a minimal analysis UI.
 
 ## Implemented
 
@@ -17,14 +17,18 @@ Phase 3 vertical slice: Phase 2 arXiv ingestion plus a parser-neutral raw repres
 - Deterministic normalization/content hashes and paragraph evidence registry.
 - Transactional document/section/paragraph/evidence persistence and retrieval APIs.
 - Frontend source paragraph list with evidence drawer.
+- Provider-neutral AI abstraction with OpenAI-compatible adapter, bounded schema retries, and prompt registry.
+- Deterministic section classification, focused evidence selection, ten independent extractors, and PaperIR conversion.
+- Evidence ID validation, explicit/inferred origins, extraction states, cache keys, and analysis persistence/API.
+- Minimal analysis UI with origin badges and evidence interaction.
 
 ## Current Phase
 
-Phase 3 — Structured Document + Evidence Registry
+Phase 4 — Evidence-Grounded Research Extraction
 
 ## Current Task
 
-Complete and validate the source-preserving document/evidence vertical slice.
+Complete and validate focused evidence-grounded research extraction.
 
 ## Validation
 
@@ -37,12 +41,17 @@ Complete and validate the source-preserving document/evidence vertical slice.
 - `.venv/bin/python -m unittest discover -s backend/tests` — 15 tests passed.
 - Live Phase 3 check for `1706.03762` — Phase 2 response remained 17 sections; normalized document returned 22 sections, 538 paragraphs, and evidence API returned HTTP 200.
 - Frontend typecheck/lint/build — passed after evidence drawer integration.
+- `.venv/bin/python -m unittest discover -s backend/tests` — 23 tests passed.
+- Live Phase 4 safe path — arXiv ingestion and extract API returned HTTP 200 with `FAILED`/`NO_EVIDENCE` states under `AI_PROVIDER=none`; no fake claims created.
+- Mocked provider tests — schema retry, prompt-injection/grounding rejection, partial failure, cache reuse, numeric fidelity, and analysis API passed.
+- Live arXiv structural integration with a dynamic mock provider — 17 legacy sections, 22 normalized sections, 538 paragraphs, persisted PaperIR, and valid evidence references.
 
 ## Known Problems
 
 - `npm install` reports 3 high-severity transitive audit findings; no automatic force-fix was applied.
 - Frontend browser-level interaction has not been automated; build/typecheck/lint cover the current shell.
 - Figure, table, equation, and reference extraction models exist but are intentionally empty.
+- No AI credentials are configured, so live external model extraction was not run.
 
 ## Important Decisions
 
@@ -52,8 +61,11 @@ Complete and validate the source-preserving document/evidence vertical slice.
 - Keep frontend loading state tied to the single actual ingestion request; no fake timed progress.
 - Keep Phase 2's legacy section response stable while the normalized document adds paragraph-level provenance.
 - Replace a paper's active normalized document transactionally on re-normalization; never mix evidence versions.
-- Treat `PaperIR` as an empty, explicitly not-started semantic shell until Phase 4.
+- Keep `PaperIR` semantic content empty or explicitly stateful when no relevant evidence or provider output is available; never fabricate claims.
+- Keep semantic output provider-neutral, schema-validated, and evidence-validated before persistence.
+- Keep explicit author statements distinct from model-inferred interpretations in data and UI.
+- Cache analysis by document hash, prompt/schema version, provider, and model.
 
 ## Next Recommended Task
 
-Phase 4 — Research Extraction.
+Phase 5 — Visual Reader.
