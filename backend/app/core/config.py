@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import re
+import stat
 from pathlib import Path
 from dataclasses import dataclass
 from typing import ClassVar
@@ -22,6 +24,7 @@ class Settings:
     database_url: str = "sqlite:///./paperlens.db"
     frontend_origin: str = "http://localhost:3000"
     frontend_origins: str | None = None
+    backend_public_url: str = "http://localhost:8000"
     arxiv_request_timeout: float = 30.0
     paper_storage_path: str = "data/papers"
     max_pdf_size: int = 50 * 1024 * 1024
@@ -58,6 +61,21 @@ class Settings:
     metrics_enabled: bool = True
     auto_create_schema: bool = True
     trusted_proxy_ips: str = ""
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
+    db_pool_timeout: float = 30.0
+    rate_limits_enabled: bool = False
+    rate_limit_ingestion_per_minute: int = 4
+    rate_limit_ai_per_minute: int = 6
+    rate_limit_chat_per_minute: int = 20
+    rate_limit_research_per_minute: int = 2
+    release_version: str = "0.1.0-beta"
+    build_sha: str = "local"
+    build_timestamp: str = "unknown"
+    paper_storage_provider: str = "local"
+    ai_analysis_enabled: bool = False
+    semantic_retrieval_enabled: bool = False
+    research_agent_enabled: bool = False
 
     _allowed_environments: ClassVar[frozenset[str]] = frozenset({"development", "test", "staging", "production"})
 
@@ -66,20 +84,27 @@ class Settings:
         """Build settings from environment variables without requiring a package."""
 
         defaults = cls()
-        return cls(
+        ai_provider = os.getenv("AI_PROVIDER", defaults.ai_provider)
+        ai_api_key = os.getenv("AI_API_KEY") or None
+        embedding_provider = os.getenv("EMBEDDING_PROVIDER", defaults.embedding_provider)
+        ai_enabled_raw = os.getenv("PAPERLENS_AI_ANALYSIS_ENABLED") or None
+        semantic_enabled_raw = os.getenv("PAPERLENS_SEMANTIC_RETRIEVAL_ENABLED") or None
+        research_enabled_raw = os.getenv("PAPERLENS_RESEARCH_AGENT_ENABLED") or None
+        result = cls(
             app_name=os.getenv("PAPERLENS_APP_NAME", defaults.app_name),
-            environment=os.getenv("PAPERLENS_ENVIRONMENT", defaults.environment),
-            database_url=os.getenv("PAPERLENS_DATABASE_URL", defaults.database_url),
-            frontend_origin=os.getenv("PAPERLENS_FRONTEND_ORIGIN", defaults.frontend_origin),
+            environment=_first_env("PAPERLENS_ENVIRONMENT", "APP_ENV", default=defaults.environment),
+            database_url=_first_env("PAPERLENS_DATABASE_URL", "DATABASE_URL", default=defaults.database_url),
+            frontend_origin=_first_env("PAPERLENS_FRONTEND_ORIGIN", "FRONTEND_ORIGIN", default=defaults.frontend_origin),
             frontend_origins=os.getenv("PAPERLENS_FRONTEND_ORIGINS") or None,
+            backend_public_url=os.getenv("PAPERLENS_BACKEND_PUBLIC_URL", os.getenv("BACKEND_PUBLIC_URL", defaults.backend_public_url)),
             arxiv_request_timeout=float(
                 os.getenv("PAPERLENS_ARXIV_REQUEST_TIMEOUT", str(defaults.arxiv_request_timeout))
             ),
-            paper_storage_path=os.getenv("PAPERLENS_STORAGE_PATH", defaults.paper_storage_path),
+            paper_storage_path=_first_env("PAPERLENS_STORAGE_PATH", "PAPER_STORAGE_PATH", default=defaults.paper_storage_path),
             max_pdf_size=int(os.getenv("PAPERLENS_MAX_PDF_SIZE", str(defaults.max_pdf_size))),
-            ai_provider=os.getenv("AI_PROVIDER", defaults.ai_provider),
+            ai_provider=ai_provider,
             ai_model=os.getenv("AI_MODEL", defaults.ai_model),
-            ai_api_key=os.getenv("AI_API_KEY") or None,
+            ai_api_key=ai_api_key,
             ai_base_url=os.getenv("AI_BASE_URL", defaults.ai_base_url),
             ai_request_timeout=float(os.getenv("AI_REQUEST_TIMEOUT", str(defaults.ai_request_timeout))),
             ai_max_retries=int(os.getenv("AI_MAX_RETRIES", str(defaults.ai_max_retries))),
@@ -87,7 +112,7 @@ class Settings:
             chat_max_context_chars=max(1_000, int(os.getenv("CHAT_MAX_CONTEXT_CHARS", str(defaults.chat_max_context_chars)))),
             chat_min_relevance=max(0.0, float(os.getenv("CHAT_MIN_RELEVANCE", str(defaults.chat_min_relevance)))),
             chat_max_question_chars=max(100, int(os.getenv("CHAT_MAX_QUESTION_CHARS", str(defaults.chat_max_question_chars)))),
-            embedding_provider=os.getenv("EMBEDDING_PROVIDER", defaults.embedding_provider),
+            embedding_provider=embedding_provider,
             embedding_model=os.getenv("EMBEDDING_MODEL", defaults.embedding_model),
             embedding_dimension=max(8, int(os.getenv("EMBEDDING_DIMENSION", str(defaults.embedding_dimension)))),
             embedding_version=os.getenv("EMBEDDING_VERSION", defaults.embedding_version),
@@ -110,7 +135,23 @@ class Settings:
             metrics_enabled=_as_bool(os.getenv("PAPERLENS_METRICS_ENABLED", str(defaults.metrics_enabled))),
             auto_create_schema=_as_bool(os.getenv("PAPERLENS_AUTO_CREATE_SCHEMA", str(defaults.auto_create_schema))),
             trusted_proxy_ips=os.getenv("PAPERLENS_TRUSTED_PROXY_IPS", defaults.trusted_proxy_ips),
+            db_pool_size=int(os.getenv("DB_POOL_SIZE", str(defaults.db_pool_size))),
+            db_max_overflow=int(os.getenv("DB_MAX_OVERFLOW", str(defaults.db_max_overflow))),
+            db_pool_timeout=float(os.getenv("DB_POOL_TIMEOUT", str(defaults.db_pool_timeout))),
+            rate_limits_enabled=_as_bool(os.getenv("PAPERLENS_RATE_LIMITS_ENABLED", str(defaults.rate_limits_enabled))),
+            rate_limit_ingestion_per_minute=int(os.getenv("PAPERLENS_RATE_LIMIT_INGESTION_PER_MINUTE", str(defaults.rate_limit_ingestion_per_minute))),
+            rate_limit_ai_per_minute=int(os.getenv("PAPERLENS_RATE_LIMIT_AI_PER_MINUTE", str(defaults.rate_limit_ai_per_minute))),
+            rate_limit_chat_per_minute=int(os.getenv("PAPERLENS_RATE_LIMIT_CHAT_PER_MINUTE", str(defaults.rate_limit_chat_per_minute))),
+            rate_limit_research_per_minute=int(os.getenv("PAPERLENS_RATE_LIMIT_RESEARCH_PER_MINUTE", str(defaults.rate_limit_research_per_minute))),
+            release_version=os.getenv("PAPERLENS_RELEASE_VERSION", defaults.release_version),
+            build_sha=os.getenv("PAPERLENS_BUILD_SHA", defaults.build_sha),
+            build_timestamp=os.getenv("PAPERLENS_BUILD_TIMESTAMP", defaults.build_timestamp),
+            paper_storage_provider=os.getenv("PAPERLENS_STORAGE_PROVIDER", defaults.paper_storage_provider).lower(),
+            ai_analysis_enabled=_as_bool(ai_enabled_raw) if ai_enabled_raw is not None else bool(ai_api_key and ai_provider.lower() not in {"none", "disabled"}),
+            semantic_retrieval_enabled=_as_bool(semantic_enabled_raw) if semantic_enabled_raw is not None else embedding_provider.lower() not in {"none", "disabled"},
+            research_agent_enabled=_as_bool(research_enabled_raw) if research_enabled_raw is not None else bool(ai_api_key and ai_provider.lower() not in {"none", "disabled"}),
         )
+        return result
 
     @property
     def allowed_origins(self) -> list[str]:
@@ -125,7 +166,7 @@ class Settings:
         environment = self.environment.strip().lower()
         if environment not in self._allowed_environments:
             raise ConfigurationError("PAPERLENS_ENVIRONMENT must be development, test, staging, or production.")
-        if not self.database_url.startswith(("sqlite:", "postgresql:", "postgres:")):
+        if not self.database_url.startswith(("sqlite:", "postgresql", "postgres:")):
             raise ConfigurationError("PAPERLENS_DATABASE_URL must use SQLite or PostgreSQL.")
         parsed_ai_url = urlparse(self.ai_base_url)
         if parsed_ai_url.scheme not in {"http", "https"} or not parsed_ai_url.netloc:
@@ -139,6 +180,9 @@ class Settings:
             parsed = urlparse(origin)
             if parsed.scheme not in {"http", "https"} or not parsed.netloc:
                 raise ConfigurationError("PAPERLENS_FRONTEND_ORIGIN values must be absolute HTTP(S) origins.")
+        backend_url = urlparse(self.backend_public_url)
+        if backend_url.scheme not in {"http", "https"} or not backend_url.netloc:
+            raise ConfigurationError("BACKEND_PUBLIC_URL must be an absolute HTTP(S) URL.")
         numeric = {
             "max_pdf_size": self.max_pdf_size,
             "max_request_body_size": self.max_request_body_size,
@@ -152,9 +196,30 @@ class Settings:
             raise ConfigurationError("AI_MAX_RETRIES must be between 0 and 5.")
         if self.environment == "production" and self.auto_create_schema:
             raise ConfigurationError("PAPERLENS_AUTO_CREATE_SCHEMA must be false in production; run migrations explicitly.")
+        if self.environment == "production" and not self.database_url.startswith(("postgresql", "postgres:")):
+            raise ConfigurationError("Production deployments require a PostgreSQL DATABASE_URL.")
+        if self.paper_storage_provider != "local":
+            raise ConfigurationError("PAPERLENS_STORAGE_PROVIDER must be 'local' until an object-storage adapter is configured.")
+        if self.db_pool_size <= 0 or self.db_max_overflow < 0 or self.db_pool_timeout <= 0:
+            raise ConfigurationError("Database pool settings must be positive and bounded.")
+        limits = {
+            "rate_limit_ingestion_per_minute": self.rate_limit_ingestion_per_minute,
+            "rate_limit_ai_per_minute": self.rate_limit_ai_per_minute,
+            "rate_limit_chat_per_minute": self.rate_limit_chat_per_minute,
+            "rate_limit_research_per_minute": self.rate_limit_research_per_minute,
+        }
+        if any(value <= 0 for value in limits.values()):
+            raise ConfigurationError("Rate limits must be positive.")
+        if not self.release_version.strip() or not re.fullmatch(r"[0-9A-Za-z][0-9A-Za-z.+-]*", self.release_version.strip()):
+            raise ConfigurationError("PAPERLENS_RELEASE_VERSION must be a safe release identifier.")
         storage = Path(self.paper_storage_path).expanduser()
         if storage.exists() and not storage.is_dir():
             raise ConfigurationError("PAPERLENS_STORAGE_PATH must point to a directory.")
+        if self.environment == "production":
+            if not storage.exists() or not storage.is_dir():
+                raise ConfigurationError("PAPERLENS_STORAGE_PATH must exist as a directory in production.")
+            if not (storage.stat().st_mode & (stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH)):
+                raise ConfigurationError("PAPERLENS_STORAGE_PATH must be writable in production.")
 
 
 def _as_bool(value: str) -> bool:
@@ -164,3 +229,11 @@ def _as_bool(value: str) -> bool:
     if normalized in {"0", "false", "no", "off"}:
         return False
     raise ConfigurationError(f"Invalid boolean configuration value: {value!r}.")
+
+
+def _first_env(*names: str, default: str) -> str:
+    for name in names:
+        value = os.getenv(name)
+        if value is not None and value.strip():
+            return value
+    return default

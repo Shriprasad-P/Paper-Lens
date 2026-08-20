@@ -244,6 +244,13 @@ export type ReaderResponse = {
   visualizations: VisualizationSpec[];
   source: { available: boolean; endpoint: string | null; page_count: number | null };
   verification: PaperVerificationResponse | null;
+  capabilities?: {
+    ai_analysis_enabled: boolean;
+    semantic_retrieval_enabled: boolean;
+    research_agent_enabled: boolean;
+    supported_sources: string[];
+    beta: boolean;
+  } | null;
 };
 
 export type ChatCitation = {

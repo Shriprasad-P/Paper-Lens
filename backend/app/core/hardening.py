@@ -143,5 +143,60 @@ class RequestBodyLimitMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Small process-local beta limiter for expensive public operations.
+
+    The limiter is intentionally conservative and bounded. It is a safety net for a
+    single API process; an edge/WAF should provide the shared limit when the beta is
+    scaled horizontally.
+    """
+
+    def __init__(self, app: Any, *, limits: dict[str, int]) -> None:
+        super().__init__(app)
+        self.limits = {key: max(1, value) for key, value in limits.items()}
+        self._windows: dict[tuple[str, str], tuple[float, int]] = {}
+
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        bucket = _rate_bucket(request.url.path, request.method)
+        limit = self.limits.get(bucket)
+        if limit is None:
+            return await call_next(request)
+        key = (bucket, _client_key(request))
+        now = time.monotonic()
+        window_start, count = self._windows.get(key, (now, 0))
+        if now - window_start >= 60:
+            window_start, count = now, 0
+        if count >= limit:
+            retry_after = max(1, int(60 - (now - window_start)))
+            request_id = getattr(request.state, "request_id", "unknown")
+            return JSONResponse(
+                status_code=429,
+                headers={"Retry-After": str(retry_after)},
+                content=error_body("RATE_LIMITED", "This operation is temporarily rate limited for the beta.", request_id),
+            )
+        self._windows[key] = (window_start, count + 1)
+        # Keep the in-process limiter from becoming an unbounded map.
+        if len(self._windows) > 4096:
+            self._windows = {entry_key: value for entry_key, value in self._windows.items() if now - value[0] < 60}
+        return await call_next(request)
+
+
 def _safe_request_id(value: str) -> bool:
     return len(value) <= 128 and all(char.isalnum() or char in {"-", "_", "."} for char in value)
+
+
+def _rate_bucket(path: str, method: str) -> str | None:
+    if method == "POST" and path == "/api/papers/ingest":
+        return "ingestion"
+    if method == "POST" and (path.endswith("/extract") or path.endswith("/verify")):
+        return "ai"
+    if method == "POST" and "/chat/sessions/" in path and path.endswith("/messages"):
+        return "chat"
+    if method == "POST" and path == "/api/research/runs":
+        return "research"
+    return None
+
+
+def _client_key(request: Request) -> str:
+    client = request.client
+    return client.host if client and client.host else "unknown"

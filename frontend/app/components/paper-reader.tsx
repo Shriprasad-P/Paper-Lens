@@ -259,9 +259,9 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
         </div>
         <div className="reader-header-actions">
           <span className="paper-status">{reader.paper.status}</span>
-          <button type="button" className="secondary-button" onClick={() => setChatOpen((open) => !open)} aria-expanded={chatOpen}>
+          {reader.capabilities?.ai_analysis_enabled === false ? <span className="beta-unavailable">AI features unavailable</span> : <button type="button" className="secondary-button" onClick={() => setChatOpen((open) => !open)} aria-expanded={chatOpen}>
             {chatOpen ? "Hide Paper Chat" : "Open Paper Chat"}
-          </button>
+          </button>}
           {sourceUrl ? (
             <button type="button" className="secondary-button" onClick={() => setPdfOpen((open) => !open)}>
               {pdfOpen ? "Hide original" : "Show original"}

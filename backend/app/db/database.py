@@ -379,9 +379,20 @@ class IdempotencyRecord(Base):
 class SQLDatabase:
     """Synchronous SQLAlchemy adapter used by the async service boundary."""
 
-    def __init__(self, database_url: str = "sqlite:///./paperlens.db", *, engine: Engine | None = None, create_schema: bool = True) -> None:
+    def __init__(
+        self,
+        database_url: str = "sqlite:///./paperlens.db",
+        *,
+        engine: Engine | None = None,
+        create_schema: bool = True,
+        pool_size: int = 5,
+        max_overflow: int = 5,
+        pool_timeout: float = 30.0,
+    ) -> None:
         connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
         engine_kwargs: dict[str, object] = {"future": True, "connect_args": connect_args, "pool_pre_ping": True}
+        if database_url.startswith(("postgresql", "postgres:")):
+            engine_kwargs.update(pool_size=pool_size, max_overflow=max_overflow, pool_timeout=pool_timeout)
         if database_url in {"sqlite://", "sqlite:///:memory:"}:
             engine_kwargs["poolclass"] = StaticPool
         self.engine = engine or create_engine(database_url, **engine_kwargs)

@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from .ai.provider import AIProvider, create_ai_provider
 from .api.routes import router
 from .core.config import ConfigurationError, Settings
-from .core.hardening import Metrics, RequestBodyLimitMiddleware, RequestContextMiddleware, SecurityHeadersMiddleware, error_body
+from .core.hardening import Metrics, RateLimitMiddleware, RequestBodyLimitMiddleware, RequestContextMiddleware, SecurityHeadersMiddleware, error_body
 from .db.database import SQLDatabase
 from .extraction.service import ResearchExtractionService
 from .ingestion.service import IngestionService
@@ -36,11 +36,14 @@ def create_app(
 
     resolved_settings = settings or Settings.from_env()
     resolved_settings.validate()
-    app = FastAPI(title=resolved_settings.app_name, version="0.1.0")
+    app = FastAPI(title=resolved_settings.app_name, version=resolved_settings.release_version)
     app.state.settings = resolved_settings
     app.state.database = database or SQLDatabase(
         resolved_settings.database_url,
         create_schema=resolved_settings.auto_create_schema,
+        pool_size=resolved_settings.db_pool_size,
+        max_overflow=resolved_settings.db_max_overflow,
+        pool_timeout=resolved_settings.db_pool_timeout,
     )
     app.state.metrics = Metrics()
     app.state.database.recover_incomplete_work()
@@ -80,6 +83,16 @@ def create_app(
         allow_headers=["Accept", "Content-Type", "Authorization", "Idempotency-Key", "X-Request-ID"],
     )
     app.add_middleware(RequestBodyLimitMiddleware, max_bytes=resolved_settings.max_request_body_size)
+    if resolved_settings.rate_limits_enabled:
+        app.add_middleware(
+            RateLimitMiddleware,
+            limits={
+                "ingestion": resolved_settings.rate_limit_ingestion_per_minute,
+                "ai": resolved_settings.rate_limit_ai_per_minute,
+                "chat": resolved_settings.rate_limit_chat_per_minute,
+                "research": resolved_settings.rate_limit_research_per_minute,
+            },
+        )
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestContextMiddleware)
 

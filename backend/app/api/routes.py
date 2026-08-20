@@ -24,6 +24,7 @@ from ..extraction.service import ResearchExtractionError
 from ..models.document import Evidence, PaperIR, StructuredDocument
 from ..models.paper import IngestRequest, IngestedPaper
 from ..models.reader import (
+    CapabilityFlags,
     ReaderDocumentSummary,
     ReaderPaperView,
     ReaderReference,
@@ -45,6 +46,18 @@ from ..research.agent import ResearchAgentError
 router = APIRouter()
 
 
+@router.get("/api/capabilities", response_model=CapabilityFlags)
+async def capabilities(request: Request) -> CapabilityFlags:
+    """Expose beta feature availability without leaking provider configuration."""
+
+    settings = request.app.state.settings
+    return CapabilityFlags(
+        ai_analysis_enabled=settings.ai_analysis_enabled,
+        semantic_retrieval_enabled=settings.semantic_retrieval_enabled,
+        research_agent_enabled=settings.research_agent_enabled,
+    )
+
+
 @router.get("/health")
 async def health(request: Request) -> dict[str, Any]:
     """Report service and persistence health without exposing implementation details."""
@@ -54,6 +67,7 @@ async def health(request: Request) -> dict[str, Any]:
         "status": "ok" if database_ok else "degraded",
         "service": "paperlens-api",
         "database": "ok" if database_ok else "unavailable",
+        "version": request.app.state.settings.release_version,
     }
 
 
@@ -74,6 +88,18 @@ async def health_ready(request: Request) -> dict[str, Any]:
     if not database_ok or not storage_ok:
         raise HTTPException(status_code=503, detail="The service is not ready.")
     return {"status": "ready", "database": "ok", "storage": "ok"}
+
+
+@router.get("/health/version")
+async def health_version(request: Request) -> dict[str, str]:
+    """Return safe release metadata for deployment diagnosis."""
+
+    settings = request.app.state.settings
+    return {
+        "version": settings.release_version,
+        "git_sha": settings.build_sha,
+        "build_timestamp": settings.build_timestamp,
+    }
 
 
 @router.get("/metrics", response_class=PlainTextResponse)
@@ -212,6 +238,11 @@ async def get_reader(paper_id: str, request: Request) -> ReaderResponse:
             page_count=document.page_count,
         ),
         verification=verification,
+        capabilities=CapabilityFlags(
+            ai_analysis_enabled=request.app.state.settings.ai_analysis_enabled,
+            semantic_retrieval_enabled=request.app.state.settings.semantic_retrieval_enabled,
+            research_agent_enabled=request.app.state.settings.research_agent_enabled,
+        ),
     )
 
 
@@ -254,6 +285,8 @@ async def get_figure_image(paper_id: str, document_id: str, figure_id: str, requ
 async def extract_paper(paper_id: str, request: Request) -> PaperIR:
     """Run focused evidence-grounded research extraction for a document."""
 
+    if _capability_disabled(request, "ai_analysis_enabled"):
+        raise HTTPException(status_code=503, detail="AI analysis is not enabled for this deployment.")
     try:
         return await request.app.state.extraction_service.extract(paper_id)
     except ResearchExtractionError as exc:
@@ -274,6 +307,8 @@ async def get_analysis(paper_id: str, request: Request) -> PaperIR:
 async def verify_paper(paper_id: str, request: Request) -> PaperVerificationResponse:
     """Verify each persisted semantic claim against only its linked evidence."""
 
+    if _capability_disabled(request, "ai_analysis_enabled"):
+        raise HTTPException(status_code=503, detail="AI verification is not enabled for this deployment.")
     try:
         return await request.app.state.verification_service.verify(paper_id)
     except PaperVerificationError as exc:
@@ -298,6 +333,8 @@ async def get_verification(paper_id: str, request: Request) -> PaperVerification
 async def create_chat_session(paper_id: str, request: Request) -> ChatSessionCreateResponse:
     """Create a chat bound to the paper's current normalized document version."""
 
+    if _capability_disabled(request, "ai_analysis_enabled"):
+        raise HTTPException(status_code=503, detail="Paper Chat is not enabled for this deployment.")
     try:
         session = request.app.state.chat_service.create_session(paper_id)
         return ChatSessionCreateResponse(session_id=session.id, **session.model_dump(exclude={"id"}))
@@ -318,6 +355,8 @@ async def get_chat_session(paper_id: str, session_id: str, request: Request) -> 
 
 @router.post("/api/papers/{paper_id}/chat/sessions/{session_id}/messages", response_model=ChatAnswerResponse)
 async def send_chat_message(paper_id: str, session_id: str, payload: ChatQuestion, request: Request) -> ChatAnswerResponse:
+    if _capability_disabled(request, "ai_analysis_enabled"):
+        raise HTTPException(status_code=503, detail="Paper Chat is not enabled for this deployment.")
     idempotency_key = _idempotency_key(request)
     scope = f"chat:{_scope_digest(f'{paper_id}:{session_id}:{payload.question.strip()}')}"
     if idempotency_key:
@@ -418,6 +457,8 @@ async def citation_graph(paper_id: str, request: Request) -> CitationGraph:
 
 @router.post("/api/research/runs", response_model=ResearchRunResponse, status_code=status.HTTP_201_CREATED)
 async def create_research_run(payload: ResearchRunCreate, request: Request) -> ResearchRunResponse:
+    if _capability_disabled(request, "research_agent_enabled"):
+        raise HTTPException(status_code=503, detail="The Research Agent is not enabled for this deployment.")
     question = payload.question.strip()
     if not question:
         raise HTTPException(status_code=422, detail="Research question is required.")
@@ -506,6 +547,13 @@ def _idempotency_key(request: Request) -> str | None:
 
 def _scope_digest(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _capability_disabled(request: Request, name: str) -> bool:
+    """Enforce capability flags on staging/production while preserving local fixtures."""
+
+    settings = request.app.state.settings
+    return settings.environment in {"staging", "production"} and not bool(getattr(settings, name, False))
 
 
 def _research_response(request: Request, run_id: str) -> ResearchRunResponse:

@@ -13,6 +13,10 @@
 - JSON requests have a bounded content-length limit. Pydantic bounds questions,
   workspaces, research budgets, retrieval top-K, page counts, and extracted
   text. PDF downloads stream and stop at the configured byte limit.
+- Public-beta expensive operations have server-side, per-client-IP rate limits
+  for ingestion, AI extraction/verification, chat, and research-run creation.
+  The limiter is deliberately process-local and must be paired with an edge
+  limit for multi-process deployments.
 
 ## Untrusted research content
 
@@ -39,6 +43,7 @@ not require live credentials. Keep Chromium test artifacts out of commits.
 ## Remaining risks
 
 Metrics are in-process, trusted-proxy handling is documented but not enabled by
-default, and a live PostgreSQL/security scan must be performed in the target
-deployment environment. These are deployment tasks, not reasons to weaken the
-API's default limits or secret-redaction behavior.
+default, and object storage remains a deployment adapter beyond the durable
+local-volume beta path. A live PostgreSQL/security scan must be performed in
+the target deployment environment. These are explicit release risks, not
+reasons to weaken the API's default limits or secret-redaction behavior.

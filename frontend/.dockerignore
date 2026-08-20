@@ -1,0 +1,7 @@
+node_modules
+.next
+out
+playwright-report
+test-results
+.env*
+app/page 2.tsx

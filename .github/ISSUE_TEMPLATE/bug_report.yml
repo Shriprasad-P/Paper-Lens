@@ -1,0 +1,27 @@
+name: Bug report
+description: Report a reproducible beta problem without sharing private PDFs.
+title: "[Bug] "
+body:
+  - type: input
+    id: arxiv
+    attributes:
+      label: arXiv identifier
+      description: Use an identifier only; do not upload a copyrighted PDF.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened?
+      description: Include steps, expected behavior, and approximate UTC time.
+    validations:
+      required: true
+  - type: input
+    id: request_id
+    attributes:
+      label: Request ID
+      description: Include the visible request ID if the UI showed one.
+  - type: input
+    id: version
+    attributes:
+      label: Deployment version

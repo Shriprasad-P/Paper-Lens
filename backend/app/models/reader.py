@@ -96,6 +96,18 @@ class ReaderSource(BaseModel):
     page_count: int | None = None
 
 
+class CapabilityFlags(BaseModel):
+    """Safe public feature availability metadata; never includes credentials."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    ai_analysis_enabled: bool
+    semantic_retrieval_enabled: bool
+    research_agent_enabled: bool
+    supported_sources: list[str] = Field(default_factory=lambda: ["arxiv"])
+    beta: bool = True
+
+
 class ReaderResponse(BaseModel):
     """Small reader payload; evidence bodies remain lazy via evidence APIs."""
 
@@ -107,3 +119,4 @@ class ReaderResponse(BaseModel):
     visualizations: list[VisualizationSpec] = Field(default_factory=list)
     source: ReaderSource
     verification: PaperVerificationResponse | None = None
+    capabilities: CapabilityFlags | None = None

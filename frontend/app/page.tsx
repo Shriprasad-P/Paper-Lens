@@ -35,9 +35,10 @@ export default function HomePage() {
   return (
     <main className="page-shell landing-shell">
       <section className="hero" aria-labelledby="page-title">
-        <div className="eyebrow">PAPERLENS / RESEARCH READER</div>
+        <div className="eyebrow">PAPERLENS / RESEARCH READER · PUBLIC BETA</div>
         <h1 id="page-title">Turn research papers into visual, verifiable explanations.</h1>
         <p className="hero-copy">Start with an arXiv paper. PaperLens preserves the path from the reader back to the source.</p>
+        <p className="beta-notice">Public beta · arXiv is the supported source. PaperLens generates evidence-linked interpretations; verify important conclusions against the original source.</p>
         <form className="paper-form" onSubmit={handleSubmit}>
           <label htmlFor="paper-url">arXiv URL or identifier</label>
           <div className="input-row">

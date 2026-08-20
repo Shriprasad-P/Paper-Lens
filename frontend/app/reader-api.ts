@@ -2,6 +2,14 @@ import type { ChatAnswerResponse, ChatSession, ChatSessionResponse, CitationGrap
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
+export type CapabilityFlags = {
+  ai_analysis_enabled: boolean;
+  semantic_retrieval_enabled: boolean;
+  research_agent_enabled: boolean;
+  supported_sources: string[];
+  beta: boolean;
+};
+
 export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
@@ -9,13 +17,17 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
   });
   const payload = (await response.json().catch(() => null)) as T | { detail?: string } | null;
   if (!response.ok) {
-    throw new Error(
-      payload && typeof payload === "object" && "detail" in payload && payload.detail
-        ? payload.detail
-        : "Request failed.",
-    );
+    const detail = payload && typeof payload === "object" && "detail" in payload && payload.detail ? String(payload.detail) : "Request failed.";
+    const requestId = payload && typeof payload === "object" && "error" in payload && payload.error && typeof payload.error === "object" && "request_id" in payload.error
+      ? String(payload.error.request_id)
+      : null;
+    throw new Error(requestId && requestId !== "unknown" ? `${detail} Request ID: ${requestId}` : detail);
   }
   return payload as T;
+}
+
+export async function loadCapabilities(): Promise<CapabilityFlags> {
+  return requestJson<CapabilityFlags>("/api/capabilities");
 }
 
 export function evidencePath(paperId: string, evidenceId: string): string {

@@ -231,3 +231,36 @@ PDF, evidence drawer, Paper Chat entry, workspaces, research entry, and
 ingestion failure states. CI separates backend, evaluation smoke, frontend, and
 browser gates. See `docs/production.md`, `docs/operations.md`, and
 `docs/security.md` for deployment and incident guidance.
+
+## Deployment and public beta (Phase 12)
+
+The beta keeps the logical architecture small and provider-neutral:
+
+```text
+HTTPS edge → Next.js standalone frontend → FastAPI workers
+                                      ↘ PostgreSQL
+                                      ↘ durable LocalStorage volume
+                                      ↘ optional AI/embedding providers
+```
+
+`backend/Dockerfile`, `frontend/Dockerfile`, and `docker-compose.yml` provide
+reproducible local/staging packaging. Compose starts PostgreSQL, runs
+`alembic upgrade head` as a one-shot migration service, waits for backend
+readiness, then starts the frontend. Runtime images are non-root and exclude
+credentials, source PDFs, databases, node_modules, test output, and unrelated
+backup files. Production hosting supplies TLS at the edge; the API does not
+trust arbitrary forwarded headers.
+
+`LocalStorage` is the current durable-volume provider behind a small storage
+boundary (`save_pdf`, `open`, `exists`, `delete`) with deterministic private
+paper keys. A signed object-storage adapter can replace it without changing
+domain code. Capability flags at `/api/capabilities` gate AI analysis, semantic
+retrieval, and the Research Agent; rate-limit middleware bounds public beta
+ingestion, AI, chat, and research operations per client IP. Metrics remain
+process-local and are labeled as such rather than falsely aggregated.
+
+Release CI runs the full quality gate, PostgreSQL migration check, immutable
+SHA image builds, Trivy scans, and an explicit staging hook. Database backup,
+restore, retention, maintenance, rollback, support, and release checklists are
+documented in `docs/operations.md`, `docs/release-checklist.md`, and
+`docs/beta-support.md`. The Phase 10 benchmark remains `PRELIMINARY`.

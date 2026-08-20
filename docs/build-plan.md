@@ -2,11 +2,13 @@
 
 ## Current Phase
 
-Phase 11 — Production Hardening
+Phase 12 — Deployment & Public Beta
 
 ## Current Milestone
 
-Production runtime hardening, deterministic browser coverage, dependency migration, observability, recovery, and operational documentation.
+Reproducible production-like packaging, PostgreSQL migration validation, public-beta
+capability gating, release gates, smoke/load checks, backup/rollback guidance,
+and deployment documentation.
 
 ## Completed
 
@@ -89,15 +91,23 @@ Production runtime hardening, deterministic browser coverage, dependency migrati
 
 ## Later
 
-- [ ] Begin Phase 12 — Deployment & Public Beta.
+- [ ] Begin Phase 13 — Accounts & Research Library.
 - [ ] Consider animation only after the reader is stable.
+
+## Phase 12 release work
+
+- [x] Add non-root backend/frontend production images, strict Docker ignores, and PostgreSQL Compose migration/readiness harness.
+- [x] Add production aliases, release metadata, capability flags, server-side beta limits, and safe request-ID/error UX.
+- [x] Add immutable-SHA CI release workflow, image/security scans, backup/restore and maintenance scripts.
+- [x] Add public-beta support, release checklist/notes, security record, rollback/retention guidance, and issue templates.
+- [x] Validate real PostgreSQL migrations/persistence, container startup, health/readiness, and bounded load.
 
 ## Blockers
 
-- PostgreSQL integration and target-environment security scans remain deployment-specific.
+- A hosted HTTPS edge and provider-specific staging URL/credentials remain external deployment responsibilities; the local Compose release harness is validated.
 
 ## Explicitly Out of Scope for Current Phase
 
-- Deployment/public beta, external queues, and unrelated feature expansion.
+- Accounts, collaboration, external queues, and unrelated feature expansion.
 - Image understanding or arbitrary image/file serving; artifacts remain caption/table/equation/reference evidence.
 - Live external AI extraction without configured credentials.

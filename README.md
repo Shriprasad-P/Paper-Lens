@@ -2,7 +2,7 @@
 
 Turn research papers into visual, verifiable explanations.
 
-PaperLens is being built as a local-first research-paper ingestion and visualization platform. The application keeps paper parsing, evidence provenance, semantic extraction, verification, and deterministic rendering as separate stages.
+PaperLens is a local-first research-paper ingestion and visualization platform in limited public beta. The application keeps paper parsing, evidence provenance, semantic extraction, verification, and deterministic rendering as separate stages.
 
 ## Repository layout
 
@@ -158,3 +158,35 @@ npm run lint
 npm run build
 npm run test:e2e
 ```
+
+## Public beta deployment
+
+The supported production-like architecture is a Next.js frontend behind an
+HTTPS edge, a FastAPI backend, PostgreSQL, and a durable paper-storage volume.
+There is no Redis, queue, or Kubernetes requirement at this scale. Application
+configuration stays environment-driven; provider-specific deployment files do
+not enter domain logic.
+
+Build the local production-like stack with explicit PostgreSQL migrations:
+
+```bash
+docker compose up --build
+python3 scripts/production-smoke.py
+python3 scripts/load_test.py --base-url http://localhost:8000
+```
+
+The image tags, migration revision, release version, and deployment timestamp
+should be recorded for every beta promotion. See [docs/production.md](docs/production.md),
+[docs/release-checklist.md](docs/release-checklist.md), and
+[docs/beta-support.md](docs/beta-support.md) for deployment, rollback, backup,
+retention, and support procedures.
+
+Supported input is arXiv identifiers and URLs only. AI analysis, semantic
+retrieval, Paper Chat, and the Research Agent are capability-gated; without
+live credentials the reader, evidence, PDF, workspace, and BM25 paths remain
+available while AI controls are disabled cleanly. Phase 10 evaluation results
+are explicitly `PRELIMINARY` and are not claims of scientific accuracy.
+
+## Current phase
+
+Phase 12 — Deployment & Public Beta (`v0.1.0-beta`).

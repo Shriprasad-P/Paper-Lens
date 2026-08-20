@@ -1,0 +1,17 @@
+name: Evidence or citation issue
+description: Report a source-linking or citation problem.
+title: "[Evidence] "
+body:
+  - type: input
+    id: arxiv
+    attributes:
+      label: arXiv identifier
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: Evidence issue
+      description: Describe the visible claim/evidence mismatch without pasting the paper.
+    validations:
+      required: true

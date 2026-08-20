@@ -4,10 +4,25 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_call:
 
 jobs:
   backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: paperlens
+          POSTGRES_USER: paperlens
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U paperlens -d paperlens"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -18,6 +33,8 @@ jobs:
       - run: python -m unittest discover -s backend/tests
       - run: python -m compileall -q backend
       - run: python -m backend.evaluation.run smoke --output-dir /tmp/paperlens-evaluation
+      - run: PAPERLENS_DATABASE_URL=postgresql+psycopg://paperlens@127.0.0.1:5432/paperlens alembic upgrade head
+      - run: PAPERLENS_DATABASE_URL=postgresql+psycopg://paperlens@127.0.0.1:5432/paperlens alembic current
 
   frontend:
     runs-on: ubuntu-latest

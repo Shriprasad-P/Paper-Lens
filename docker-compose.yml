@@ -1,0 +1,79 @@
+name: paperlens-beta
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: paperlens
+      POSTGRES_USER: paperlens
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - paperlens-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paperlens -d paperlens"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  backend-migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      PAPERLENS_ENVIRONMENT: production
+      PAPERLENS_DATABASE_URL: postgresql+psycopg://paperlens@postgres:5432/paperlens
+      PAPERLENS_STORAGE_PATH: /var/lib/paperlens/papers
+      PAPERLENS_FRONTEND_ORIGINS: http://localhost:3000
+      PAPERLENS_AUTO_CREATE_SCHEMA: "false"
+      PAPERLENS_RATE_LIMITS_ENABLED: "true"
+      PAPERLENS_RELEASE_VERSION: 0.1.0-beta
+    command: ["alembic", "upgrade", "head"]
+    volumes:
+      - paperlens-papers:/var/lib/paperlens/papers
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      PAPERLENS_ENVIRONMENT: production
+      PAPERLENS_DATABASE_URL: postgresql+psycopg://paperlens@postgres:5432/paperlens
+      PAPERLENS_STORAGE_PATH: /var/lib/paperlens/papers
+      PAPERLENS_FRONTEND_ORIGINS: http://localhost:3000
+      PAPERLENS_AUTO_CREATE_SCHEMA: "false"
+      PAPERLENS_RATE_LIMITS_ENABLED: "true"
+      PAPERLENS_RELEASE_VERSION: 0.1.0-beta
+      PAPERLENS_BUILD_SHA: local-compose
+      AI_PROVIDER: none
+      EMBEDDING_PROVIDER: none
+    volumes:
+      - paperlens-papers:/var/lib/paperlens/papers
+    ports:
+      - "8000:8000"
+    depends_on:
+      backend-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  paperlens-postgres:
+  paperlens-papers:

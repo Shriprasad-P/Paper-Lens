@@ -70,11 +70,12 @@ Phase 10 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/Evi
 
 ## Current Phase
 
-Phase 11 — Production Hardening
+Phase 12 — Deployment & Public Beta
 
 ## Current Task
 
-Complete and validate production hardening without changing Phase 1–10 semantic behavior.
+Prepare and validate a reproducible, migration-safe, observable public-beta
+deployment without changing Phase 1–11 semantic behavior.
 
 ## Validation
 
@@ -120,6 +121,13 @@ Complete and validate production hardening without changing Phase 1–10 semanti
 - Phase 11 frontend gates — `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run test:e2e` passed.
 - Phase 11 compile/evaluation smoke — passed after middleware, migration, recovery, provider, and resource-limit changes.
 - Phase 11 local performance sample (fixture, 40–50 iterations, TestClient): `/health/live` p50 1.297 ms / p95 1.783 ms; document reader endpoint p50 2.734 ms / p95 3.325 ms; BM25 retrieval p50 1.220 ms / p95 1.438 ms. These are local reference measurements, not production SLAs.
+- Phase 12 backend regression suite — 66 tests passed; compileall and evaluation smoke passed.
+- Phase 12 frontend typecheck, lint, production build, and Playwright — passed; 3 browser tests passed.
+- Real PostgreSQL 15.17 migration upgrade/current and base→head migration drill — passed; container PostgreSQL 16 Compose migration/readiness — passed.
+- PostgreSQL persistence smoke covered paper/document/evidence, PaperIR, verification, chat, workspace, research run, embeddings, and idempotency — passed.
+- Production-like Docker images built and ran as non-root; Compose frontend/backend/PostgreSQL health checks passed; deployment smoke passed.
+- npm audit — 0 vulnerabilities; pip-audit — no known vulnerabilities; Trivy 0.57.1 HIGH/CRITICAL scans — 0 findings for both rebuilt images; secret scan found no committed secrets.
+- Bounded load probe at concurrency 4: health/live p50 2.638 ms/p95 18.954 ms, health/ready p50 4.775 ms/p95 6.422 ms; PostgreSQL-backed reader p50 38.446 ms/p95 60.722 ms; evidence p50 6.411 ms/p95 8.167 ms; all error rates 0.0%.
 
 ## Known Problems
 
@@ -136,6 +144,8 @@ Complete and validate production hardening without changing Phase 1–10 semanti
 - Phase 9 discovery currently ships with official arXiv Atom only; DOI/index providers and live AI synthesis remain optional future adapters.
 - Report claims are intentionally `UNVERIFIED` on the deterministic path; broad scientific quality metrics require the Phase 10 benchmark fixtures.
 - Phase 10 results are intentionally `PRELIMINARY`: corpus metadata is identifier-only, annotation coverage is a starter JSONL, and offline fixture scores are not live system quality claims.
+- HTTPS edge termination remains provider-specific; the local Compose harness is HTTP and must sit behind managed TLS/reverse-proxy ingress for public beta.
+- Metrics and beta rate limits remain process-local; add shared collection/edge limiting before horizontal scaling.
 
 ## Important Decisions
 
@@ -158,4 +168,4 @@ Complete and validate production hardening without changing Phase 1–10 semanti
 
 ## Next Recommended Task
 
-Phase 12 — Deployment & Public Beta.
+Phase 13 — Accounts & Research Library.

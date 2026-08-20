@@ -1,0 +1,20 @@
+.git
+.env*
+!.env.example
+.venv
+node_modules
+**/node_modules
+.next
+**/.next
+__pycache__
+**/__pycache__
+*.py[cod]
+*.db
+data/papers
+evaluation-results
+frontend/playwright-report
+frontend/test-results
+frontend/app/page 2.tsx
+*.pdf
+*.log
+coverage

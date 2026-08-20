@@ -1,0 +1,17 @@
+name: Feature request
+description: Suggest a scoped improvement for PaperLens.
+title: "[Feature] "
+body:
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+    validations:
+      required: true
+  - type: checkboxes
+    id: grounding
+    attributes:
+      label: Evidence grounding
+      options:
+        - label: This request preserves source/evidence traceability.
+          required: true

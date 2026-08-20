@@ -52,5 +52,6 @@ export default function ReaderPageClient({ paperId }: { paperId: string }) {
 
   if (isLoading) return <main className="reader-loading"><div className="eyebrow">PAPERLENS / VISUAL READER</div><h1>Loading the research story…</h1><p>Fetching persisted analysis and source metadata.</p></main>;
   if (error || !reader) return <main className="reader-loading"><div className="eyebrow">PAPERLENS / VISUAL READER</div><h1>Reader unavailable</h1><p>{error || "The reader response was empty."}</p><Link className="back-link" href="/">← Return home</Link></main>;
-  return <PaperReader reader={reader} onAnalyze={reader.analysis ? undefined : analyze} analysisError={analysisError} onVerify={reader.analysis ? verify : undefined} verificationError={verificationError} />;
+  const aiEnabled = reader.capabilities?.ai_analysis_enabled ?? true;
+  return <PaperReader reader={reader} onAnalyze={reader.analysis || !aiEnabled ? undefined : analyze} analysisError={analysisError} onVerify={reader.analysis && aiEnabled ? verify : undefined} verificationError={verificationError} />;
 }

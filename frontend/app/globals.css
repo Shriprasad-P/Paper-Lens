@@ -404,6 +404,8 @@ footer { display: flex; justify-content: space-between; border-top: 1px solid va
 .chat-composer label { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .chat-composer textarea { resize: vertical; min-height: 62px; border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 9px 10px; color: var(--ink); font: inherit; font-size: 13px; line-height: 1.4; }
 .chat-composer button { justify-self: end; min-height: 33px; padding: 0 13px; font-size: 11px; }
+.beta-notice { max-width: 650px; margin: 18px 0 0; border-left: 3px solid var(--accent); padding-left: 12px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.beta-unavailable { align-self: center; border: 1px solid var(--line); border-radius: 999px; padding: 7px 10px; color: var(--muted); font-size: 10px; }
 
 @media (max-width: 1180px) {
   .reader-layout.reader-with-source { grid-template-columns: 160px minmax(0, 1fr); }

@@ -1,0 +1,88 @@
+name: PaperLens beta release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_images:
+        description: Publish immutable images to GHCR
+        required: true
+        default: false
+        type: boolean
+      deploy_staging:
+        description: Run the configured staging hook (requires repository secrets)
+        required: true
+        default: false
+        type: boolean
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAMESPACE: ghcr.io/${{ github.repository_owner }}/paperlens
+
+jobs:
+  quality:
+    uses: ./.github/workflows/ci.yml
+
+  images:
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build immutable backend image
+        run: docker build --file backend/Dockerfile --tag "${IMAGE_NAMESPACE}-backend:${GITHUB_SHA}" .
+      - name: Build immutable frontend image
+        run: docker build --file frontend/Dockerfile --build-arg NEXT_PUBLIC_API_BASE_URL="${{ vars.BETA_API_URL || 'https://api.example.invalid' }}" --tag "${IMAGE_NAMESPACE}-frontend:${GITHUB_SHA}" frontend
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE_NAMESPACE }}-backend:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE_NAMESPACE }}-frontend:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+      - name: Login to GHCR
+        if: github.event_name == 'push' || inputs.publish_images
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish immutable images
+        if: github.event_name == 'push' || inputs.publish_images
+        run: |
+          docker push "${IMAGE_NAMESPACE}-backend:${GITHUB_SHA}"
+          docker push "${IMAGE_NAMESPACE}-frontend:${GITHUB_SHA}"
+
+  staging:
+    needs: images
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy_staging
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Deploy through the configured provider hook
+        env:
+          STAGING_DEPLOY_HOOK: ${{ secrets.STAGING_DEPLOY_HOOK }}
+          IMAGE_SHA: ${{ github.sha }}
+        run: |
+          test -n "$STAGING_DEPLOY_HOOK"
+          curl --fail-with-body --silent --show-error -X POST \
+            -H 'Content-Type: application/json' \
+            --data "{\"git_sha\":\"$IMAGE_SHA\"}" "$STAGING_DEPLOY_HOOK"
+      - name: Staging health smoke
+        env:
+          PAPERLENS_BACKEND_URL: ${{ vars.STAGING_BACKEND_URL }}
+          PAPERLENS_FRONTEND_URL: ${{ vars.STAGING_FRONTEND_URL }}
+        run: python3 scripts/production-smoke.py
