@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Phase 8 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/EvidenceRegistry, Phase 4 evidence-grounded PaperIR, Phase 5 deterministic visual reader, Phase 6 claim-level faithfulness verification, Phase 7 single-paper evidence-grounded chat, and advanced research intelligence.
+Phase 10 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/EvidenceRegistry, Phase 4 evidence-grounded PaperIR, Phase 5 deterministic visual reader, Phase 6 claim-level faithfulness verification, Phase 7 single-paper evidence-grounded chat, Phase 8 research intelligence, Phase 9 research agent/discovery, and Phase 10 offline evaluation/benchmarking.
 
 ## Implemented
 
@@ -53,14 +53,16 @@ Phase 8 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/Evid
 - Cross-paper lexical/semantic/hybrid Evidence Registry retrieval and composite `(paper_id, document_id, evidence_id)` citation validation, including numeric fidelity checks.
 - Deterministic report sections for claims, themes, methods, agreements, safe contradictions, calibrated gaps, limitations, future directions, and selected-paper summaries.
 - `/research` and `/research/{run_id}` UI with persisted event progress, cancellation, report sections, and evidence-drawer citation navigation.
+- Separate `backend/evaluation` package with versioned manifest, annotation schemas/import-export, deterministic fixture expansion, metric implementations, component runners, failure taxonomy, and JSON/Markdown reports.
+- Offline CLI commands for smoke, parsing, extraction, verification, retrieval, chat, research-agent, synthesis, and all; live mode is explicit and never implicit.
 
 ## Current Phase
 
-Phase 9 — Research Agent and Literature Discovery
+Phase 10 — Evaluation & Benchmarking
 
 ## Current Task
 
-Complete and validate bounded research planning/discovery, multi-paper evidence retrieval, grounded synthesis, and research-run UX over persisted Evidence Registry evidence.
+Complete and validate reproducible evaluation infrastructure for parsing, artifacts, extraction, evidence attribution, retrieval, verification, Paper Chat, discovery, synthesis, safety, and performance.
 
 ## Validation
 
@@ -100,6 +102,8 @@ Complete and validate bounded research planning/discovery, multi-paper evidence 
 - Phase 9 backend tests — passed, including planner/discovery normalization, dedup/ranking, cross-paper identity, citation validation, and run/event persistence.
 - Phase 9 frontend typecheck/lint/build — passed with `/research` and `/research/{run_id}` routes.
 - Live discovery and live AI synthesis — not run; tests use bounded arXiv Atom mocks and deterministic no-credential behavior.
+- Phase 10 metric/schema/fixture tests — passed with deterministic offline runners; generated reports are marked `PRELIMINARY`.
+- Full live benchmark — not run; no external AI, embedding, arXiv acquisition, or paid evaluation is invoked by default.
 
 ## Known Problems
 
@@ -114,6 +118,7 @@ Complete and validate bounded research planning/discovery, multi-paper evidence 
 - Citation graph matching is local, preferring exact arXiv IDs with normalized-title fallback; no external citation discovery is attempted.
 - Phase 9 discovery currently ships with official arXiv Atom only; DOI/index providers and live AI synthesis remain optional future adapters.
 - Report claims are intentionally `UNVERIFIED` on the deterministic path; broad scientific quality metrics require the Phase 10 benchmark fixtures.
+- Phase 10 results are intentionally `PRELIMINARY`: corpus metadata is identifier-only, annotation coverage is a starter JSONL, and offline fixture scores are not live system quality claims.
 
 ## Important Decisions
 
@@ -136,4 +141,4 @@ Complete and validate bounded research planning/discovery, multi-paper evidence 
 
 ## Next Recommended Task
 
-Phase 10 — Evaluation & Benchmarking.
+Phase 11 — Production Hardening.

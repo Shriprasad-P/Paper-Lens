@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 9 — Research Agent and Literature Discovery
+Phase 10 — Evaluation & Benchmarking
 
 ## Current Milestone
 
-Persistent evidence-grounded research runs, bounded official-arXiv discovery, cross-paper retrieval, and citation-validating synthesis.
+Reproducible offline evaluation architecture, versioned benchmark corpus/annotations, metric implementations, component runners, and report generation.
 
 ## Completed
 
@@ -70,6 +70,11 @@ Persistent evidence-grounded research runs, bounded official-arXiv discovery, cr
 - [x] Add cross-paper BM25/semantic/hybrid retrieval with composite evidence identity and report validation.
 - [x] Add deterministic report IR for claims, themes, methods, agreements, contradictions, gaps, limitations, and future directions.
 - [x] Add research APIs, progress timeline, report/citation UI, Phase 9 tests, and documentation.
+- [x] Add a separate `backend/evaluation` package with versioned schemas, manifest, JSONL annotations, and deterministic fixture loaders.
+- [x] Add pure retrieval, classification, citation, evidence attribution, numeric fidelity, boundary, claim-matching, and latency metrics with validation tests.
+- [x] Add parser/artifact/extraction/verification/retrieval/chat/research-agent/synthesis runner boundaries and failure taxonomy.
+- [x] Add offline CLI (`smoke`, component commands, `all`, explicit `--live`) with reproducibility metadata and JSON/Markdown reports.
+- [x] Document preliminary benchmark policy, corpus limitations, annotation workflow, safety cases, and recommendations.
 
 ## Current
 
@@ -77,7 +82,7 @@ Persistent evidence-grounded research runs, bounded official-arXiv discovery, cr
 
 ## Later
 
-- [ ] Begin Phase 10 — Evaluation & Benchmarking.
+- [ ] Begin Phase 11 — Production Hardening.
 - [ ] Consider animation only after the reader is stable.
 
 ## Blockers
@@ -86,6 +91,6 @@ Persistent evidence-grounded research runs, bounded official-arXiv discovery, cr
 
 ## Explicitly Out of Scope for Current Phase
 
-- Multi-paper chat, generated code, animations, and distributed workers.
+- Production hardening, comprehensive browser automation, and unrelated feature expansion.
 - Image understanding or arbitrary image/file serving; artifacts remain caption/table/equation/reference evidence.
 - Live external AI extraction without configured credentials.

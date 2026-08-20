@@ -182,3 +182,19 @@ question → bounded ResearchPlan → official arXiv Atom discovery
 Only official arXiv generated identifiers are sent to ingestion; discovery metadata is never treated as evidence. Candidate, query, plan, event, and report records are persisted. The agent stops after at most three iterations, when coverage is sufficient, or when refinement produces no new candidates. Cancellation is checked at each stage boundary. Failed providers and individual paper failures produce partial results instead of fabricated papers.
 
 Cross-paper citations use the composite `(paper_id, document_id, evidence_id)` identity. Report validation rejects unknown papers, mismatched documents, missing registry evidence, and numeric values absent from the cited source text. Agreement, contradiction, and gap sections are explicitly `CROSS_PAPER_INFERRED` and remain `UNVERIFIED`; contradiction detection requires comparable metric/context and does not claim universal absence. Prompt/search injection is source data, never executable instructions, and no general-knowledge fallback is used.
+
+## Evaluation and benchmarking (Phase 10)
+
+Evaluation is a separate boundary and never writes back into production claims:
+
+```text
+versioned manifest + annotations + frozen predictions
+                  ↓
+          offline component runner
+                  ↓
+          pure metric implementations
+                  ↓
+       versioned JSON + Markdown report
+```
+
+`backend/evaluation/` contains Pydantic schemas, identifier-only corpus metadata, JSONL annotation import/export, parser/extraction/retrieval/verification/chat/research-agent/synthesis runners, a failure taxonomy, and report writers. The standard runner is deterministic and offline; live mode is explicit and recorded in reproducibility metadata. Missing annotations or predictions produce `not measured`, not fabricated quality values. BM25, semantic, and hybrid lanes use the same retrieval cases; the production default remains unchanged.

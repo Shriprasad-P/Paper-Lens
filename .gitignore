@@ -9,6 +9,7 @@ __pycache__/
 *.tsbuildinfo
 data/papers/
 .pytest_cache/
+evaluation-results/
 node_modules/
 .next/
 out/

@@ -119,6 +119,18 @@ GET  /api/research/runs/{run_id}/report
 
 Without credentials, planning and ranking remain deterministic, arXiv metadata is discovery-only, reports cite only persisted Evidence Registry tuples, and claims remain `UNVERIFIED`. Defaults are bounded by `RESEARCH_MAX_SEARCH_QUERIES=6`, `RESEARCH_MAX_CANDIDATES=30`, `RESEARCH_MAX_INGESTED_PAPERS=8`, `RESEARCH_MAX_ITERATIONS=3`, and ingestion concurrency `2`.
 
+### Phase 10 Evaluation
+
+Evaluation is offline-first and separate from production services. The versioned corpus manifest, annotation schemas, pure metrics, fixture runners, and report writer live under `backend/evaluation/`.
+
+```bash
+python -m backend.evaluation.run smoke --output-dir /tmp/paperlens-evaluation
+python -m backend.evaluation.run all --output-dir /tmp/paperlens-evaluation
+python -m backend.evaluation.run all --live --output-dir /tmp/paperlens-evaluation
+```
+
+The first two commands make no network or paid-provider calls. Reports record reproducibility metadata and remain `PRELIMINARY` until reviewed annotations and frozen production predictions are available. See [docs/evaluation.md](docs/evaluation.md) for corpus, metrics, failure taxonomy, and live/offline policy.
+
 ## Validation
 
 ```bash

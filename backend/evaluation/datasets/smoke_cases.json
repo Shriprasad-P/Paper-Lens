@@ -1,0 +1,31 @@
+{
+  "retrieval": [
+    {"case_id":"ret_001","paper_id":"fixture_paper","query":"problem statement","category":"problem","relevant_evidence_ids":["ev_problem"],"predictions":{"BM25":["ev_problem","ev_method","ev_result"],"Semantic":["ev_method","ev_problem","ev_result"],"Hybrid":["ev_problem","ev_result","ev_method"]}},
+    {"case_id":"ret_002","paper_id":"fixture_paper","query":"method steps","category":"method","relevant_evidence_ids":["ev_method"],"predictions":{"BM25":["ev_method","ev_problem","ev_result"],"Semantic":["ev_method","ev_result","ev_problem"],"Hybrid":["ev_method","ev_problem","ev_result"]}},
+    {"case_id":"ret_003","paper_id":"fixture_paper","query":"reported metric","category":"results","relevant_evidence_ids":["ev_result"],"predictions":{"BM25":["ev_result","ev_method","ev_problem"],"Semantic":["ev_result","ev_problem","ev_method"],"Hybrid":["ev_result","ev_method","ev_problem"]}}
+  ],
+  "verification": [
+    {"case_id":"ver_001","claim":"The method reaches 0.51 F1.","evidence":["The method reaches 0.51 F1."],"gold_status":"SUPPORTED","prediction":"SUPPORTED"},
+    {"case_id":"ver_002","claim":"The method reaches 0.91 F1.","evidence":["The method reaches 0.51 F1."],"gold_status":"UNSUPPORTED","prediction":"UNSUPPORTED"},
+    {"case_id":"ver_003","claim":"The method is better in every setting.","evidence":["The method improves on Dataset A."],"gold_status":"PARTIALLY_SUPPORTED","prediction":"PARTIALLY_SUPPORTED"},
+    {"case_id":"ver_004","claim":"The method decreases F1.","evidence":["The method increases F1."],"gold_status":"CONTRADICTORY","prediction":"CONTRADICTORY"}
+  ],
+  "chat": [
+    {"case_id":"chat_001","paper_id":"fixture_paper","question":"What metric is reported?","expected_answer_points":["F1"],"relevant_evidence_ids":["ev_result"],"answerable":true,"category":"numeric"},
+    {"case_id":"chat_002","paper_id":"fixture_paper","question":"What is the capital of France?","expected_answer_points":[],"relevant_evidence_ids":[],"answerable":false,"category":"unanswerable"}
+  ],
+  "research_agent": [
+    {"case_id":"agent_001","research_question":"retrieval methods","relevant_paper_ids":["paper_a","paper_b"],"candidate_paper_ids":["paper_a","paper_b","paper_duplicate"]},
+    {"case_id":"agent_002","research_question":"numeric fidelity","relevant_paper_ids":["paper_c"],"candidate_paper_ids":["paper_c","paper_irrelevant"]},
+    {"case_id":"agent_003","research_question":"evidence-grounded chat","relevant_paper_ids":["paper_d","paper_e"],"candidate_paper_ids":["paper_d","paper_e"]},
+    {"case_id":"agent_004","research_question":"cross paper contradiction","relevant_paper_ids":["paper_f"],"candidate_paper_ids":["paper_noise","paper_f"]},
+    {"case_id":"agent_005","research_question":"table and equation extraction","relevant_paper_ids":["paper_g"],"candidate_paper_ids":["paper_g","paper_h"]}
+  ],
+  "synthesis": [
+    {"case_id":"syn_001","kind":"AGREEMENT","input_claims":["Both papers report F1 0.9"],"expected":"agreement","expected_origin":"CROSS_PAPER_INFERRED","evidence_refs_valid":true},
+    {"case_id":"syn_002","kind":"GAP","input_claims":["Both papers identify a small-dataset limitation"],"expected":"calibrated_gap","expected_origin":"CROSS_PAPER_INFERRED","evidence_refs_valid":true},
+    {"case_id":"syn_003","kind":"CONTRADICTION","input_claims":["Paper A improves; Paper B worsens"],"expected":"result_divergence","expected_origin":"CROSS_PAPER_INFERRED","evidence_refs_valid":true},
+    {"case_id":"syn_004","kind":"NOT_CONTRADICTION","input_claims":["Different datasets report different metrics"],"expected":"not_contradiction","expected_origin":"CROSS_PAPER_INFERRED","evidence_refs_valid":true},
+    {"case_id":"syn_005","kind":"CROSS_PAPER_VERIFICATION","input_claims":["Evidence belongs to paper-specific documents"],"expected":"valid_identity","expected_origin":"AUTHOR_EXPLICIT","evidence_refs_valid":true}
+  ]
+}
