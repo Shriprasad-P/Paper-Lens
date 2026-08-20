@@ -24,6 +24,7 @@ from ..models.document import (
 from ..models.document import PaperIR
 from ..models.paper import IngestedPaper, PaperMetadata, ParsedSection
 from ..models.verification import VerificationResult
+from ..models.chat import ChatMessage, ChatMessageStatus, ChatRole, ChatSession
 
 
 class Database(Protocol):
@@ -190,6 +191,37 @@ class VerificationRecord(Base):
     cache_key: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     payload: Mapped[dict[str, object]] = mapped_column(JSON)
     verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class ChatSessionRecord(Base):
+    __tablename__ = "chat_sessions"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    paper_id: Mapped[str] = mapped_column(ForeignKey("papers.id", ondelete="CASCADE"), index=True)
+    document_id: Mapped[str] = mapped_column(String(64), index=True)
+    document_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class ChatMessageRecord(Base):
+    __tablename__ = "chat_messages"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("chat_sessions.id", ondelete="CASCADE"), index=True)
+    role: Mapped[str] = mapped_column(String(16))
+    content: Mapped[str] = mapped_column(Text)
+    status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    citation_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    sufficient_evidence: Mapped[bool | None] = mapped_column(nullable=True)
+    document_id: Mapped[str] = mapped_column(String(64))
+    retrieval_query: Mapped[str | None] = mapped_column(Text, nullable=True)
+    retrieved_evidence_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    retrieval_scores: Mapped[dict[str, float]] = mapped_column(JSON, default=dict)
+    retriever_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    provider: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    model: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class SQLDatabase:
@@ -394,6 +426,74 @@ class SQLDatabase:
                 )
             ).all()
             return {record.id: _to_evidence(record) for record in records}
+
+    def get_evidence_for_document(self, paper_id: str, document_id: str) -> list[Evidence]:
+        with self.session_factory() as session:
+            records = session.scalars(
+                select(EvidenceRecord)
+                .where(EvidenceRecord.paper_id == paper_id, EvidenceRecord.document_id == document_id)
+                .order_by(EvidenceRecord.id)
+            ).all()
+            return [_to_evidence(record) for record in records]
+
+    def create_chat_session(self, session: ChatSession) -> ChatSession:
+        try:
+            with self.session_factory.begin() as db_session:
+                db_session.add(
+                    ChatSessionRecord(
+                        id=session.id,
+                        paper_id=session.paper_id,
+                        document_id=session.document_id,
+                        document_hash=session.document_hash,
+                        created_at=session.created_at,
+                        updated_at=session.updated_at,
+                    )
+                )
+            return session
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The chat session could not be saved.") from exc
+
+    def get_chat_session(self, session_id: str) -> ChatSession | None:
+        with self.session_factory() as db_session:
+            record = db_session.get(ChatSessionRecord, session_id)
+            return _to_chat_session(record) if record else None
+
+    def save_chat_message(self, message: ChatMessage) -> None:
+        try:
+            with self.session_factory.begin() as db_session:
+                db_session.add(
+                    ChatMessageRecord(
+                        id=message.id,
+                        session_id=message.session_id,
+                        role=message.role.value,
+                        content=message.content,
+                        status=message.status.value if message.status else None,
+                        citation_ids=[citation.model_dump(mode="json") for citation in message.citations],
+                        sufficient_evidence=message.sufficient_evidence,
+                        document_id=message.document_id,
+                        retrieval_query=message.retrieval_query,
+                        retrieved_evidence_ids=message.retrieved_evidence_ids,
+                        retrieval_scores=message.retrieval_scores,
+                        retriever_version=message.retriever_version,
+                        provider=message.provider,
+                        model=message.model,
+                        created_at=message.created_at,
+                    )
+                )
+                session_record = db_session.get(ChatSessionRecord, message.session_id)
+                if session_record is not None:
+                    session_record.updated_at = message.created_at
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The chat message could not be saved.") from exc
+
+    def get_chat_messages(self, session_id: str) -> list[ChatMessage]:
+        with self.session_factory() as db_session:
+            records = db_session.scalars(
+                select(ChatMessageRecord)
+                .where(ChatMessageRecord.session_id == session_id)
+                .order_by(ChatMessageRecord.created_at, ChatMessageRecord.id)
+            ).all()
+            return [_to_chat_message(record) for record in records]
 
     def get_source_pdf_path(self, paper_id: str) -> Path | None:
         """Return a persisted PDF path only for a completed paper."""
@@ -623,5 +723,44 @@ def _to_evidence(record: EvidenceRecord) -> Evidence:
         table_id=record.table_id,
         equation_id=record.equation_id,
         source_region=_source_region(record),
+        created_at=record.created_at,
+    )
+
+
+def _to_chat_session(record: ChatSessionRecord) -> ChatSession:
+    return ChatSession(
+        id=record.id,
+        paper_id=record.paper_id,
+        document_id=record.document_id,
+        document_hash=record.document_hash,
+        created_at=record.created_at,
+        updated_at=record.updated_at,
+    )
+
+
+def _to_chat_message(record: ChatMessageRecord) -> ChatMessage:
+    from ..models.chat import ChatCitation
+
+    citations = []
+    for item in list(record.citation_ids or []):
+        if isinstance(item, dict):
+            citations.append(ChatCitation.model_validate(item))
+        else:
+            citations.append(ChatCitation(evidence_id=str(item)))
+    return ChatMessage(
+        id=record.id,
+        session_id=record.session_id,
+        role=ChatRole(record.role),
+        content=record.content,
+        status=ChatMessageStatus(record.status) if record.status else None,
+        citations=citations,
+        sufficient_evidence=record.sufficient_evidence,
+        document_id=record.document_id,
+        retrieval_query=record.retrieval_query,
+        retrieved_evidence_ids=list(record.retrieved_evidence_ids or []),
+        retrieval_scores={str(key): float(value) for key, value in dict(record.retrieval_scores or {}).items()},
+        retriever_version=record.retriever_version,
+        provider=record.provider,
+        model=record.model,
         created_at=record.created_at,
     )

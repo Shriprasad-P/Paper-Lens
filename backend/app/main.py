@@ -12,6 +12,7 @@ from .db.database import SQLDatabase
 from .extraction.service import ResearchExtractionService
 from .ingestion.service import IngestionService
 from .verification.service import PaperVerificationService
+from .chat.service import PaperChatService
 
 
 def create_app(
@@ -22,6 +23,7 @@ def create_app(
     ai_provider: AIProvider | None = None,
     extraction_service: ResearchExtractionService | None = None,
     verification_service: PaperVerificationService | None = None,
+    chat_service: PaperChatService | None = None,
 ) -> FastAPI:
     """Create an application instance suitable for production or tests."""
 
@@ -40,6 +42,11 @@ def create_app(
         settings=resolved_settings,
     )
     app.state.verification_service = verification_service or PaperVerificationService(
+        app.state.database,
+        resolved_provider,
+        settings=resolved_settings,
+    )
+    app.state.chat_service = chat_service or PaperChatService(
         app.state.database,
         resolved_provider,
         settings=resolved_settings,

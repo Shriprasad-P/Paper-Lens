@@ -69,6 +69,16 @@ GET  /api/papers/{paper_id}/verification
 
 Verification is claim-level and persisted separately from PaperIR. It reports categorical support (`SUPPORTED`, `PARTIALLY_SUPPORTED`, `UNSUPPORTED`, `CONTRADICTORY`, `UNVERIFIED`) and never requires runtime AI to render the reader. Without verifier credentials, claims remain explicitly `UNVERIFIED` rather than receiving fabricated support.
 
+Phase 7 Paper Chat endpoints are:
+
+```text
+POST /api/papers/{paper_id}/chat/sessions
+GET  /api/papers/{paper_id}/chat/sessions/{session_id}
+POST /api/papers/{paper_id}/chat/sessions/{session_id}/messages
+```
+
+Chat retrieves only bounded paragraph evidence from the current paper using deterministic BM25 ranking. Every assistant turn is persisted with document-bound citations; insufficient retrieval and missing AI credentials remain explicit safe states. `CHAT_RETRIEVAL_TOP_K`, `CHAT_MAX_CONTEXT_CHARS`, `CHAT_MIN_RELEVANCE`, and `CHAT_MAX_QUESTION_CHARS` tune the boundary.
+
 Relevant environment variables are documented in `.env.example`: database URL, arXiv timeout, local PDF storage path, PDF size limit, and frontend origin.
 
 ### Frontend

@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Phase 6 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/EvidenceRegistry, Phase 4 evidence-grounded PaperIR, Phase 5 deterministic visual reader, and claim-level faithfulness verification.
+Phase 7 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/EvidenceRegistry, Phase 4 evidence-grounded PaperIR, Phase 5 deterministic visual reader, Phase 6 claim-level faithfulness verification, and single-paper evidence-grounded chat.
 
 ## Implemented
 
@@ -33,14 +33,19 @@ Phase 6 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/Evid
 - Versioned `claim_verifications` persistence with claim/evidence/document/provider/model/prompt/schema cache keys.
 - `POST /api/papers/{paper_id}/verify` and `GET /api/papers/{paper_id}/verification` APIs.
 - Reader verification summary, manual verify/reverify action, per-claim badges, and unsupported/contradictory overview/chart suppression.
+- Provider-neutral `BM25EvidenceRetriever` (`bm25-v1`) over paragraph Evidence Registry records, preserving scientific tokens and using bounded section-aware scoring.
+- Paper Chat context assembly with `CHAT_RETRIEVAL_TOP_K=8`, `CHAT_MAX_CONTEXT_CHARS=12000`, a configurable relevance floor, and local retrieval caching.
+- Persistent `ChatSession`/`ChatMessage` records bound to `document_id` and `document_hash`; historical sessions freeze when the paper is re-ingested.
+- Structured Paper Chat output, citation/document-version validation, numeric fidelity checks, prompt-injection boundaries, and explicit insufficient/generation-failure states.
+- Session/history/message APIs and reader Paper Chat panel with citation buttons wired to the existing evidence drawer and PDF page navigation.
 
 ## Current Phase
 
-Phase 6 — Claim Verification and Faithfulness
+Phase 7 — Evidence-Grounded Paper Chat
 
 ## Current Task
 
-Complete and validate claim-level verification over persisted PaperIR and evidence.
+Complete and validate single-paper chat over persisted Evidence Registry evidence.
 
 ## Validation
 
@@ -68,6 +73,12 @@ Complete and validate claim-level verification over persisted PaperIR and eviden
 - `npm run lint` — passed.
 - `npm run build` — passed with verification summary/badges in the dynamic reader route.
 - Live external verification — not run; no AI credentials configured. The no-credential path persists safe `UNVERIFIED` results.
+- `.venv/bin/python -m unittest discover -s backend/tests` — 42 tests passed, including deterministic BM25 retrieval, section boosts, follow-up history routing, chat persistence, wrong-source/citation rejection, numeric fidelity, document-version freeze, unavailable-provider, out-of-scope insufficiency, and API session coverage.
+- `.venv/bin/python -m compileall -q backend/app backend/tests` — passed after Paper Chat integration.
+- `npm run typecheck` — passed after clearing stale generated `.next/* 2` artifacts from the unrelated backup copy.
+- `npm run lint` — passed.
+- Live external Paper Chat generation — not run; no AI credentials configured. Retrieval remains locally testable and mocked generation is covered.
+- Live retrieval smoke for `1706.03762` — temporary in-memory ingest returned 538 normalized paragraphs. Attention queries ranked application/multi-head attention passages on pages 5; dataset queries surfaced the WMT 2014 training passage on page 7; results queries surfaced narrative/table-result passages on pages 9–10; contribution queries ranked the introduction contribution passage on page 1. No live external chat generation was attempted.
 
 ## Known Problems
 
@@ -77,6 +88,7 @@ Complete and validate claim-level verification over persisted PaperIR and eviden
 - No AI credentials are configured, so live external model extraction was not run.
 - Source-region PDF highlighting is intentionally deferred; page navigation is supported.
 - Verification uses concise provider rationales only; raw model reasoning is never exposed.
+- Paper Chat citations use only current retrieved Evidence Registry IDs; history is reference context, never evidence, and old sessions are frozen across document replacement.
 
 ## Important Decisions
 
@@ -99,4 +111,4 @@ Complete and validate claim-level verification over persisted PaperIR and eviden
 
 ## Next Recommended Task
 
-Phase 7 — Paper Chat.
+Phase 7 — Evidence-Grounded Paper Chat validation and handoff.

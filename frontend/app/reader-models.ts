@@ -204,6 +204,52 @@ export type ReaderResponse = {
   verification: PaperVerificationResponse | null;
 };
 
+export type ChatCitation = {
+  evidence_id: string;
+  page: number | null;
+  section_id: string | null;
+};
+
+export type ChatMessage = {
+  id: string;
+  session_id: string;
+  role: "USER" | "ASSISTANT";
+  content: string;
+  status: "ANSWERED" | "INSUFFICIENT_EVIDENCE" | "GENERATION_FAILED" | null;
+  citations: ChatCitation[];
+  sufficient_evidence: boolean | null;
+  document_id: string;
+  retrieval_query: string | null;
+  retrieved_evidence_ids: string[];
+  retrieval_scores: Record<string, number>;
+  retriever_version: string | null;
+  provider: string | null;
+  model: string | null;
+  created_at: string;
+};
+
+export type ChatSession = {
+  id: string;
+  paper_id: string;
+  document_id: string;
+  document_hash: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ChatSessionResponse = {
+  session: ChatSession;
+  messages: ChatMessage[];
+};
+
+export type ChatAnswerResponse = {
+  message_id: string;
+  answer: string;
+  status: "ANSWERED" | "INSUFFICIENT_EVIDENCE" | "GENERATION_FAILED";
+  sufficient_evidence: boolean;
+  citations: ChatCitation[];
+};
+
 export type MethodNodeData = {
   label: string;
   description: string;

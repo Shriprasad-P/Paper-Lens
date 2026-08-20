@@ -31,6 +31,8 @@ from ..models.reader import (
 from ..models.verification import PaperVerificationResponse
 from ..verification.service import PaperVerificationError
 from ..visualization.planner import plan_visualizations
+from ..chat.service import ChatDocumentChanged, ChatGenerationUnavailable, ChatSessionNotFound, PaperChatError
+from ..models.chat import ChatAnswerResponse, ChatQuestion, ChatSessionCreateResponse, ChatSessionResponse
 
 router = APIRouter()
 
@@ -220,6 +222,52 @@ async def get_verification(paper_id: str, request: Request) -> PaperVerification
         return request.app.state.verification_service.current(paper_id)
     except PaperPersistenceError as exc:
         raise HTTPException(status_code=500, detail="The paper verification could not be loaded.") from exc
+
+
+@router.post("/api/papers/{paper_id}/chat/sessions", response_model=ChatSessionCreateResponse, status_code=status.HTTP_201_CREATED)
+async def create_chat_session(paper_id: str, request: Request) -> ChatSessionCreateResponse:
+    """Create a chat bound to the paper's current normalized document version."""
+
+    try:
+        session = request.app.state.chat_service.create_session(paper_id)
+        return ChatSessionCreateResponse(session_id=session.id, **session.model_dump(exclude={"id"}))
+    except ChatSessionNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except PaperPersistenceError as exc:
+        raise HTTPException(status_code=500, detail="The chat session could not be saved.") from exc
+
+
+@router.get("/api/papers/{paper_id}/chat/sessions/{session_id}", response_model=ChatSessionResponse)
+async def get_chat_session(paper_id: str, session_id: str, request: Request) -> ChatSessionResponse:
+    try:
+        session, messages = request.app.state.chat_service.get_session(paper_id, session_id)
+        return ChatSessionResponse(session=session, messages=messages)
+    except ChatSessionNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/api/papers/{paper_id}/chat/sessions/{session_id}/messages", response_model=ChatAnswerResponse)
+async def send_chat_message(paper_id: str, session_id: str, payload: ChatQuestion, request: Request) -> ChatAnswerResponse:
+    try:
+        message = await request.app.state.chat_service.answer(paper_id, session_id, payload.question)
+        assert message.status is not None
+        return ChatAnswerResponse(
+            message_id=message.id,
+            answer=message.content,
+            status=message.status,
+            sufficient_evidence=bool(message.sufficient_evidence),
+            citations=message.citations,
+        )
+    except ChatSessionNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ChatDocumentChanged as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ChatGenerationUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except PaperChatError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except PaperPersistenceError as exc:
+        raise HTTPException(status_code=500, detail="The chat turn could not be saved.") from exc
 
 
 def _safe_source_path(request: Request, source_path: object) -> Path | None:

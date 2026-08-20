@@ -19,10 +19,12 @@ import {
 } from "recharts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { API_BASE_URL, loadEvidence } from "../reader-api";
+import { API_BASE_URL, createChatSession, loadChatSession, loadEvidence, sendChatMessage } from "../reader-api";
 import {
   type Analysis,
   type ClaimVerification,
+  type ChatMessage,
+  type ChatSession,
   type Evidence,
   type ExtractionState,
   type ExperimentIR,
@@ -89,6 +91,12 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
   const [pdfLoading, setPdfLoading] = useState(reader.source.available);
   const [drawer, setDrawer] = useState<EvidenceDrawer | null>(null);
   const [selectedMethodNode, setSelectedMethodNode] = useState<MethodFlowNode | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatSession, setChatSession] = useState<ChatSession | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatSending, setChatSending] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
   const evidenceCache = useRef(new Map<string, Evidence>());
 
   const analysis = reader.analysis;
@@ -166,6 +174,69 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
     [openEvidence],
   );
 
+  const ensureChatSession = useCallback(async () => {
+    if (chatSession) return chatSession;
+    setChatLoading(true);
+    setChatError(null);
+    try {
+      const session = await createChatSession(reader.paper.id);
+      const loaded = await loadChatSession(reader.paper.id, session.id);
+      setChatSession(loaded.session);
+      setChatMessages(loaded.messages);
+      return loaded.session;
+    } catch (requestError) {
+      setChatError(requestError instanceof Error ? requestError.message : "Paper Chat could not be opened.");
+      return null;
+    } finally {
+      setChatLoading(false);
+    }
+  }, [chatSession, reader.paper.id]);
+
+  const startNewChat = useCallback(async () => {
+    setChatSession(null);
+    setChatMessages([]);
+    setChatLoading(true);
+    setChatError(null);
+    try {
+      const session = await createChatSession(reader.paper.id);
+      const loaded = await loadChatSession(reader.paper.id, session.id);
+      setChatSession(loaded.session);
+      setChatMessages(loaded.messages);
+    } catch (requestError) {
+      setChatError(requestError instanceof Error ? requestError.message : "A new chat could not be created.");
+    } finally {
+      setChatLoading(false);
+    }
+  }, [reader.paper.id]);
+
+  const submitChat = useCallback(async (question: string) => {
+    const session = await ensureChatSession();
+    if (!session || !question.trim()) return;
+    setChatSending(true);
+    setChatError(null);
+    try {
+      await sendChatMessage(reader.paper.id, session.id, question);
+      const loaded = await loadChatSession(reader.paper.id, session.id);
+      setChatSession(loaded.session);
+      setChatMessages(loaded.messages);
+    } catch (requestError) {
+      try {
+        const loaded = await loadChatSession(reader.paper.id, session.id);
+        setChatSession(loaded.session);
+        setChatMessages(loaded.messages);
+      } catch {
+        // Keep the original, user-facing request error if history is unavailable too.
+      }
+      setChatError(requestError instanceof Error ? requestError.message : "The grounded answer could not be generated.");
+    } finally {
+      setChatSending(false);
+    }
+  }, [ensureChatSession, reader.paper.id]);
+
+  useEffect(() => {
+    if (chatOpen && !chatSession && !chatLoading) void ensureChatSession();
+  }, [chatOpen, chatLoading, chatSession, ensureChatSession]);
+
   return (
     <main className="reader-shell">
       <header className="reader-header">
@@ -183,6 +254,9 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
         </div>
         <div className="reader-header-actions">
           <span className="paper-status">{reader.paper.status}</span>
+          <button type="button" className="secondary-button" onClick={() => setChatOpen((open) => !open)} aria-expanded={chatOpen}>
+            {chatOpen ? "Hide Paper Chat" : "Open Paper Chat"}
+          </button>
           {sourceUrl ? (
             <button type="button" className="secondary-button" onClick={() => setPdfOpen((open) => !open)}>
               {pdfOpen ? "Hide original" : "Show original"}
@@ -310,6 +384,18 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
 
       {drawer ? (
         <EvidenceDrawerView drawer={drawer} onClose={() => setDrawer(null)} onPage={openPage} />
+      ) : null}
+      {chatOpen ? (
+        <ChatPanel
+          messages={chatMessages}
+          loading={chatLoading}
+          sending={chatSending}
+          error={chatError}
+          onClose={() => setChatOpen(false)}
+          onNewChat={() => void startNewChat()}
+          onSend={(question) => void submitChat(question)}
+          onCitation={(citation) => void openEvidence([citation.evidence_id], `Paper Chat citation · ${citation.evidence_id}`)}
+        />
       ) : null}
     </main>
   );
@@ -584,6 +670,70 @@ function EvidenceDrawerView({ drawer, onClose, onPage }: { drawer: EvidenceDrawe
         </div>
       </aside>
     </div>
+  );
+}
+
+function ChatPanel({
+  messages,
+  loading,
+  sending,
+  error,
+  onClose,
+  onNewChat,
+  onSend,
+  onCitation,
+}: {
+  messages: ChatMessage[];
+  loading: boolean;
+  sending: boolean;
+  error: string | null;
+  onClose: () => void;
+  onNewChat: () => void;
+  onSend: (question: string) => void;
+  onCitation: (citation: ChatMessage["citations"][number]) => void;
+}) {
+  const [input, setInput] = useState("");
+  const suggestions = [
+    "What problem does this paper address?",
+    "What are the main contributions?",
+    "Explain the methodology.",
+    "What are the key results?",
+  ];
+  function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const question = input.trim();
+    if (!question || sending) return;
+    setInput("");
+    onSend(question);
+  }
+  return (
+    <aside className="chat-panel" aria-label="Paper Chat">
+      <div className="chat-panel-header">
+        <div><div className="card-label">Paper Chat</div><strong>Ask this paper</strong></div>
+        <div className="chat-panel-actions"><button type="button" className="secondary-button" onClick={onNewChat} disabled={loading || sending}>New chat</button><button type="button" className="close-button" onClick={onClose} aria-label="Close Paper Chat">×</button></div>
+      </div>
+      <p className="chat-grounding-note">Answers use only retrieved passages from the current paper. Citations open the source evidence.</p>
+      <div className="chat-messages" aria-live="polite">
+        {loading ? <p className="chat-state">Opening a document-bound chat…</p> : null}
+        {!loading && !messages.length ? <div className="chat-empty"><strong>Start with a paper question.</strong><div className="chat-suggestions">{suggestions.map((suggestion) => <button type="button" key={suggestion} onClick={() => onSend(suggestion)} disabled={sending}>{suggestion}</button>)}</div></div> : null}
+        {messages.map((message) => (
+          <article className={`chat-message chat-${message.role.toLowerCase()}`} key={message.id}>
+            <div className="chat-message-label">{message.role === "USER" ? "You" : "PaperLens"}</div>
+            <p>{message.content}</p>
+            {message.role === "ASSISTANT" && message.citations.length ? <div className="chat-citations" aria-label="Answer citations">{message.citations.map((citation, index) => <button type="button" key={`${message.id}-${citation.evidence_id}`} onClick={() => onCitation(citation)} title={`${citation.evidence_id}${citation.page ? ` · page ${citation.page}` : ""}`}>[{index + 1}]</button>)}</div> : null}
+            {message.status === "INSUFFICIENT_EVIDENCE" ? <small className="chat-insufficient">Insufficient retrieved evidence</small> : null}
+            {message.status === "GENERATION_FAILED" ? <small className="chat-failure">Grounded generation failed</small> : null}
+          </article>
+        ))}
+        {sending ? <p className="chat-state">Retrieving evidence and checking citations…</p> : null}
+      </div>
+      {error ? <p className="chat-error" role="alert">{error}</p> : null}
+      <form className="chat-composer" onSubmit={submit}>
+        <label htmlFor="paper-chat-question">Question</label>
+        <textarea id="paper-chat-question" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask about the paper…" rows={3} disabled={sending || loading} />
+        <button type="submit" disabled={sending || loading || !input.trim()}>{sending ? "Answering…" : "Ask paper"}</button>
+      </form>
+    </aside>
   );
 }
 

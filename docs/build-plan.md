@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 6 — Claim Verification and Faithfulness
+Phase 7 — Evidence-Grounded Paper Chat
 
 ## Current Milestone
 
-Claim-level faithfulness verification over persisted PaperIR and linked evidence.
+Single-paper conversational retrieval and answer generation over persisted Evidence Registry records.
 
 ## Completed
 
@@ -50,6 +50,12 @@ Claim-level faithfulness verification over persisted PaperIR and linked evidence
 - [x] Persist versioned verification results and cache by claim/evidence/document/provider/model/prompt/schema.
 - [x] Add typed verification APIs and reader badges, summary, manual verify action, and unsupported-claim treatment.
 - [x] Validate all statuses, malformed output, prompt injection, numeric fidelity, cache invalidation, API persistence, and Phase 1–5 regressions.
+- [x] Add provider-neutral `BM25EvidenceRetriever` (`bm25-v1`) with scientific-token normalization, bounded Top-K, section-aware ranking, and local retrieval cache.
+- [x] Add bounded chat context assembly and `paper_chat.md` rules that treat source text and history as untrusted/non-evidence data.
+- [x] Add document-bound persistent chat sessions/messages with citation metadata, chronological history, and safe re-ingestion freeze behavior.
+- [x] Add structured chat output validation for supplied-context citations, wrong-paper/document rejection, missing citations, numeric fidelity, and first-class insufficient evidence.
+- [x] Add chat APIs and a responsive reader Paper Chat panel that reuses the evidence drawer and PDF page navigation.
+- [x] Add deterministic retrieval, grounding, persistence, API, prompt-injection, no-credential, and out-of-scope chat tests.
 
 ## Current
 
@@ -57,7 +63,7 @@ Claim-level faithfulness verification over persisted PaperIR and linked evidence
 
 ## Later
 
-- [ ] Add paper-grounded chat.
+- [ ] Add semantic/hybrid retrieval only if lexical retrieval no longer meets measured quality needs.
 - [ ] Consider animation only after the reader is stable.
 
 ## Blockers
@@ -66,6 +72,6 @@ Claim-level faithfulness verification over persisted PaperIR and linked evidence
 
 ## Explicitly Out of Scope for Current Phase
 
-- Vector search, paper-grounded chat, generated code, animations, and distributed workers.
+- Vector search, multi-paper chat, generated code, animations, and distributed workers.
 - Reliable parser-level figure/table/equation/reference extraction beyond the typed source models.
 - Live external AI extraction without configured credentials.

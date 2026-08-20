@@ -132,3 +132,19 @@ Visual Reader
 The verification service collects stable application-generated claim IDs from PaperIR, including the fixed `method_001` summary ID and existing extractor IDs for problem, gaps, contributions, steps, equations, experiments, results, limitations, and future work. Before any provider call it checks claim/evidence presence, paper ownership, current document identity, non-empty source text, and exact structured numeric value presence. Invalid or unavailable inputs become `UNVERIFIED` without being mislabeled `UNSUPPORTED`.
 
 Results are stored separately in `claim_verifications`; the original PaperIR statement is never overwritten. Cache keys include document hash, claim hash, ordered evidence-content hash, provider/model, prompt version, and schema version. The verification API exposes `POST /api/papers/{paper_id}/verify` and `GET /api/papers/{paper_id}/verification`; the reader displays categorical badges, a count summary, and a manual verify/reverify action. Unsupported or contradictory claims are visually marked and excluded from the prominent overview cards and numeric charts.
+
+## Evidence-grounded Paper Chat
+
+Phase 7 reuses the Phase 3 Evidence Registry for one chat namespace per paper:
+
+```text
+question → history resolver → query normalizer → BM25 evidence retrieval
+         → bounded context → structured AIProvider output
+         → citation/document validation → persisted chat turn → reader UI
+```
+
+`BM25EvidenceRetriever` (`bm25-v1`) indexes only paragraph `Evidence.source_text` plus section titles and returns provider-neutral `RetrievedEvidence`. Scientific tokens such as `BERT`, `F1`, `ResNet-50`, and `GPT-4` are preserved. Section intent contributes a small ranking boost without hard filtering. `CHAT_RETRIEVAL_TOP_K` defaults to 8, `CHAT_MAX_CONTEXT_CHARS` defaults to 12,000, and an in-process cache is keyed by paper/query/limit/section hint. Scores rank passages; they are not calibrated probabilities. Empty or below-threshold retrieval becomes explicit insufficient evidence without an AI call.
+
+`PaperChatService` may use recent turns to resolve pronouns, but history is labeled context and never evidence. Sessions persist their `document_id` and `document_hash`; historical sessions remain readable after re-ingestion, while new turns are frozen until a new session is created. The provider receives `paper_chat.md`, the question, bounded history, and delimited `[EVIDENCE ev_…]` passages. Structured claims are accepted only when every factual claim cites a supplied current-paper ID. Missing, fabricated, outside-context, wrong-document, or numerically unfaithful citations are rejected and persisted as a failure state. Missing credentials never trigger general-knowledge fallback.
+
+The reader's optional Paper Chat panel renders plain text, explicit insufficient/failure states, and compact citation buttons. Citations reuse the existing evidence drawer and set the existing PDF viewer to the cited page; no second provenance or navigation system is introduced.
