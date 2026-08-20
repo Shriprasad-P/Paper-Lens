@@ -119,6 +119,7 @@ Complete and validate production hardening without changing Phase 1–10 semanti
 - Phase 11 dependency audit — `npm audit --omit=dev` clean after Next.js 16.3.1 migration (network audit rerun with registry access).
 - Phase 11 frontend gates — `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run test:e2e` passed.
 - Phase 11 compile/evaluation smoke — passed after middleware, migration, recovery, provider, and resource-limit changes.
+- Phase 11 local performance sample (fixture, 40–50 iterations, TestClient): `/health/live` p50 1.297 ms / p95 1.783 ms; document reader endpoint p50 2.734 ms / p95 3.325 ms; BM25 retrieval p50 1.220 ms / p95 1.438 ms. These are local reference measurements, not production SLAs.
 
 ## Known Problems
 
