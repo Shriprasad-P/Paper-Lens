@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 5 — Visual Reader
+Phase 6 — Claim Verification and Faithfulness
 
 ## Current Milestone
 
-Interactive, evidence-linked visual reader over persisted PaperIR and source PDFs.
+Claim-level faithfulness verification over persisted PaperIR and linked evidence.
 
 ## Completed
 
@@ -44,6 +44,12 @@ Interactive, evidence-linked visual reader over persisted PaperIR and source PDF
 - [x] Add Recharts numeric result view with table/text fallback.
 - [x] Add lazy multi-record evidence drawer and source PDF page navigation.
 - [x] Validate reader API/source safety, backend regressions, frontend build, and dependency audit.
+- [x] Add stable claim collection and categorical verification statuses.
+- [x] Add deterministic evidence/document/numeric pre-validation and focused faithfulness prompt.
+- [x] Add independent verifier/orchestrator with partial failure isolation and no-credential `UNVERIFIED` fallback.
+- [x] Persist versioned verification results and cache by claim/evidence/document/provider/model/prompt/schema.
+- [x] Add typed verification APIs and reader badges, summary, manual verify action, and unsupported-claim treatment.
+- [x] Validate all statuses, malformed output, prompt injection, numeric fidelity, cache invalidation, API persistence, and Phase 1–5 regressions.
 
 ## Current
 
@@ -51,7 +57,7 @@ Interactive, evidence-linked visual reader over persisted PaperIR and source PDF
 
 ## Later
 
-- [ ] Add verification, retrieval, and paper-grounded chat.
+- [ ] Add paper-grounded chat.
 - [ ] Consider animation only after the reader is stable.
 
 ## Blockers
@@ -60,6 +66,6 @@ Interactive, evidence-linked visual reader over persisted PaperIR and source PDF
 
 ## Explicitly Out of Scope for Current Phase
 
-- Verification, vector search, paper-grounded chat, generated code, animations, and distributed workers.
+- Vector search, paper-grounded chat, generated code, animations, and distributed workers.
 - Reliable parser-level figure/table/equation/reference extraction beyond the typed source models.
 - Live external AI extraction without configured credentials.

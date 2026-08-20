@@ -11,6 +11,7 @@ from .core.config import Settings
 from .db.database import SQLDatabase
 from .extraction.service import ResearchExtractionService
 from .ingestion.service import IngestionService
+from .verification.service import PaperVerificationService
 
 
 def create_app(
@@ -20,6 +21,7 @@ def create_app(
     ingestion_service: IngestionService | None = None,
     ai_provider: AIProvider | None = None,
     extraction_service: ResearchExtractionService | None = None,
+    verification_service: PaperVerificationService | None = None,
 ) -> FastAPI:
     """Create an application instance suitable for production or tests."""
 
@@ -33,6 +35,11 @@ def create_app(
     )
     resolved_provider = ai_provider or create_ai_provider(resolved_settings)
     app.state.extraction_service = extraction_service or ResearchExtractionService(
+        app.state.database,
+        resolved_provider,
+        settings=resolved_settings,
+    )
+    app.state.verification_service = verification_service or PaperVerificationService(
         app.state.database,
         resolved_provider,
         settings=resolved_settings,

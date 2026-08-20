@@ -7,6 +7,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
 
 from .document import PaperIR, PaperMetadata
+from .verification import PaperVerificationResponse
 
 
 class VisualizationType(str, Enum):
@@ -97,3 +98,4 @@ class ReaderResponse(BaseModel):
     analysis: PaperIR | None = None
     visualizations: list[VisualizationSpec] = Field(default_factory=list)
     source: ReaderSource
+    verification: PaperVerificationResponse | None = None

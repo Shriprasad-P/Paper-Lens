@@ -60,6 +60,15 @@ GET /api/papers/{paper_id}/source
 
 Open the visual reader at `http://localhost:3000/papers/{paper_id}`. It loads compact persisted PaperIR metadata, fetches evidence passages only when requested, and opens the persisted PDF through the ownership-checked source endpoint.
 
+Phase 6 verification endpoints are:
+
+```text
+POST /api/papers/{paper_id}/verify
+GET  /api/papers/{paper_id}/verification
+```
+
+Verification is claim-level and persisted separately from PaperIR. It reports categorical support (`SUPPORTED`, `PARTIALLY_SUPPORTED`, `UNSUPPORTED`, `CONTRADICTORY`, `UNVERIFIED`) and never requires runtime AI to render the reader. Without verifier credentials, claims remain explicitly `UNVERIFIED` rather than receiving fabricated support.
+
 Relevant environment variables are documented in `.env.example`: database URL, arXiv timeout, local PDF storage path, PDF size limit, and frontend origin.
 
 ### Frontend

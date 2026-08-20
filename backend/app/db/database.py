@@ -23,6 +23,7 @@ from ..models.document import (
 )
 from ..models.document import PaperIR
 from ..models.paper import IngestedPaper, PaperMetadata, ParsedSection
+from ..models.verification import VerificationResult
 
 
 class Database(Protocol):
@@ -170,6 +171,25 @@ class AnalysisRecord(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+
+class VerificationRecord(Base):
+    __tablename__ = "claim_verifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    paper_id: Mapped[str] = mapped_column(ForeignKey("papers.id", ondelete="CASCADE"), index=True)
+    claim_id: Mapped[str] = mapped_column(String(128), index=True)
+    document_id: Mapped[str] = mapped_column(String(64))
+    document_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    claim_hash: Mapped[str] = mapped_column(String(64))
+    evidence_hash: Mapped[str] = mapped_column(String(64))
+    provider: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    model: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    prompt_version: Mapped[str] = mapped_column(String(32))
+    schema_version: Mapped[str] = mapped_column(String(32))
+    cache_key: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    payload: Mapped[dict[str, object]] = mapped_column(JSON)
+    verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class SQLDatabase:
@@ -363,6 +383,18 @@ class SQLDatabase:
             )
             return _to_evidence(record) if record else None
 
+    def get_evidence_many(self, paper_id: str, evidence_ids: list[str]) -> dict[str, Evidence]:
+        if not evidence_ids:
+            return {}
+        with self.session_factory() as session:
+            records = session.scalars(
+                select(EvidenceRecord).where(
+                    EvidenceRecord.paper_id == paper_id,
+                    EvidenceRecord.id.in_(evidence_ids),
+                )
+            ).all()
+            return {record.id: _to_evidence(record) for record in records}
+
     def get_source_pdf_path(self, paper_id: str) -> Path | None:
         """Return a persisted PDF path only for a completed paper."""
 
@@ -381,6 +413,55 @@ class SQLDatabase:
                 return PaperIR.model_validate(record.payload), record.cache_key
             except ValueError as exc:
                 raise PaperPersistenceError("The stored paper analysis is invalid.") from exc
+
+    def get_verification_by_cache_keys(self, paper_id: str, cache_keys: list[str]) -> dict[str, VerificationResult]:
+        if not cache_keys:
+            return {}
+        with self.session_factory() as session:
+            records = session.scalars(
+                select(VerificationRecord).where(
+                    VerificationRecord.paper_id == paper_id,
+                    VerificationRecord.cache_key.in_(cache_keys),
+                )
+            ).all()
+            try:
+                return {
+                    record.cache_key: VerificationResult.model_validate(record.payload)
+                    for record in records
+                }
+            except ValueError as exc:
+                raise PaperPersistenceError("The stored verification result is invalid.") from exc
+
+    def save_verification_results(self, paper_id: str, document_id: str, results: list[VerificationResult]) -> None:
+        try:
+            with self.session_factory.begin() as session:
+                for result in results:
+                    payload = result.model_dump(mode="json")
+                    record = session.scalar(
+                        select(VerificationRecord).where(VerificationRecord.cache_key == result.cache_key)
+                    )
+                    values = {
+                        "paper_id": paper_id,
+                        "claim_id": result.claim_id,
+                        "document_id": document_id,
+                        "document_hash": result.document_hash,
+                        "claim_hash": result.claim_hash,
+                        "evidence_hash": result.evidence_hash,
+                        "provider": result.verifier_provider,
+                        "model": result.verifier_model,
+                        "prompt_version": result.prompt_version,
+                        "schema_version": result.schema_version,
+                        "cache_key": result.cache_key,
+                        "payload": payload,
+                        "verified_at": result.verified_at,
+                    }
+                    if record is None:
+                        session.add(VerificationRecord(**values))
+                    else:
+                        for key, value in values.items():
+                            setattr(record, key, value)
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The paper verification could not be saved.") from exc
 
     def save_analysis(
         self,

@@ -28,6 +28,8 @@ from ..models.reader import (
     ReaderSectionSummary,
     ReaderSource,
 )
+from ..models.verification import PaperVerificationResponse
+from ..verification.service import PaperVerificationError
 from ..visualization.planner import plan_visualizations
 
 router = APIRouter()
@@ -106,6 +108,7 @@ async def get_reader(paper_id: str, request: Request) -> ReaderResponse:
     if paper is None or document is None:
         raise HTTPException(status_code=404, detail="Paper reader data not found.")
     analysis_record = request.app.state.database.get_analysis_record(paper_id)
+    verification = request.app.state.verification_service.current(paper_id)
     source_path = request.app.state.database.get_source_pdf_path(paper_id)
     source_available = _safe_source_path(request, source_path) is not None
     return ReaderResponse(
@@ -153,6 +156,7 @@ async def get_reader(paper_id: str, request: Request) -> ReaderResponse:
             endpoint=f"/api/papers/{paper_id}/source" if source_available else None,
             page_count=document.page_count,
         ),
+        verification=verification,
     )
 
 
@@ -192,6 +196,30 @@ async def get_analysis(paper_id: str, request: Request) -> PaperIR:
     if analysis is None:
         raise HTTPException(status_code=404, detail="Paper analysis not found.")
     return analysis[0]
+
+
+@router.post("/api/papers/{paper_id}/verify", response_model=PaperVerificationResponse)
+async def verify_paper(paper_id: str, request: Request) -> PaperVerificationResponse:
+    """Verify each persisted semantic claim against only its linked evidence."""
+
+    try:
+        return await request.app.state.verification_service.verify(paper_id)
+    except PaperVerificationError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except PaperPersistenceError as exc:
+        raise HTTPException(status_code=500, detail="The paper verification could not be loaded or saved.") from exc
+
+
+@router.get("/api/papers/{paper_id}/verification", response_model=PaperVerificationResponse)
+async def get_verification(paper_id: str, request: Request) -> PaperVerificationResponse:
+    """Return only verification results current for the stored analysis/document."""
+
+    if request.app.state.database.get_by_id(paper_id) is None:
+        raise HTTPException(status_code=404, detail="Paper not found.")
+    try:
+        return request.app.state.verification_service.current(paper_id)
+    except PaperPersistenceError as exc:
+        raise HTTPException(status_code=500, detail="The paper verification could not be loaded.") from exc
 
 
 def _safe_source_path(request: Request, source_path: object) -> Path | None:

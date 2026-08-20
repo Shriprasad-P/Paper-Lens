@@ -2,6 +2,7 @@ import type { Edge, Node } from "@xyflow/react";
 
 export type StatementOrigin = "AUTHOR_EXPLICIT" | "MODEL_INFERRED";
 export type ExtractionState = { status: string; error: string | null };
+export type VerificationStatus = "SUPPORTED" | "PARTIALLY_SUPPORTED" | "UNSUPPORTED" | "CONTRADICTORY" | "UNVERIFIED";
 
 export type ResearchClaim = {
   id: string;
@@ -157,12 +158,50 @@ export type VisualizationSpec = {
   evidence_ids: string[];
 };
 
+export type ClaimVerification = {
+  claim_id: string;
+  status: VerificationStatus;
+  evidence_ids: string[];
+  rationale: string | null;
+  confidence: number | null;
+  verified_at: string;
+  verifier_provider: string | null;
+  verifier_model: string | null;
+  prompt_version: string;
+  schema_version: string;
+  document_hash: string | null;
+  claim_hash: string;
+  evidence_hash: string;
+  cache_key: string;
+};
+
+export type VerificationSummary = {
+  total_claims: number;
+  supported: number;
+  partially_supported: number;
+  unsupported: number;
+  contradictory: number;
+  unverified: number;
+  verified_at: string | null;
+};
+
+export type PaperVerificationResponse = {
+  paper_id: string;
+  document_id: string | null;
+  document_hash: string | null;
+  available: boolean;
+  error: string | null;
+  summary: VerificationSummary;
+  results: ClaimVerification[];
+};
+
 export type ReaderResponse = {
   paper: ReaderPaper;
   document: ReaderDocumentSummary;
   analysis: Analysis | null;
   visualizations: VisualizationSpec[];
   source: { available: boolean; endpoint: string | null; page_count: number | null };
+  verification: PaperVerificationResponse | null;
 };
 
 export type MethodNodeData = {

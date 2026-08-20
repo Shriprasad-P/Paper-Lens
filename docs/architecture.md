@@ -1,6 +1,6 @@
 # PaperLens Architecture
 
-Phase 5 extends the Phase 2–4 vertical slice with a deterministic visual reader while keeping parser, extraction, verification, and rendering stages separate:
+Phase 6 extends the Phase 2–5 vertical slice with claim-level faithfulness verification while keeping parser, extraction, verification, and rendering stages separate:
 
 ```text
 arXiv input
@@ -27,7 +27,13 @@ VisualizationSpec + typed Reader API
         ↓
 Next.js visual reader + evidence/PDF interaction
         ↓
-verification (later phase)
+PaperIR claim collection
+        ↓
+Evidence resolver + deterministic validation
+        ↓
+FaithfulnessVerifier → VerificationResult persistence
+        ↓
+Reader verification badges and summary
 ```
 
 The current runtime has two independently deployable surfaces:
@@ -100,3 +106,29 @@ typed ReaderResponse + VisualizationSpec[]
 The method graph transformation is frontend application code: `MethodIR` steps become deterministic top-to-bottom React Flow nodes and persisted relations become edges. A textual outline remains alongside the graph for keyboard and no-graph fallback use. Result visualization is deterministic: comparable numeric results may become a bar chart, a single numeric result a metric view, and mixed/non-numeric results a table/text view. No runtime AI call is used for rendering.
 
 `GET /api/papers/{paper_id}/source` serves only a completed paper's persisted PDF after ownership and storage-root validation. The reader uses the browser's established PDF viewer in a split view and navigates to evidence pages with `#page=N`. Source-region coordinates remain visible as preserved provenance but are not highlighted until coordinate mapping is reliable across PDF rendering scales.
+
+## Claim verification and faithfulness
+
+Phase 6 keeps verification separate from the original extracted claims:
+
+```text
+PaperIR Claim
+      ↓
+Evidence Resolver
+      ↓
+Deterministic Validation
+      ↓
+FaithfulnessVerifier
+      ↓
+VerificationResult
+      ↓
+Versioned persistence/cache
+      ↓
+Visual Reader
+```
+
+`VerificationStatus` is categorical (`SUPPORTED`, `PARTIALLY_SUPPORTED`, `UNSUPPORTED`, `CONTRADICTORY`, or `UNVERIFIED`). Origin (`AUTHOR_EXPLICIT` versus `MODEL_INFERRED`) remains a separate dimension. The verifier receives one claim, its origin, structured numeric context when available, and only the linked evidence records; paper text is explicitly treated as untrusted data in `faithfulness_verifier.md`.
+
+The verification service collects stable application-generated claim IDs from PaperIR, including the fixed `method_001` summary ID and existing extractor IDs for problem, gaps, contributions, steps, equations, experiments, results, limitations, and future work. Before any provider call it checks claim/evidence presence, paper ownership, current document identity, non-empty source text, and exact structured numeric value presence. Invalid or unavailable inputs become `UNVERIFIED` without being mislabeled `UNSUPPORTED`.
+
+Results are stored separately in `claim_verifications`; the original PaperIR statement is never overwritten. Cache keys include document hash, claim hash, ordered evidence-content hash, provider/model, prompt version, and schema version. The verification API exposes `POST /api/papers/{paper_id}/verify` and `GET /api/papers/{paper_id}/verification`; the reader displays categorical badges, a count summary, and a manual verify/reverify action. Unsupported or contradictory claims are visually marked and excluded from the prominent overview cards and numeric charts.

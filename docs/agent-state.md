@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Phase 5 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/EvidenceRegistry, Phase 4 evidence-grounded PaperIR, and a deterministic visual reader with lazy evidence and PDF page navigation.
+Phase 6 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/EvidenceRegistry, Phase 4 evidence-grounded PaperIR, Phase 5 deterministic visual reader, and claim-level faithfulness verification.
 
 ## Implemented
 
@@ -27,14 +27,20 @@ Phase 5 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/Evid
 - KaTeX equation rendering with original-expression fallback and undefined-variable messaging.
 - Recharts numeric result visualization with textual/table fallback and preserved numeric values.
 - Multi-record evidence drawer with session cache, source metadata, and PDF page navigation.
+- Typed `VerificationStatus`, `VerificationOutput`, `VerificationResult`, summary, and API response models kept separate from PaperIR.
+- Stable claim collection for semantic PaperIR objects, including method summaries/steps and available equation interpretations/experiment fields.
+- Focused `FaithfulnessVerifier` prompt and service with deterministic evidence/document/numeric pre-validation, safe `UNVERIFIED` fallback, partial failure isolation, and prompt-injection rules.
+- Versioned `claim_verifications` persistence with claim/evidence/document/provider/model/prompt/schema cache keys.
+- `POST /api/papers/{paper_id}/verify` and `GET /api/papers/{paper_id}/verification` APIs.
+- Reader verification summary, manual verify/reverify action, per-claim badges, and unsupported/contradictory overview/chart suppression.
 
 ## Current Phase
 
-Phase 5 — Visual Reader
+Phase 6 — Claim Verification and Faithfulness
 
 ## Current Task
 
-Complete and validate the persisted PaperIR visual reader.
+Complete and validate claim-level verification over persisted PaperIR and evidence.
 
 ## Validation
 
@@ -57,6 +63,11 @@ Complete and validate the persisted PaperIR visual reader.
 - `npm run build` — passed with `/papers/[paperId]` dynamic reader route.
 - `npm audit --omit=dev` — three high-severity findings remain in `postcss`/`sharp` through Next 15; remediation requires a breaking Next 16 upgrade, so no force fix was applied.
 - Live arXiv reader smoke test — `1706.03762` returned HTTP 200 for extraction, reader, evidence, and PDF source; reader reported 22 normalized sections and 538 paragraphs.
+- `.venv/bin/python -m unittest discover -s backend/tests` — 33 tests passed, including all verification statuses, deterministic validation, prompt-injection handling, numeric fidelity, cache invalidation, persistence, unavailable-provider behavior, and API coverage.
+- `npm run typecheck` — passed with verification view models and reader integration.
+- `npm run lint` — passed.
+- `npm run build` — passed with verification summary/badges in the dynamic reader route.
+- Live external verification — not run; no AI credentials configured. The no-credential path persists safe `UNVERIFIED` results.
 
 ## Known Problems
 
@@ -65,6 +76,7 @@ Complete and validate the persisted PaperIR visual reader.
 - Figure, table, equation, and reference extraction models exist but are intentionally empty.
 - No AI credentials are configured, so live external model extraction was not run.
 - Source-region PDF highlighting is intentionally deferred; page navigation is supported.
+- Verification uses concise provider rationales only; raw model reasoning is never exposed.
 
 ## Important Decisions
 
@@ -81,7 +93,10 @@ Complete and validate the persisted PaperIR visual reader.
 - Keep reader responses compact: semantic PaperIR and document metadata load initially; evidence bodies and source passages load on demand.
 - Serve PDFs only through an ownership-checked API route rooted under `PAPERLENS_STORAGE_PATH`; never expose local filesystem paths.
 - Keep visualization planning deterministic and renderer-neutral; React Flow/Recharts/KaTeX consume validated persisted data only.
+- Keep verification separate from extraction so claim text remains immutable and verifier/prompt/model changes are auditable.
+- Require deterministic evidence/document/numeric checks before provider calls; failures become `UNVERIFIED`, not `UNSUPPORTED`.
+- Cache verification by claim/evidence/document/provider/model/prompt/schema versions and hide stale results from the current reader.
 
 ## Next Recommended Task
 
-Phase 6 — Verification.
+Phase 7 — Paper Chat.

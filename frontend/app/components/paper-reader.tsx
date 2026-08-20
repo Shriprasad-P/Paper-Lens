@@ -22,6 +22,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE_URL, loadEvidence } from "../reader-api";
 import {
   type Analysis,
+  type ClaimVerification,
   type Evidence,
   type ExtractionState,
   type ExperimentIR,
@@ -33,6 +34,7 @@ import {
   type ResearchClaim,
   type ResultIR,
   type StatementOrigin,
+  type VerificationStatus,
 } from "../reader-models";
 
 type ReaderSectionId =
@@ -60,7 +62,11 @@ type PaperReaderProps = {
   reader: ReaderResponse;
   onAnalyze?: () => Promise<void>;
   analysisError?: string | null;
+  onVerify?: () => Promise<void>;
+  verificationError?: string | null;
 };
+
+type VerificationLookup = Map<string, ClaimVerification>;
 
 const sectionLabels: Record<ReaderSectionId, string> = {
   overview: "Overview",
@@ -76,7 +82,7 @@ const sectionLabels: Record<ReaderSectionId, string> = {
   references: "References",
 };
 
-export function PaperReader({ reader, onAnalyze, analysisError }: PaperReaderProps) {
+export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verificationError }: PaperReaderProps) {
   const [activeSection, setActiveSection] = useState<ReaderSectionId>("overview");
   const [pdfOpen, setPdfOpen] = useState(reader.source.available);
   const [pdfPage, setPdfPage] = useState<number | null>(null);
@@ -87,6 +93,10 @@ export function PaperReader({ reader, onAnalyze, analysisError }: PaperReaderPro
 
   const analysis = reader.analysis;
   const navigation = useMemo(() => buildNavigation(reader), [reader]);
+  const verificationByClaim = useMemo(
+    () => new Map((reader.verification?.results ?? []).map((result) => [result.claim_id, result])),
+    [reader.verification],
+  );
   const sourceUrl = reader.source.endpoint ? `${API_BASE_URL}${reader.source.endpoint}` : null;
 
   useEffect(() => {
@@ -206,52 +216,52 @@ export function PaperReader({ reader, onAnalyze, analysisError }: PaperReaderPro
 
         <article className="reader-story">
           <ReaderSection id="overview" title="Overview" eyebrow="01 / ORIENTATION">
-            <OverviewSection reader={reader} analysis={analysis} onEvidence={openEvidence} onNavigate={goToSection} />
+            <OverviewSection reader={reader} analysis={analysis} verification={verificationByClaim} onEvidence={openEvidence} onNavigate={goToSection} />
           </ReaderSection>
 
           {hasSection(navigation, "problem") ? (
             <ReaderSection id="problem" title="Problem" eyebrow="02 / QUESTION">
-              <ProblemSection analysis={analysis} onEvidence={openEvidence} />
+              <ProblemSection analysis={analysis} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "gap") ? (
             <ReaderSection id="gap" title="Research Gap" eyebrow="03 / GAP">
-              <ClaimList claims={analysis?.research_gap ?? []} emptyState={analysis?.extraction.research_gap} onEvidence={openEvidence} />
+              <ClaimList claims={analysis?.research_gap ?? []} emptyState={analysis?.extraction.research_gap} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "contributions") ? (
             <ReaderSection id="contributions" title="Contributions" eyebrow="04 / WHAT THIS PAPER ADDS">
-              <ClaimList claims={analysis?.contributions ?? []} emptyState={analysis?.extraction.contributions} onEvidence={openEvidence} numbered />
+              <ClaimList claims={analysis?.contributions ?? []} emptyState={analysis?.extraction.contributions} verification={verificationByClaim} onEvidence={openEvidence} numbered />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "method") ? (
             <ReaderSection id="method" title="Method" eyebrow="05 / HOW IT WORKS">
-              <MethodSection method={analysis?.method ?? null} state={analysis?.extraction.method} selectedNodeId={selectedMethodNode?.id ?? null} onEvidence={openEvidence} onNodeClick={handleMethodNodeClick} />
+              <MethodSection method={analysis?.method ?? null} state={analysis?.extraction.method} verification={verificationByClaim} selectedNodeId={selectedMethodNode?.id ?? null} onEvidence={openEvidence} onNodeClick={handleMethodNodeClick} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "equations") ? (
             <ReaderSection id="equations" title="Equations" eyebrow="06 / MATHEMATICAL OBJECTS">
-              <EquationSection equations={analysis?.equations ?? []} state={analysis?.extraction.equations} onEvidence={openEvidence} />
+              <EquationSection equations={analysis?.equations ?? []} state={analysis?.extraction.equations} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "experiments") ? (
             <ReaderSection id="experiments" title="Experiments" eyebrow="07 / EVALUATION SETUP">
-              <ExperimentSection experiments={analysis?.experiments ?? []} state={analysis?.extraction.experiments} onEvidence={openEvidence} />
+              <ExperimentSection experiments={analysis?.experiments ?? []} state={analysis?.extraction.experiments} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "results") ? (
             <ReaderSection id="results" title="Results" eyebrow="08 / FINDINGS">
-              <ResultsSection analysis={analysis} specs={reader.visualizations} state={analysis?.extraction.results} onEvidence={openEvidence} />
+              <ResultsSection analysis={analysis} specs={reader.visualizations} state={analysis?.extraction.results} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "limitations") ? (
             <ReaderSection id="limitations" title="Limitations" eyebrow="09 / BOUNDARIES">
-              <ClaimList claims={analysis?.limitations ?? []} emptyState={analysis?.extraction.limitations} onEvidence={openEvidence} />
+              <ClaimList claims={analysis?.limitations ?? []} emptyState={analysis?.extraction.limitations} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "future-work") ? (
             <ReaderSection id="future-work" title="Future Work" eyebrow="10 / WHAT COMES NEXT">
-              <ClaimList claims={analysis?.future_work ?? []} emptyState={analysis?.extraction.future_work} onEvidence={openEvidence} />
+              <ClaimList claims={analysis?.future_work ?? []} emptyState={analysis?.extraction.future_work} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "references") ? (
@@ -260,7 +270,7 @@ export function PaperReader({ reader, onAnalyze, analysisError }: PaperReaderPro
             </ReaderSection>
           ) : null}
 
-          {analysis ? <ExtractionSummary analysis={analysis} /> : <EmptyAnalysis onAnalyze={onAnalyze} error={analysisError} />}
+          {analysis ? <><VerificationSummaryCard verification={reader.verification} onVerify={onVerify} error={verificationError} /><ExtractionSummary analysis={analysis} /></> : <EmptyAnalysis onAnalyze={onAnalyze} error={analysisError} />}
         </article>
 
         {pdfOpen && sourceUrl ? (
@@ -315,7 +325,7 @@ function ReaderSection({ id, title, eyebrow, children }: { id: ReaderSectionId; 
   );
 }
 
-function OverviewSection({ reader, analysis, onEvidence, onNavigate }: { reader: ReaderResponse; analysis: Analysis | null; onEvidence: (ids: string[], title: string) => void; onNavigate: (section: ReaderSectionId) => void }) {
+function OverviewSection({ reader, analysis, verification, onEvidence, onNavigate }: { reader: ReaderResponse; analysis: Analysis | null; verification: VerificationLookup; onEvidence: (ids: string[], title: string) => void; onNavigate: (section: ReaderSectionId) => void }) {
   if (!analysis) {
     return (
       <div className="overview-intro">
@@ -326,12 +336,16 @@ function OverviewSection({ reader, analysis, onEvidence, onNavigate }: { reader:
     );
   }
   const overviewItems = [
-    analysis.problem ? { label: "Research problem", statement: analysis.problem.statement, origin: analysis.problem.origin, evidenceIds: analysis.problem.evidence_ids, section: "problem" as ReaderSectionId } : null,
-    analysis.research_gap[0] ? { label: "Research gap", statement: analysis.research_gap[0].statement, origin: analysis.research_gap[0].origin, evidenceIds: analysis.research_gap[0].evidence_ids, section: "gap" as ReaderSectionId } : null,
-    analysis.contributions[0] ? { label: "Main contribution", statement: analysis.contributions[0].statement, origin: analysis.contributions[0].origin, evidenceIds: analysis.contributions[0].evidence_ids, section: "contributions" as ReaderSectionId } : null,
-    analysis.method ? { label: "Method summary", statement: analysis.method.summary, origin: analysis.method.origin, evidenceIds: analysis.method.evidence_ids, section: "method" as ReaderSectionId } : null,
-    analysis.results[0] ? { label: "Main result", statement: analysis.results[0].statement, origin: analysis.results[0].origin, evidenceIds: analysis.results[0].evidence_ids, section: "results" as ReaderSectionId } : null,
-  ].filter((item): item is { label: string; statement: string; origin: StatementOrigin; evidenceIds: string[]; section: ReaderSectionId } => item !== null);
+    analysis.problem ? { claimId: analysis.problem.id, label: "Research problem", statement: analysis.problem.statement, origin: analysis.problem.origin, evidenceIds: analysis.problem.evidence_ids, section: "problem" as ReaderSectionId } : null,
+    analysis.research_gap[0] ? { claimId: analysis.research_gap[0].id, label: "Research gap", statement: analysis.research_gap[0].statement, origin: analysis.research_gap[0].origin, evidenceIds: analysis.research_gap[0].evidence_ids, section: "gap" as ReaderSectionId } : null,
+    analysis.contributions[0] ? { claimId: analysis.contributions[0].id, label: "Main contribution", statement: analysis.contributions[0].statement, origin: analysis.contributions[0].origin, evidenceIds: analysis.contributions[0].evidence_ids, section: "contributions" as ReaderSectionId } : null,
+    analysis.method ? { claimId: "method_001", label: "Method summary", statement: analysis.method.summary, origin: analysis.method.origin, evidenceIds: analysis.method.evidence_ids, section: "method" as ReaderSectionId } : null,
+    analysis.results[0] ? { claimId: analysis.results[0].id, label: "Main result", statement: analysis.results[0].statement, origin: analysis.results[0].origin, evidenceIds: analysis.results[0].evidence_ids, section: "results" as ReaderSectionId } : null,
+  ].filter((item): item is { claimId: string; label: string; statement: string; origin: StatementOrigin; evidenceIds: string[]; section: ReaderSectionId } => item !== null)
+    .filter((item) => {
+      const status = verification.get(item.claimId)?.status;
+      return !status || status === "SUPPORTED" || status === "PARTIALLY_SUPPORTED";
+    });
   return (
     <div className="overview-grid">
       <div className="overview-intro">
@@ -345,7 +359,7 @@ function OverviewSection({ reader, analysis, onEvidence, onNavigate }: { reader:
               <span className="card-label">{item.label}</span>
               <p>{item.statement}</p>
             </button>
-            <OriginBadge origin={item.origin} />
+            <div className="claim-badges"><OriginBadge origin={item.origin} /><VerificationBadge verification={verification.get(item.claimId)} /></div>
             <EvidenceButton evidenceIds={item.evidenceIds} title={item.label} onEvidence={onEvidence} />
           </article>
         )) : <EmptyState text="No supported overview statements are available." />}
@@ -354,25 +368,25 @@ function OverviewSection({ reader, analysis, onEvidence, onNavigate }: { reader:
   );
 }
 
-function ProblemSection({ analysis, onEvidence }: { analysis: Analysis | null; onEvidence: (ids: string[], title: string) => void }) {
+function ProblemSection({ analysis, verification, onEvidence }: { analysis: Analysis | null; verification: VerificationLookup; onEvidence: (ids: string[], title: string) => void }) {
   if (!analysis) return <EmptyAnalysis />;
   return (
     <div className="problem-grid">
-      <StatementCard title="Research problem" claim={analysis.problem} onEvidence={onEvidence} />
-      <StatementCard title="Motivation" claim={analysis.motivation} onEvidence={onEvidence} />
+      <StatementCard title="Research problem" claim={analysis.problem} verification={analysis.problem ? verification.get(analysis.problem.id) : undefined} onEvidence={onEvidence} />
+      <StatementCard title="Motivation" claim={analysis.motivation} verification={analysis.motivation ? verification.get(analysis.motivation.id) : undefined} onEvidence={onEvidence} />
     </div>
   );
 }
 
-function StatementCard({ title, claim, onEvidence }: { title: string; claim: (ResearchClaim | ProblemClaim) | null; onEvidence: (ids: string[], title: string) => void }) {
+function StatementCard({ title, claim, verification, onEvidence }: { title: string; claim: (ResearchClaim | ProblemClaim) | null; verification?: ClaimVerification; onEvidence: (ids: string[], title: string) => void }) {
   return (
-    <article className="reader-card statement-card">
+    <article className={`reader-card statement-card${verificationTone(verification?.status)}`}>
       <div className="card-label">{title}</div>
       {claim ? (
         <>
           <p className="statement-copy">{claim.statement}</p>
           {"context" in claim && claim.context ? <p className="claim-context">{claim.context}</p> : null}
-          <OriginBadge origin={claim.origin} />
+          <div className="claim-badges"><OriginBadge origin={claim.origin} /><VerificationBadge verification={verification} /></div>
           <EvidenceButton evidenceIds={claim.evidence_ids} title={title} onEvidence={onEvidence} />
         </>
       ) : <EmptyState text="Not explicitly identified in the paper." />}
@@ -380,16 +394,16 @@ function StatementCard({ title, claim, onEvidence }: { title: string; claim: (Re
   );
 }
 
-function ClaimList({ claims, emptyState, onEvidence, numbered = false }: { claims: ResearchClaim[]; emptyState?: ExtractionState; onEvidence: (ids: string[], title: string) => void; numbered?: boolean }) {
+function ClaimList({ claims, emptyState, verification, onEvidence, numbered = false }: { claims: ResearchClaim[]; emptyState?: ExtractionState; verification: VerificationLookup; onEvidence: (ids: string[], title: string) => void; numbered?: boolean }) {
   if (!claims.length) return <StatusState state={emptyState} />;
   return (
     <div className="claim-list">
       {claims.map((claim, index) => (
-        <article className="claim-item" key={claim.id}>
+        <article className={`claim-item${verificationTone(verification.get(claim.id)?.status)}`} key={claim.id}>
           {numbered ? <div className="claim-index">{String(index + 1).padStart(2, "0")}</div> : null}
           <div>
             <p className="statement-copy">{claim.statement}</p>
-            <OriginBadge origin={claim.origin} />
+            <div className="claim-badges"><OriginBadge origin={claim.origin} /><VerificationBadge verification={verification.get(claim.id)} /></div>
             <EvidenceButton evidenceIds={claim.evidence_ids} title={claim.statement} onEvidence={onEvidence} />
           </div>
         </article>
@@ -398,15 +412,19 @@ function ClaimList({ claims, emptyState, onEvidence, numbered = false }: { claim
   );
 }
 
-function MethodSection({ method, state, selectedNodeId, onEvidence, onNodeClick }: { method: MethodIR | null; state?: ExtractionState; selectedNodeId: string | null; onEvidence: (ids: string[], title: string) => void; onNodeClick: NodeMouseHandler<MethodFlowNode> }) {
+function MethodSection({ method, state, verification, selectedNodeId, onEvidence, onNodeClick }: { method: MethodIR | null; state?: ExtractionState; verification: VerificationLookup; selectedNodeId: string | null; onEvidence: (ids: string[], title: string) => void; onNodeClick: NodeMouseHandler<MethodFlowNode> }) {
   if (!method) return <StatusState state={state} />;
   const flow = methodToFlow(method);
-  const graphNodes = flow.nodes.map((node) => ({ ...node, className: node.id === selectedNodeId ? "method-node-selected" : undefined }));
+  const graphNodes = flow.nodes.map((node) => {
+    const status = verification.get(node.id)?.status;
+    const classes = [node.id === selectedNodeId ? "method-node-selected" : "", status === "UNSUPPORTED" ? "method-node-unsupported" : "", status === "CONTRADICTORY" ? "method-node-contradictory" : ""].filter(Boolean).join(" ");
+    return { ...node, className: classes || undefined };
+  });
   return (
     <div className="method-section">
-      <div className="reader-card method-summary">
+      <div className={`reader-card method-summary${verificationTone(verification.get("method_001")?.status)}`}>
         <p className="statement-copy">{method.summary}</p>
-        <OriginBadge origin={method.origin} />
+        <div className="claim-badges"><OriginBadge origin={method.origin} /><VerificationBadge verification={verification.get("method_001")} /></div>
         <EvidenceButton evidenceIds={method.evidence_ids} title="Method summary" onEvidence={onEvidence} />
       </div>
       {flow.nodes.length ? (
@@ -421,7 +439,7 @@ function MethodSection({ method, state, selectedNodeId, onEvidence, onNodeClick 
             {selectedNodeId ? (
               (() => {
                 const step = method.steps.find((item) => item.id === selectedNodeId);
-                return step ? <><strong>{step.label}</strong><p>{step.description}</p><OriginBadge origin={step.origin} /><EvidenceButton evidenceIds={step.evidence_ids} title={`Method · ${step.label}`} onEvidence={onEvidence} /></> : null;
+                return step ? <><strong>{step.label}</strong><p>{step.description}</p><div className="claim-badges"><OriginBadge origin={step.origin} /><VerificationBadge verification={verification.get(step.id)} /></div><EvidenceButton evidenceIds={step.evidence_ids} title={`Method · ${step.label}`} onEvidence={onEvidence} /></> : null;
               })()
             ) : <p>Select a method node to inspect its source-backed detail.</p>}
           </div>
@@ -437,12 +455,12 @@ function MethodSection({ method, state, selectedNodeId, onEvidence, onNodeClick 
   );
 }
 
-function EquationSection({ equations, state, onEvidence }: { equations: Analysis["equations"]; state?: ExtractionState; onEvidence: (ids: string[], title: string) => void }) {
+function EquationSection({ equations, state, verification, onEvidence }: { equations: Analysis["equations"]; state?: ExtractionState; verification: VerificationLookup; onEvidence: (ids: string[], title: string) => void }) {
   if (!equations.length) return <StatusState state={state} />;
-  return <div className="equation-list">{equations.map((equation) => <EquationCard key={equation.id} equation={equation} onEvidence={onEvidence} />)}</div>;
+  return <div className="equation-list">{equations.map((equation) => <EquationCard key={equation.id} equation={equation} verification={verification.get(equation.id)} onEvidence={onEvidence} />)}</div>;
 }
 
-function EquationCard({ equation, onEvidence }: { equation: Analysis["equations"][number]; onEvidence: (ids: string[], title: string) => void }) {
+function EquationCard({ equation, verification, onEvidence }: { equation: Analysis["equations"][number]; verification?: ClaimVerification; onEvidence: (ids: string[], title: string) => void }) {
   const explanation = equation.explanation ?? equation.interpretation;
   const rendered = useMemo(() => {
     try {
@@ -452,24 +470,24 @@ function EquationCard({ equation, onEvidence }: { equation: Analysis["equations"
     }
   }, [equation.expression]);
   return (
-    <article className="reader-card equation-card">
+    <article className={`reader-card equation-card${verificationTone(verification?.status)}`}>
       <div className="card-label">{equation.equation_id || "Equation"}</div>
       {rendered ? <div className="equation-rendered" dangerouslySetInnerHTML={{ __html: rendered }} /> : <pre className="equation-fallback">{equation.expression}</pre>}
       {explanation ? <p className="claim-context">{explanation}</p> : <p className="claim-context">No interpretation was explicitly provided.</p>}
       {equation.variables.length ? <dl className="variable-list">{equation.variables.map((variable) => <div key={variable.symbol}><dt>{variable.symbol}</dt><dd>{variable.meaning || "Not explicitly defined in the paper."}</dd></div>)}</dl> : null}
       {equation.role ? <p className="claim-context"><strong>Role:</strong> {equation.role}</p> : null}
-      <OriginBadge origin={equation.origin} />
+      <div className="claim-badges"><OriginBadge origin={equation.origin} />{verification ? <VerificationBadge verification={verification} /> : null}</div>
       <EvidenceButton evidenceIds={equation.evidence_ids} title="Equation" onEvidence={onEvidence} />
     </article>
   );
 }
 
-function ExperimentSection({ experiments, state, onEvidence }: { experiments: ExperimentIR[]; state?: ExtractionState; onEvidence: (ids: string[], title: string) => void }) {
+function ExperimentSection({ experiments, state, verification, onEvidence }: { experiments: ExperimentIR[]; state?: ExtractionState; verification: VerificationLookup; onEvidence: (ids: string[], title: string) => void }) {
   if (!experiments.length) return <StatusState state={state} />;
-  return <div className="experiment-grid">{experiments.map((experiment) => <ExperimentCard key={experiment.id} experiment={experiment} onEvidence={onEvidence} />)}</div>;
+  return <div className="experiment-grid">{experiments.map((experiment) => <ExperimentCard key={experiment.id} experiment={experiment} verification={verification.get(experiment.id)} onEvidence={onEvidence} />)}</div>;
 }
 
-function ExperimentCard({ experiment, onEvidence }: { experiment: ExperimentIR; onEvidence: (ids: string[], title: string) => void }) {
+function ExperimentCard({ experiment, verification, onEvidence }: { experiment: ExperimentIR; verification?: ClaimVerification; onEvidence: (ids: string[], title: string) => void }) {
   const fields = [
     ["Datasets", experiment.datasets],
     ["Models", experiment.models],
@@ -477,23 +495,27 @@ function ExperimentCard({ experiment, onEvidence }: { experiment: ExperimentIR; 
     ["Metrics", experiment.metrics],
   ].filter((entry): entry is [string, string[]] => entry[1].length > 0);
   return (
-    <article className="reader-card experiment-card">
+    <article className={`reader-card experiment-card${verificationTone(verification?.status)}`}>
       <div className="card-label">{experiment.name || "Experiment"}</div>
       {fields.length ? <dl className="experiment-fields">{fields.map(([label, values]) => <div key={label}><dt>{label}</dt><dd>{values.join(" · ")}</dd></div>)}</dl> : <EmptyState text="No experimental fields were explicitly identified." />}
       {experiment.setup ? <p className="claim-context">{experiment.setup}</p> : null}
-      <OriginBadge origin={experiment.origin} />
+      <div className="claim-badges"><OriginBadge origin={experiment.origin} />{verification ? <VerificationBadge verification={verification} /> : null}</div>
       <EvidenceButton evidenceIds={experiment.evidence_ids} title={experiment.name || "Experiment"} onEvidence={onEvidence} />
     </article>
   );
 }
 
-function ResultsSection({ analysis, specs, state, onEvidence }: { analysis: Analysis | null; specs: ReaderResponse["visualizations"]; state?: ExtractionState; onEvidence: (ids: string[], title: string) => void }) {
+function ResultsSection({ analysis, specs, state, verification, onEvidence }: { analysis: Analysis | null; specs: ReaderResponse["visualizations"]; state?: ExtractionState; verification: VerificationLookup; onEvidence: (ids: string[], title: string) => void }) {
   if (!analysis?.results.length) return <StatusState state={state} />;
   const chartSpec = specs.find((spec) => spec.type === "BAR_CHART" || spec.type === "METRIC");
   const numericRows = analysis.results.filter((result): result is ResultIR & { value: number } => typeof result.value === "number" && Number.isFinite(result.value));
+  const chartAllowed = numericRows.every((result) => {
+    const status = verification.get(result.id)?.status;
+    return !status || status === "SUPPORTED" || status === "PARTIALLY_SUPPORTED";
+  });
   return (
     <div className="results-section">
-      {chartSpec?.type === "BAR_CHART" && numericRows.length > 1 ? (
+      {chartAllowed && chartSpec?.type === "BAR_CHART" && numericRows.length > 1 ? (
         <div className="reader-card chart-card">
           <div className="card-label">{chartSpec.title}</div>
           <div className="chart-wrap" role="img" aria-label="Bar chart of reported numeric results">
@@ -509,15 +531,15 @@ function ResultsSection({ analysis, specs, state, onEvidence }: { analysis: Anal
           </div>
           <p className="chart-caption">Numeric values are plotted without percentage conversion or rounding.</p>
         </div>
-      ) : chartSpec?.type === "METRIC" && numericRows.length === 1 ? (
+      ) : chartAllowed && chartSpec?.type === "METRIC" && numericRows.length === 1 ? (
         <div className="reader-card metric-card"><div className="card-label">{chartSpec.title}</div><strong>{numericRows[0].value}{numericRows[0].unit ? ` ${numericRows[0].unit}` : ""}</strong><p>{numericRows[0].statement}</p></div>
       ) : null}
       <div className="result-list">
         {analysis.results.map((result) => (
-          <article className="result-row" key={result.id}>
+          <article className={`result-row${verificationTone(verification.get(result.id)?.status)}`} key={result.id}>
             <div><span className="result-metric">{result.metric || "Reported result"}</span><p>{result.statement}</p></div>
             <div className="result-value">{result.value !== null ? `${result.value}${result.unit ? ` ${result.unit}` : ""}` : "Value unavailable"}</div>
-            <div><OriginBadge origin={result.origin} /><EvidenceButton evidenceIds={result.evidence_ids} title={result.metric || "Result"} onEvidence={onEvidence} /></div>
+            <div><div className="claim-badges"><OriginBadge origin={result.origin} /><VerificationBadge verification={verification.get(result.id)} /></div><EvidenceButton evidenceIds={result.evidence_ids} title={result.metric || "Result"} onEvidence={onEvidence} /></div>
           </article>
         ))}
       </div>
@@ -567,6 +589,44 @@ function EvidenceDrawerView({ drawer, onClose, onPage }: { drawer: EvidenceDrawe
 
 function OriginBadge({ origin }: { origin: StatementOrigin }) {
   return <span className={`origin-badge ${origin === "AUTHOR_EXPLICIT" ? "origin-explicit" : "origin-inferred"}`}>{origin === "AUTHOR_EXPLICIT" ? "Explicit in paper" : "PaperLens interpretation"}</span>;
+}
+
+function VerificationBadge({ verification }: { verification?: ClaimVerification }) {
+  const status = verification?.status ?? "UNVERIFIED";
+  const labels: Record<VerificationStatus | "MISSING", string> = {
+    SUPPORTED: "Supported by evidence",
+    PARTIALLY_SUPPORTED: "Partially supported",
+    UNSUPPORTED: "Not sufficiently supported",
+    CONTRADICTORY: "Contradicted by evidence",
+    UNVERIFIED: "Not yet verified",
+    MISSING: "Not yet verified",
+  };
+  return <span className={`verification-badge verification-${status.toLowerCase()}`} title={verification?.rationale || undefined}>{labels[verification ? status : "MISSING"]}</span>;
+}
+
+function verificationTone(status?: VerificationStatus): string {
+  if (status === "UNSUPPORTED") return " claim-unsupported";
+  if (status === "CONTRADICTORY") return " claim-contradictory";
+  if (status === "PARTIALLY_SUPPORTED") return " claim-partial";
+  return "";
+}
+
+function VerificationSummaryCard({ verification, onVerify, error }: { verification: ReaderResponse["verification"]; onVerify?: () => Promise<void>; error?: string | null }) {
+  const [loading, setLoading] = useState(false);
+  async function handleVerify() {
+    if (!onVerify) return;
+    setLoading(true);
+    try {
+      await onVerify();
+    } finally {
+      setLoading(false);
+    }
+  }
+  if (!verification?.available) {
+    return <div className="reader-card verification-summary verification-not-ready"><div><div className="card-label">Verification</div><strong>Not yet verified</strong><p>{error || verification?.error || "Check each semantic claim against its linked evidence."}</p></div>{onVerify ? <button type="button" onClick={() => void handleVerify()} disabled={loading}>{loading ? "Verifying…" : "Verify analysis"}</button> : null}</div>;
+  }
+  const summary = verification.summary;
+  return <div className="reader-card verification-summary"><div className="verification-summary-heading"><div><div className="card-label">Verification</div><strong>Evidence faithfulness checks</strong></div>{onVerify ? <button type="button" className="secondary-button" onClick={() => void handleVerify()} disabled={loading}>{loading ? "Verifying…" : "Reverify"}</button> : null}</div><div className="verification-counts"><span className="verification-supported">{summary.supported} supported</span><span className="verification-partial">{summary.partially_supported} partial</span><span className="verification-unsupported">{summary.unsupported} unsupported</span><span className="verification-contradictory">{summary.contradictory} contradictory</span><span className="verification-unverified">{summary.unverified} unverified</span></div>{error ? <p className="drawer-error" role="alert">{error}</p> : null}</div>;
 }
 
 function StatusState({ state }: { state?: ExtractionState }) {

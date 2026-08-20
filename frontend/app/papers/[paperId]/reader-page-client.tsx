@@ -12,6 +12,7 @@ export default function ReaderPageClient({ paperId }: { paperId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
@@ -39,7 +40,17 @@ export default function ReaderPageClient({ paperId }: { paperId: string }) {
     }
   }, [paperId, refresh]);
 
+  const verify = useCallback(async () => {
+    setVerificationError(null);
+    try {
+      await requestJson(`/api/papers/${paperId}/verify`, { method: "POST" });
+      await refresh();
+    } catch (requestError) {
+      setVerificationError(requestError instanceof Error ? requestError.message : "Verification could not be completed.");
+    }
+  }, [paperId, refresh]);
+
   if (isLoading) return <main className="reader-loading"><div className="eyebrow">PAPERLENS / VISUAL READER</div><h1>Loading the research story…</h1><p>Fetching persisted analysis and source metadata.</p></main>;
   if (error || !reader) return <main className="reader-loading"><div className="eyebrow">PAPERLENS / VISUAL READER</div><h1>Reader unavailable</h1><p>{error || "The reader response was empty."}</p><Link className="back-link" href="/">← Return home</Link></main>;
-  return <PaperReader reader={reader} onAnalyze={reader.analysis ? undefined : analyze} analysisError={analysisError} />;
+  return <PaperReader reader={reader} onAnalyze={reader.analysis ? undefined : analyze} analysisError={analysisError} onVerify={reader.analysis ? verify : undefined} verificationError={verificationError} />;
 }
