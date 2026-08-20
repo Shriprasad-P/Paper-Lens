@@ -42,6 +42,7 @@ and deployment documentation — all validated for `v0.1.0-beta`.
 - [x] Add deterministic VisualizationSpec planner for method flows and result views.
 - [x] Add `/papers/{paper_id}` visual reader route with responsive section navigation.
 - [x] Add React Flow method visualization and accessible textual fallback.
+- [x] Add unified paper visualization map for method/functions, tables, figures, equations, and results.
 - [x] Add KaTeX equation explorer and safe original-expression fallback.
 - [x] Add Recharts numeric result view with table/text fallback.
 - [x] Add lazy multi-record evidence drawer and source PDF page navigation.

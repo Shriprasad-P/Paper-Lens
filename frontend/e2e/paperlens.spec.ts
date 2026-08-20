@@ -71,6 +71,10 @@ test("reader, evidence drawer, PDF navigation, and grounded chat work with deter
   await page.getByRole("button", { name: "Open visual reader" }).click();
   await expect(page).toHaveURL(/papers\/paper_fixture/);
   await expect(page.getByRole("heading", { name: /Attention Is All You Need/ })).toBeVisible();
+  await page.getByRole("button", { name: /Visualize/ }).click();
+  await expect(page.getByRole("heading", { name: "Visualize", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "How the proposed method works" })).toBeVisible();
+  await expect(page.getByText("Paper visual map", { exact: true })).toBeVisible();
   await expect(page.getByTitle("Original paper PDF")).toBeVisible();
   await page.getByRole("region", { name: "Method" }).getByRole("button", { name: "View evidence for Method summary" }).click();
   await expect(page.getByRole("dialog")).toContainText("fixture method");

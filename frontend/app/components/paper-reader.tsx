@@ -20,7 +20,7 @@ import {
 } from "recharts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { API_BASE_URL, createChatSession, loadChatSession, loadEvidence, sendChatMessage } from "../reader-api";
+import { apiUrl, createChatSession, loadChatSession, loadEvidence, sendChatMessage } from "../reader-api";
 import {
   type Analysis,
   type ClaimVerification,
@@ -38,10 +38,12 @@ import {
   type ResultIR,
   type StatementOrigin,
   type VerificationStatus,
+  documentSectionsToFlow,
 } from "../reader-models";
 
 type ReaderSectionId =
   | "overview"
+  | "visualize"
   | "problem"
   | "gap"
   | "contributions"
@@ -75,6 +77,7 @@ type VerificationLookup = Map<string, ClaimVerification>;
 
 const sectionLabels: Record<ReaderSectionId, string> = {
   overview: "Overview",
+  visualize: "Visualize",
   problem: "Problem",
   gap: "Research Gap",
   contributions: "Contributions",
@@ -110,7 +113,7 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
     () => new Map((reader.verification?.results ?? []).map((result) => [result.claim_id, result])),
     [reader.verification],
   );
-  const sourceUrl = reader.source.endpoint ? `${API_BASE_URL}${reader.source.endpoint}` : null;
+  const sourceUrl = reader.source.endpoint ? apiUrl(reader.source.endpoint) : null;
 
   useEffect(() => {
     const hash = window.location.hash.replace("#", "") as ReaderSectionId;
@@ -298,63 +301,67 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
             <OverviewSection reader={reader} analysis={analysis} verification={verificationByClaim} onEvidence={openEvidence} onNavigate={goToSection} />
           </ReaderSection>
 
+          <ReaderSection id="visualize" title="Visualize" eyebrow="02 / PAPER MAP">
+            <VisualizationBoard reader={reader} analysis={analysis} verification={verificationByClaim} selectedMethodNodeId={selectedMethodNode?.id ?? null} onEvidence={openEvidence} onNodeClick={handleMethodNodeClick} onPage={openPage} />
+          </ReaderSection>
+
           {hasSection(navigation, "problem") ? (
-            <ReaderSection id="problem" title="Problem" eyebrow="02 / QUESTION">
+            <ReaderSection id="problem" title="Problem" eyebrow="03 / QUESTION">
               <ProblemSection analysis={analysis} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "gap") ? (
-            <ReaderSection id="gap" title="Research Gap" eyebrow="03 / GAP">
+            <ReaderSection id="gap" title="Research Gap" eyebrow="04 / GAP">
               <ClaimList claims={analysis?.research_gap ?? []} emptyState={analysis?.extraction.research_gap} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "contributions") ? (
-            <ReaderSection id="contributions" title="Contributions" eyebrow="04 / WHAT THIS PAPER ADDS">
+            <ReaderSection id="contributions" title="Contributions" eyebrow="05 / WHAT THIS PAPER ADDS">
               <ClaimList claims={analysis?.contributions ?? []} emptyState={analysis?.extraction.contributions} verification={verificationByClaim} onEvidence={openEvidence} numbered />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "method") ? (
-            <ReaderSection id="method" title="Method" eyebrow="05 / HOW IT WORKS">
+            <ReaderSection id="method" title="Method" eyebrow="06 / HOW IT WORKS">
               <MethodSection method={analysis?.method ?? null} state={analysis?.extraction.method} verification={verificationByClaim} selectedNodeId={selectedMethodNode?.id ?? null} onEvidence={openEvidence} onNodeClick={handleMethodNodeClick} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "equations") ? (
-            <ReaderSection id="equations" title="Equations" eyebrow="06 / MATHEMATICAL OBJECTS">
+            <ReaderSection id="equations" title="Equations" eyebrow="07 / MATHEMATICAL OBJECTS">
               <EquationSection equations={analysis?.equations ?? []} sourceEquations={reader.document.equations} state={analysis?.extraction.equations} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "experiments") ? (
-            <ReaderSection id="experiments" title="Experiments" eyebrow="07 / EVALUATION SETUP">
+            <ReaderSection id="experiments" title="Experiments" eyebrow="08 / EVALUATION SETUP">
               <ExperimentSection experiments={analysis?.experiments ?? []} state={analysis?.extraction.experiments} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "results") ? (
-            <ReaderSection id="results" title="Results" eyebrow="08 / FINDINGS">
+            <ReaderSection id="results" title="Results" eyebrow="09 / FINDINGS">
               <ResultsSection analysis={analysis} specs={reader.visualizations} state={analysis?.extraction.results} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "figures") ? (
-            <ReaderSection id="figures" title="Figures" eyebrow="09 / VISUAL EVIDENCE">
+            <ReaderSection id="figures" title="Figures" eyebrow="10 / VISUAL EVIDENCE">
               <FiguresSection figures={reader.document.figures} paperId={reader.paper.id} documentId={reader.document.id} onEvidence={openEvidence} onPage={openPage} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "tables") ? (
-            <ReaderSection id="tables" title="Tables" eyebrow="10 / STRUCTURED RESULTS">
+            <ReaderSection id="tables" title="Tables" eyebrow="11 / STRUCTURED RESULTS">
               <TablesSection tables={reader.document.tables} onEvidence={openEvidence} onPage={openPage} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "limitations") ? (
-            <ReaderSection id="limitations" title="Limitations" eyebrow="11 / BOUNDARIES">
+            <ReaderSection id="limitations" title="Limitations" eyebrow="12 / BOUNDARIES">
               <ClaimList claims={analysis?.limitations ?? []} emptyState={analysis?.extraction.limitations} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "future-work") ? (
-            <ReaderSection id="future-work" title="Future Work" eyebrow="12 / WHAT COMES NEXT">
+            <ReaderSection id="future-work" title="Future Work" eyebrow="13 / WHAT COMES NEXT">
               <ClaimList claims={analysis?.future_work ?? []} emptyState={analysis?.extraction.future_work} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
           {hasSection(navigation, "references") ? (
-            <ReaderSection id="references" title="References" eyebrow="13 / SOURCES">
+            <ReaderSection id="references" title="References" eyebrow="14 / SOURCES">
               <ReferencesSection references={reader.document.references} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
@@ -513,6 +520,96 @@ function ClaimList({ claims, emptyState, verification, onEvidence, numbered = fa
   );
 }
 
+function VisualizationBoard({ reader, analysis, verification, selectedMethodNodeId, onEvidence, onNodeClick, onPage }: { reader: ReaderResponse; analysis: Analysis | null; verification: VerificationLookup; selectedMethodNodeId: string | null; onEvidence: (ids: string[], title: string) => void; onNodeClick: NodeMouseHandler<MethodFlowNode>; onPage: (page: number | null) => void }) {
+  const flow = analysis?.method ? methodToFlow(analysis.method) : documentSectionsToFlow(reader.document.sections);
+  const tableChart = reader.document.tables.map(tableChartData).find((item): item is TableChartData => item !== null);
+  const previewFigures = reader.document.figures.slice(0, 3);
+  const previewTables = reader.document.tables.slice(0, 2);
+  const previewEquations = analysis?.equations.length
+    ? analysis.equations.slice(0, 3).map((equation) => ({ id: equation.id, label: equation.equation_id || "Equation", expression: equation.expression, evidenceIds: equation.evidence_ids }))
+    : reader.document.equations.slice(0, 3).map((equation) => ({ id: equation.id, label: equation.label || "Equation", expression: equation.raw_text, evidenceIds: equation.evidence_ids }));
+  const graphNodes = flow.nodes.map((node) => {
+    const status = verification.get(node.id)?.status;
+    const classes = [node.id === selectedMethodNodeId ? "method-node-selected" : "", status === "UNSUPPORTED" ? "method-node-unsupported" : "", status === "CONTRADICTORY" ? "method-node-contradictory" : ""].filter(Boolean).join(" ");
+    return { ...node, className: classes || undefined };
+  });
+
+  return (
+    <div className="visualization-board">
+      <div className="visualization-lede">
+        <div>
+          <div className="card-label">Paper visual map</div>
+          <p>One source-grounded view of the paper’s flow, method functions, reported results, and visual artifacts.</p>
+        </div>
+        <div className="visualization-counts" aria-label="Paper artifact counts">
+          <span><strong>{reader.document.figure_count}</strong> figures</span>
+          <span><strong>{reader.document.table_count}</strong> tables</span>
+          <span><strong>{reader.document.equation_count}</strong> equations</span>
+          <span><strong>{reader.document.reference_count}</strong> references</span>
+        </div>
+      </div>
+
+      <div className="visualization-board-grid">
+        <section className="reader-card visualization-flow-card" aria-labelledby="visualization-flow-title">
+          <div className="card-label">{analysis?.method ? "Method / function flow" : "Paper structure flow"}</div>
+          <h3 id="visualization-flow-title">{analysis?.method ? "How the proposed method works" : "How the paper is organized"}</h3>
+          <p className="claim-context">{analysis?.method ? "Nodes are the method functions extracted from the paper. Select one to inspect its evidence." : "Semantic method extraction is unavailable, so this map stays faithful to the parsed section order instead of inventing functions."}</p>
+          {flow.nodes.length ? (
+            <div className="method-graph visualization-method-graph" aria-label={analysis?.method ? "Interactive method function flow diagram" : "Paper section flow diagram"}>
+              <ReactFlow nodes={graphNodes} edges={flow.edges} fitView fitViewOptions={{ padding: 0.25 }} nodesConnectable={false} nodesDraggable={false} onNodeClick={analysis?.method ? onNodeClick : undefined}>
+                <Background color="#d8d8d0" gap={24} />
+                <Controls showInteractive={false} />
+              </ReactFlow>
+            </div>
+          ) : <EmptyState text="No ordered method or section nodes were recovered." />}
+          {analysis?.method ? (
+            <div className="visualization-function-list">
+              {analysis.method.steps.map((step) => <div className="visualization-function" key={step.id}><span>{String(step.order + 1).padStart(2, "0")}</span><div><strong>{step.label}</strong><p>{step.description}</p></div><EvidenceButton evidenceIds={step.evidence_ids} title={`Method · ${step.label}`} onEvidence={onEvidence} /></div>)}
+            </div>
+          ) : null}
+        </section>
+
+        <section className="reader-card visualization-artifacts-card" aria-labelledby="visualization-artifacts-title">
+          <div className="card-label">Source artifacts</div>
+          <h3 id="visualization-artifacts-title">Tables, figures, and equations</h3>
+          <div className="visualization-artifact-stack">
+            {previewFigures.length ? <div><div className="visualization-subheading">Figures</div><div className="visualization-figure-strip">{previewFigures.map((figure) => <button type="button" className="visualization-figure-thumb" key={figure.id} onClick={() => onPage(figure.page)} title={figure.caption || figure.label || "Open figure page"}>{figure.image_reference ? <img src={apiUrl(`/api/papers/${encodeURIComponent(reader.paper.id)}/documents/${encodeURIComponent(reader.document.id)}/figures/${encodeURIComponent(figure.id)}`)} alt={figure.caption || figure.label || "Paper figure"} /> : <span>{figure.label || "Figure"}</span>}<small>{figure.label || "Figure"}</small></button>)}</div></div> : null}
+            {previewTables.length ? <div><div className="visualization-subheading">Tables</div>{previewTables.map((table) => <div className="visualization-table-preview" key={table.id}><strong>{table.label || "Table"}</strong>{table.headers.length && table.rows.length ? <div className="artifact-table-wrap"><table className="artifact-table"><thead><tr>{table.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{table.rows.slice(0, 4).map((row, rowIndex) => <tr key={`${table.id}-${rowIndex}`}>{row.map((cell, cellIndex) => <td key={`${table.id}-${rowIndex}-${cellIndex}`}>{cell}</td>)}</tr>)}</tbody></table></div> : <pre className="artifact-raw">{table.raw_text || "Structured table cells were not recovered."}</pre>}<EvidenceButton evidenceIds={table.evidence_ids} title={table.label || "Table"} onEvidence={onEvidence} /></div>)}</div> : null}
+            {previewEquations.length ? <div><div className="visualization-subheading">Equations</div><div className="visualization-equation-list">{previewEquations.map((equation) => <div className="visualization-equation" key={equation.id}><span>{equation.label}</span><code>{equation.expression}</code><EvidenceButton evidenceIds={equation.evidenceIds} title={equation.label} onEvidence={onEvidence} /></div>)}</div></div> : null}
+            {!previewFigures.length && !previewTables.length && !previewEquations.length ? <EmptyState text="No visual artifacts were recovered from the source document." /> : null}
+          </div>
+        </section>
+      </div>
+
+      {tableChart ? <section className="reader-card visualization-table-chart" aria-labelledby="visualization-table-chart-title"><div className="card-label">Table-derived chart</div><h3 id="visualization-table-chart-title">{tableChart.title}</h3><div className="chart-wrap" role="img" aria-label={`Chart derived from ${tableChart.label}`}><ResponsiveContainer width="100%" height={260}><BarChart data={tableChart.data}><CartesianGrid strokeDasharray="3 3" stroke="#d8d8d0" /><XAxis dataKey="label" tick={{ fill: "#64716d", fontSize: 11 }} /><YAxis tick={{ fill: "#64716d", fontSize: 11 }} /><Tooltip /><Bar dataKey="value" fill="#477c78" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div><p className="chart-caption">Parsed numeric values from {tableChart.label}; no unsupported ranking or percentage conversion is inferred.</p><EvidenceButton evidenceIds={tableChart.evidenceIds} title={tableChart.label} onEvidence={onEvidence} /></section> : null}
+
+      {analysis?.results.length ? <section className="visualization-results-block" aria-labelledby="visualization-results-title"><div className="visualization-subheading" id="visualization-results-title">Reported results</div><ResultsSection analysis={analysis} specs={reader.visualizations} state={analysis.extraction.results} verification={verification} onEvidence={onEvidence} /></section> : null}
+    </div>
+  );
+}
+
+type TableChartData = { title: string; label: string; data: { label: string; value: number }[]; evidenceIds: string[] };
+
+function tableChartData(table: ReaderResponse["document"]["tables"][number]): { title: string; label: string; data: { label: string; value: number }[]; evidenceIds: string[] } | null {
+  if (!table.headers.length || !table.rows.length) return null;
+  const numericColumn = table.headers.findIndex((_header, columnIndex) => table.rows.some((row) => parseTableNumber(row[columnIndex]) !== null));
+  if (numericColumn < 0) return null;
+  const labelColumn = numericColumn === 0 && table.headers.length > 1 ? 1 : 0;
+  const data = table.rows.slice(0, 12).flatMap((row, index) => {
+    const value = parseTableNumber(row[numericColumn]);
+    return value === null ? [] : [{ label: row[labelColumn]?.trim() || `Row ${index + 1}`, value }];
+  });
+  if (data.length < 2) return null;
+  return { title: table.caption || table.label || "Table comparison", label: table.label || "table", data, evidenceIds: table.evidence_ids };
+}
+
+function parseTableNumber(value: string | undefined): number | null {
+  const match = value?.replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+  if (!match) return null;
+  const number = Number(match[0]);
+  return Number.isFinite(number) ? number : null;
+}
+
 function MethodSection({ method, state, verification, selectedNodeId, onEvidence, onNodeClick }: { method: MethodIR | null; state?: ExtractionState; verification: VerificationLookup; selectedNodeId: string | null; onEvidence: (ids: string[], title: string) => void; onNodeClick: NodeMouseHandler<MethodFlowNode> }) {
   if (!method) return <StatusState state={state} />;
   const flow = methodToFlow(method);
@@ -663,7 +760,7 @@ function ReferencesSection({ references, onEvidence }: { references: ReaderRespo
 }
 
 function FiguresSection({ figures, paperId, documentId, onEvidence, onPage }: { figures: ReaderResponse["document"]["figures"]; paperId: string; documentId: string; onEvidence: (ids: string[], title: string) => void; onPage: (page: number | null) => void }) {
-  return <div className="artifact-grid">{figures.map((figure) => <article className="reader-card artifact-card" key={figure.id}><div className="card-label">{figure.label || "Figure"}</div>{figure.image_reference ? <img className="artifact-image" src={`${API_BASE_URL}/api/papers/${encodeURIComponent(paperId)}/documents/${encodeURIComponent(documentId)}/figures/${encodeURIComponent(figure.id)}`} alt={figure.caption || figure.label || "Extracted paper figure"} /> : null}<p>{figure.caption || "Caption unavailable; visual interpretation is not asserted."}</p><div className="artifact-meta">{figure.page !== null ? <button type="button" onClick={() => onPage(figure.page)}>Page {figure.page}</button> : <span>Page unavailable</span>}</div><EvidenceButton evidenceIds={figure.evidence_ids} title={figure.label || "Figure"} onEvidence={onEvidence} /></article>)}</div>;
+  return <div className="artifact-grid">{figures.map((figure) => <article className="reader-card artifact-card" key={figure.id}><div className="card-label">{figure.label || "Figure"}</div>{figure.image_reference ? <img className="artifact-image" src={apiUrl(`/api/papers/${encodeURIComponent(paperId)}/documents/${encodeURIComponent(documentId)}/figures/${encodeURIComponent(figure.id)}`)} alt={figure.caption || figure.label || "Extracted paper figure"} /> : null}<p>{figure.caption || "Caption unavailable; visual interpretation is not asserted."}</p><div className="artifact-meta">{figure.page !== null ? <button type="button" onClick={() => onPage(figure.page)}>Page {figure.page}</button> : <span>Page unavailable</span>}</div><EvidenceButton evidenceIds={figure.evidence_ids} title={figure.label || "Figure"} onEvidence={onEvidence} /></article>)}</div>;
 }
 
 function TablesSection({ tables, onEvidence, onPage }: { tables: ReaderResponse["document"]["tables"]; onEvidence: (ids: string[], title: string) => void; onPage: (page: number | null) => void }) {
@@ -832,7 +929,7 @@ function ExtractionSummary({ analysis }: { analysis: Analysis }) {
 
 function buildNavigation(reader: ReaderResponse): { id: ReaderSectionId; label: string; index: string }[] {
   const analysis = reader.analysis;
-  const available: ReaderSectionId[] = ["overview"];
+  const available: ReaderSectionId[] = ["overview", "visualize"];
   if (analysis?.problem || analysis?.motivation) available.push("problem");
   if (analysis?.research_gap.length) available.push("gap");
   if (analysis?.contributions.length) available.push("contributions");

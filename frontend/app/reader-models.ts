@@ -424,6 +424,29 @@ export function methodToFlow(method: MethodIR): { nodes: MethodFlowNode[]; edges
   return { nodes, edges };
 }
 
+export function documentSectionsToFlow(sections: ReaderSectionSummary[]): { nodes: MethodFlowNode[]; edges: MethodFlowEdge[] } {
+  const ordered = [...sections].sort((left, right) => left.order - right.order);
+  const nodes = ordered.map<MethodFlowNode>((section, index) => ({
+    id: `section-${section.id}`,
+    type: "default",
+    position: { x: 40, y: index * 142 },
+    data: {
+      label: section.title || `Section ${index + 1}`,
+      description: `${section.paragraph_count} source paragraphs${section.page_start !== null ? ` · page ${section.page_start}${section.page_end && section.page_end !== section.page_start ? `–${section.page_end}` : ""}` : ""}`,
+      origin: "AUTHOR_EXPLICIT",
+      evidenceIds: [],
+    },
+  }));
+  const edges = ordered.slice(1).map<MethodFlowEdge>((section, index) => ({
+    id: `section-flow-${index}`,
+    source: `section-${ordered[index].id}`,
+    target: `section-${section.id}`,
+    label: "next",
+    animated: false,
+  }));
+  return { nodes, edges };
+}
+
 export function firstAvailableEvidence(items: Array<{ evidence_ids: string[] }>): string[] {
   return items.flatMap((item) => item.evidence_ids).filter((id, index, all) => all.indexOf(id) === index);
 }

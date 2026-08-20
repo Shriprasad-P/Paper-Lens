@@ -23,6 +23,10 @@ function resolvedApiBaseUrl(): string {
   return runtimeValue("apiBaseUrl") || API_BASE_URL;
 }
 
+export function apiUrl(path: string): string {
+  return `${resolvedApiBaseUrl()}${path}`;
+}
+
 export type CapabilityFlags = {
   ai_analysis_enabled: boolean;
   semantic_retrieval_enabled: boolean;
@@ -35,7 +39,7 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
   const desktopToken = runtimeValue("desktopToken");
   let response: Response;
   try {
-    response = await fetch(`${resolvedApiBaseUrl()}${path}`, {
+    response = await fetch(apiUrl(path), {
       ...init,
       headers: {
         "Content-Type": "application/json",
