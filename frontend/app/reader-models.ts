@@ -299,6 +299,31 @@ export type WorkspaceResponse = {
   papers: WorkspacePaper[];
 };
 
+export type ResearchRunStatus = "CREATED" | "PLANNING" | "DISCOVERING" | "SELECTING" | "INGESTING" | "ANALYZING" | "SYNTHESIZING" | "VERIFYING" | "COMPLETED" | "PARTIAL" | "FAILED" | "CANCELLED";
+export type ResearchEvidenceRef = { paper_id: string; document_id: string; evidence_id: string };
+export type ResearchReportClaim = { claim_id: string; statement: string; source_papers: string[]; evidence_refs: ResearchEvidenceRef[]; origin: string; verification_status: string };
+export type ResearchCandidate = { candidate_id: string; title: string; authors: string[]; abstract: string | null; year: number | null; arxiv_id: string | null; doi: string | null; canonical_url: string | null; pdf_url: string | null; discovery_provider: string; discovery_query: string; discovery_rank: number; ranking_score: number | null; selected: boolean; ingestion_status: string; paper_id: string | null; error: string | null };
+export type ResearchReport = {
+  research_question: string;
+  executive_summary: ResearchReportClaim[];
+  themes: { name: string; summary: string; claims: ResearchReportClaim[] }[];
+  methods: { paper_id: string; method: string; evidence_refs: ResearchEvidenceRef[] }[];
+  agreements: ResearchReportClaim[];
+  contradictions: { id: string; topic: string; claim_a: string; evidence_a: ResearchEvidenceRef[]; claim_b: string; evidence_b: ResearchEvidenceRef[]; contradiction_type: string; explanation: string; verification_status: string }[];
+  research_gaps: { id: string; statement: string; evidence_refs: ResearchEvidenceRef[]; origin: string; verification_status: string }[];
+  limitations: ResearchReportClaim[];
+  future_directions: ResearchReportClaim[];
+  papers: { paper_id: string; title: string; authors: string[]; year: number | null; why_selected: string; ingestion_status: string; analysis_status: string; verification_status: string }[];
+  coverage: { sufficient: boolean; covered_concepts: string[]; missing_concepts: string[]; relevant_paper_ids: string[]; evidence_count: number; summary: string };
+  discovery_queries: string[];
+  candidate_count: number;
+  selected_count: number;
+};
+export type ResearchRun = { id: string; workspace_id: string | null; research_question: string; status: ResearchRunStatus; created_at: string; updated_at: string; completed_at: string | null; max_iterations: number; max_candidates: number; max_ingested_papers: number; planner_provider: string | null; planner_model: string | null; prompt_version: string; schema_version: string };
+export type ResearchEvent = { id: string; research_run_id: string; event_type: string; message: string; metadata: Record<string, unknown>; created_at: string };
+export type ResearchPlan = { research_question: string; search_queries: string[]; concepts: string[]; inclusion_criteria: string[]; exclusion_criteria: string[]; desired_paper_count: number; rationale_summary: string | null };
+export type ResearchRunResponse = { run: ResearchRun; plan: ResearchPlan | null; queries: string[]; candidates: ResearchCandidate[]; events: ResearchEvent[]; coverage: ResearchReport["coverage"] | null; report: ResearchReport | null };
+
 export type ComparisonEntry = {
   paper_id: string;
   document_id: string | null;

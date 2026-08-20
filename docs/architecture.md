@@ -164,3 +164,21 @@ BM25 + semantic ranks → reciprocal-rank fusion (hybrid-rrf-v1)
 Persistent `WorkspaceRecord`/`WorkspacePaperRecord` models support the `/workspaces` UI and allow the same paper in multiple workspaces. Comparison IR aligns only persisted PaperIR dimensions, retains paper/document/evidence identity, marks missing or mismatched datasets/metrics/results as partial or not comparable, and never emits an unsupported winner. Legacy per-document section/evidence IDs are namespaced on collision when multiple documents share one database.
 
 The citation graph is bounded to extracted references and papers already in the local database. Exact arXiv IDs are preferred, with normalized reference-title matching as a deterministic fallback; matched papers create `CITES` edges and unmatched references remain reference nodes. It does not perform external literature discovery in Phase 8.
+
+## Evidence-grounded research agent (Phase 9)
+
+Phase 9 adds a persistent, bounded orchestration boundary. A `ResearchRun` stores the immutable question, budgets, status, and timestamps; append-only `ResearchRunEvent` records make every stage observable. `ResearchPlanner` first attempts the configured structured provider and falls back to deterministic query variants when credentials or schema output are unavailable.
+
+```text
+question → bounded ResearchPlan → official arXiv Atom discovery
+         → normalized/deduplicated PaperCandidate metadata
+         → deterministic relevance/diversity selection
+         → existing IngestionService (concurrency ≤ 2)
+         → existing PaperIR + Evidence Registry
+         → cross-paper BM25/semantic/hybrid retrieval
+         → citation-validating ResearchReportIR
+```
+
+Only official arXiv generated identifiers are sent to ingestion; discovery metadata is never treated as evidence. Candidate, query, plan, event, and report records are persisted. The agent stops after at most three iterations, when coverage is sufficient, or when refinement produces no new candidates. Cancellation is checked at each stage boundary. Failed providers and individual paper failures produce partial results instead of fabricated papers.
+
+Cross-paper citations use the composite `(paper_id, document_id, evidence_id)` identity. Report validation rejects unknown papers, mismatched documents, missing registry evidence, and numeric values absent from the cited source text. Agreement, contradiction, and gap sections are explicitly `CROSS_PAPER_INFERRED` and remain `UNVERIFIED`; contradiction detection requires comparable metric/context and does not claim universal absence. Prompt/search injection is source data, never executable instructions, and no general-knowledge fallback is used.

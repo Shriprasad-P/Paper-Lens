@@ -5,6 +5,7 @@ from __future__ import annotations
 import mimetypes
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import FileResponse
@@ -35,8 +36,10 @@ from ..visualization.planner import plan_visualizations
 from ..chat.service import ChatDocumentChanged, ChatGenerationUnavailable, ChatSessionNotFound, PaperChatError
 from ..models.chat import ChatAnswerResponse, ChatQuestion, ChatSessionCreateResponse, ChatSessionResponse
 from ..models.research import CitationGraph, ComparisonRequest, PaperComparisonIR, WorkspaceCreate, WorkspaceResponse, Workspace
+from ..models.research import ResearchDepth, ResearchRun, ResearchRunCreate, ResearchRunEvent, ResearchRunResponse, ResearchRunStatus
 from ..comparison.service import ComparisonError, PaperComparisonService
 from ..citation_graph.service import build_citation_graph
+from ..research.agent import ResearchAgentError
 
 router = APIRouter()
 
@@ -366,6 +369,71 @@ async def citation_graph(paper_id: str, request: Request) -> CitationGraph:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+@router.post("/api/research/runs", response_model=ResearchRunResponse, status_code=status.HTTP_201_CREATED)
+async def create_research_run(payload: ResearchRunCreate, request: Request) -> ResearchRunResponse:
+    question = payload.question.strip()
+    if not question:
+        raise HTTPException(status_code=422, detail="Research question is required.")
+    if payload.workspace_id and request.app.state.database.get_workspace(payload.workspace_id) is None:
+        raise HTTPException(status_code=404, detail="Workspace not found.")
+    defaults = {
+        ResearchDepth.QUICK: (1, 10, 3),
+        ResearchDepth.STANDARD: (2, 20, 5),
+        ResearchDepth.DEEP: (3, 30, 8),
+    }[payload.depth]
+    settings = request.app.state.settings
+    run = ResearchRun(
+        id=f"research_{uuid4().hex}",
+        workspace_id=payload.workspace_id,
+        research_question=question,
+        status=ResearchRunStatus.CREATED,
+        max_iterations=min(defaults[0], settings.research_max_iterations),
+        max_candidates=min(defaults[1], settings.research_max_candidates),
+        max_ingested_papers=min(defaults[2], settings.research_max_ingested_papers),
+        planner_provider=getattr(request.app.state.research_agent.planner.provider, "__class__", type(None)).__name__ if getattr(request.app.state.research_agent, "planner", None) else None,
+        planner_model=getattr(getattr(request.app.state.research_agent, "planner", None), "provider", None) and getattr(request.app.state.research_agent.planner.provider, "model", None),
+    )
+    try:
+        request.app.state.database.create_research_run(run)
+        request.app.state.database.add_research_event(ResearchRunEvent(id=f"event_{uuid4().hex}", research_run_id=run.id, event_type="RUN_CREATED", message="Research run created.", metadata={"depth": payload.depth.value}))
+    except PaperPersistenceError as exc:
+        raise HTTPException(status_code=500, detail="The research run could not be saved.") from exc
+    return _research_response(request, run.id)
+
+
+@router.get("/api/research/runs/{run_id}", response_model=ResearchRunResponse)
+async def get_research_run(run_id: str, request: Request) -> ResearchRunResponse:
+    return _research_response(request, run_id)
+
+
+@router.post("/api/research/runs/{run_id}/execute", response_model=ResearchRunResponse)
+async def execute_research_run(run_id: str, request: Request) -> ResearchRunResponse:
+    try:
+        await request.app.state.research_agent.execute(run_id)
+    except ResearchAgentError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _research_response(request, run_id)
+
+
+@router.post("/api/research/runs/{run_id}/cancel", response_model=ResearchRunResponse)
+async def cancel_research_run(run_id: str, request: Request) -> ResearchRunResponse:
+    try:
+        await request.app.state.research_agent.cancel(run_id)
+    except ResearchAgentError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _research_response(request, run_id)
+
+
+@router.get("/api/research/runs/{run_id}/report")
+async def get_research_report(run_id: str, request: Request) -> object:
+    if request.app.state.database.get_research_run(run_id) is None:
+        raise HTTPException(status_code=404, detail="Research run not found.")
+    report = request.app.state.database.get_research_report(run_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="Research report not found.")
+    return report
+
+
 def _safe_source_path(request: Request, source_path: object) -> Path | None:
     if not isinstance(source_path, Path):
         return None
@@ -376,3 +444,20 @@ def _safe_source_path(request: Request, source_path: object) -> Path | None:
     except ValueError:
         return None
     return candidate if candidate.is_file() else None
+
+
+def _research_response(request: Request, run_id: str) -> ResearchRunResponse:
+    run = request.app.state.database.get_research_run(run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="Research run not found.")
+    report = request.app.state.database.get_research_report(run_id)
+    coverage = report.coverage if report else None
+    return ResearchRunResponse(
+        run=run,
+        plan=request.app.state.database.get_research_plan(run_id),
+        queries=request.app.state.database.get_research_queries(run_id),
+        candidates=request.app.state.database.get_research_candidates(run_id),
+        events=request.app.state.database.get_research_events(run_id),
+        coverage=coverage,
+        report=report,
+    )

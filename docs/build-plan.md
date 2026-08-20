@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 8 — Advanced Research Intelligence
+Phase 9 — Research Agent and Literature Discovery
 
 ## Current Milestone
 
-Source-first artifacts, optional hybrid retrieval, persistent research workspaces, evidence-safe comparison, and a bounded citation graph.
+Persistent evidence-grounded research runs, bounded official-arXiv discovery, cross-paper retrieval, and citation-validating synthesis.
 
 ## Completed
 
@@ -63,6 +63,13 @@ Source-first artifacts, optional hybrid retrieval, persistent research workspace
 - [x] Add evidence-preserving multi-paper comparison IR with comparability and numeric-safety rules.
 - [x] Add bounded local citation-graph matching API/UI and multi-document ID collision protection.
 - [x] Add Phase 8 artifact, retrieval, workspace, comparison, and citation graph regression tests.
+- [x] Add persistent research-run, plan, query, candidate, event, and report records.
+- [x] Add deterministic planner fallback and official arXiv Atom discovery provider.
+- [x] Add candidate normalization, version-aware deduplication, deterministic ranking, diversity selection, and budgets.
+- [x] Reuse ingestion/extraction with bounded concurrency, partial failures, workspace attachment, cancellation, and finite agent iterations.
+- [x] Add cross-paper BM25/semantic/hybrid retrieval with composite evidence identity and report validation.
+- [x] Add deterministic report IR for claims, themes, methods, agreements, contradictions, gaps, limitations, and future directions.
+- [x] Add research APIs, progress timeline, report/citation UI, Phase 9 tests, and documentation.
 
 ## Current
 
@@ -70,7 +77,7 @@ Source-first artifacts, optional hybrid retrieval, persistent research workspace
 
 ## Later
 
-- [ ] Begin Phase 9 — Research Agent and Literature Discovery.
+- [ ] Begin Phase 10 — Evaluation & Benchmarking.
 - [ ] Consider animation only after the reader is stable.
 
 ## Blockers
@@ -79,6 +86,6 @@ Source-first artifacts, optional hybrid retrieval, persistent research workspace
 
 ## Explicitly Out of Scope for Current Phase
 
-- External literature discovery, autonomous research agents, multi-paper chat, generated code, animations, and distributed workers.
+- Multi-paper chat, generated code, animations, and distributed workers.
 - Image understanding or arbitrary image/file serving; artifacts remain caption/table/equation/reference evidence.
 - Live external AI extraction without configured credentials.

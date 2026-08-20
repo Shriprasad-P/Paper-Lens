@@ -13,6 +13,9 @@ from .extraction.service import ResearchExtractionService
 from .ingestion.service import IngestionService
 from .verification.service import PaperVerificationService
 from .chat.service import PaperChatService
+from .research.agent import ResearchAgent
+from .research.discovery import ArxivDiscoveryProvider
+from .research.planner import ResearchPlanner
 
 
 def create_app(
@@ -24,6 +27,7 @@ def create_app(
     extraction_service: ResearchExtractionService | None = None,
     verification_service: PaperVerificationService | None = None,
     chat_service: PaperChatService | None = None,
+    research_agent: ResearchAgent | None = None,
 ) -> FastAPI:
     """Create an application instance suitable for production or tests."""
 
@@ -49,6 +53,14 @@ def create_app(
     app.state.chat_service = chat_service or PaperChatService(
         app.state.database,
         resolved_provider,
+        settings=resolved_settings,
+    )
+    app.state.research_agent = research_agent or ResearchAgent(
+        app.state.database,
+        ResearchPlanner(resolved_provider, settings=resolved_settings),
+        ArxivDiscoveryProvider(timeout=resolved_settings.arxiv_request_timeout),
+        app.state.ingestion_service,
+        app.state.extraction_service,
         settings=resolved_settings,
     )
     app.add_middleware(

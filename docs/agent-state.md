@@ -45,13 +45,22 @@ Phase 8 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/Evid
 - Bounded citation graph API/UI matching exact extracted arXiv references to papers already in the local database.
 - Namespaced persistence safeguard for legacy section/paragraph/evidence IDs when multiple documents share a database.
 
+## Phase 9 Additions
+
+- Persistent `ResearchRun`, plan/query/candidate/event/report records with observable stage transitions and immutable original questions.
+- Deterministic `ResearchPlanner` fallback plus official arXiv Atom discovery, version/DOI/title normalization, conservative deduplication, ranking, and bounded selection.
+- Bounded research-agent loop (maximum three iterations) with coverage/refinement, no-new stopping, cancellation, partial ingestion failures, workspace attachment, and concurrency limit two.
+- Cross-paper lexical/semantic/hybrid Evidence Registry retrieval and composite `(paper_id, document_id, evidence_id)` citation validation, including numeric fidelity checks.
+- Deterministic report sections for claims, themes, methods, agreements, safe contradictions, calibrated gaps, limitations, future directions, and selected-paper summaries.
+- `/research` and `/research/{run_id}` UI with persisted event progress, cancellation, report sections, and evidence-drawer citation navigation.
+
 ## Current Phase
 
-Phase 8 — Advanced Research Intelligence
+Phase 9 — Research Agent and Literature Discovery
 
 ## Current Task
 
-Complete and validate advanced source-grounded retrieval, artifacts, workspaces, comparisons, and local citation graph over persisted Evidence Registry evidence.
+Complete and validate bounded research planning/discovery, multi-paper evidence retrieval, grounded synthesis, and research-run UX over persisted Evidence Registry evidence.
 
 ## Validation
 
@@ -88,6 +97,9 @@ Complete and validate advanced source-grounded retrieval, artifacts, workspaces,
 - `npm run typecheck` — passed with Phase 8 workspace/comparison models and artifact reader sections.
 - `npm run lint` — passed with Phase 8 workspace/comparison pages.
 - Semantic live-provider benchmark — not run; default `EMBEDDING_PROVIDER=none` keeps lexical retrieval active. Deterministic hash-provider cache and hybrid tests passed.
+- Phase 9 backend tests — passed, including planner/discovery normalization, dedup/ranking, cross-paper identity, citation validation, and run/event persistence.
+- Phase 9 frontend typecheck/lint/build — passed with `/research` and `/research/{run_id}` routes.
+- Live discovery and live AI synthesis — not run; tests use bounded arXiv Atom mocks and deterministic no-credential behavior.
 
 ## Known Problems
 
@@ -100,6 +112,8 @@ Complete and validate advanced source-grounded retrieval, artifacts, workspaces,
 - Paper Chat citations use only current retrieved Evidence Registry IDs; history is reference context, never evidence, and old sessions are frozen across document replacement.
 - Comparison does not rank papers unless structured comparability is explicit; results retain paper-specific context.
 - Citation graph matching is local, preferring exact arXiv IDs with normalized-title fallback; no external citation discovery is attempted.
+- Phase 9 discovery currently ships with official arXiv Atom only; DOI/index providers and live AI synthesis remain optional future adapters.
+- Report claims are intentionally `UNVERIFIED` on the deterministic path; broad scientific quality metrics require the Phase 10 benchmark fixtures.
 
 ## Important Decisions
 
@@ -122,4 +136,4 @@ Complete and validate advanced source-grounded retrieval, artifacts, workspaces,
 
 ## Next Recommended Task
 
-Phase 9 — Research Agent and Literature Discovery.
+Phase 10 — Evaluation & Benchmarking.

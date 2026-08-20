@@ -30,7 +30,17 @@ from ..models.document import PaperIR
 from ..models.paper import IngestedPaper, PaperMetadata, ParsedSection
 from ..models.verification import VerificationResult
 from ..models.chat import ChatMessage, ChatMessageStatus, ChatRole, ChatSession
-from ..models.research import Workspace, WorkspacePaper, WorkspacePaperView
+from ..models.research import (
+    PaperCandidate,
+    ResearchPlan,
+    ResearchReportIR,
+    ResearchRun,
+    ResearchRunEvent,
+    ResearchRunStatus,
+    Workspace,
+    WorkspacePaper,
+    WorkspacePaperView,
+)
 from ..retrieval.embeddings import EmbeddingProvider
 
 
@@ -210,6 +220,77 @@ class WorkspacePaperRecord(Base):
     paper_id: Mapped[str] = mapped_column(ForeignKey("papers.id", ondelete="CASCADE"), index=True)
     added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     workspace: Mapped[WorkspaceRecord] = relationship(back_populates="papers")
+
+
+class ResearchRunRecord(Base):
+    __tablename__ = "research_runs"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    workspace_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    research_question: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    max_iterations: Mapped[int] = mapped_column()
+    max_candidates: Mapped[int] = mapped_column()
+    max_ingested_papers: Mapped[int] = mapped_column()
+    planner_provider: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    planner_model: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    prompt_version: Mapped[str] = mapped_column(String(32))
+    schema_version: Mapped[str] = mapped_column(String(32))
+
+
+class ResearchRunPlanRecord(Base):
+    __tablename__ = "research_run_plans"
+
+    run_id: Mapped[str] = mapped_column(ForeignKey("research_runs.id", ondelete="CASCADE"), primary_key=True)
+    payload: Mapped[dict[str, object]] = mapped_column(JSON)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class ResearchRunQueryRecord(Base):
+    __tablename__ = "research_run_queries"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("research_runs.id", ondelete="CASCADE"), index=True)
+    query: Mapped[str] = mapped_column(Text)
+    iteration: Mapped[int] = mapped_column()
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class ResearchRunCandidateRecord(Base):
+    __tablename__ = "research_run_candidates"
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("research_runs.id", ondelete="CASCADE"), index=True)
+    candidate_id: Mapped[str] = mapped_column(String(128), index=True)
+    payload: Mapped[dict[str, object]] = mapped_column(JSON)
+    ranking_score: Mapped[float | None] = mapped_column(nullable=True)
+    selected: Mapped[bool] = mapped_column(default=False)
+    ingestion_status: Mapped[str] = mapped_column(String(32), default="NOT_STARTED")
+    paper_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class ResearchRunEventRecord(Base):
+    __tablename__ = "research_run_events"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("research_runs.id", ondelete="CASCADE"), index=True)
+    event_type: Mapped[str] = mapped_column(String(64))
+    message: Mapped[str] = mapped_column(Text)
+    event_metadata: Mapped[dict[str, object]] = mapped_column("metadata", JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class ResearchRunReportRecord(Base):
+    __tablename__ = "research_run_reports"
+
+    run_id: Mapped[str] = mapped_column(ForeignKey("research_runs.id", ondelete="CASCADE"), primary_key=True)
+    coverage: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
+    payload: Mapped[dict[str, object]] = mapped_column(JSON)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class AnalysisRecord(Base):
@@ -697,6 +778,140 @@ class SQLDatabase:
         except SQLAlchemyError as exc:
             raise PaperPersistenceError("The paper could not be removed from the workspace.") from exc
 
+    def create_research_run(self, run: ResearchRun) -> ResearchRun:
+        try:
+            with self.session_factory.begin() as session:
+                values = run.model_dump()
+                values["status"] = run.status.value
+                session.add(ResearchRunRecord(**values))
+            return run
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The research run could not be saved.") from exc
+
+    def get_research_run(self, run_id: str) -> ResearchRun | None:
+        with self.session_factory() as session:
+            record = session.get(ResearchRunRecord, run_id)
+            return _to_research_run(record) if record else None
+
+    def update_research_run(self, run: ResearchRun) -> ResearchRun:
+        try:
+            with self.session_factory.begin() as session:
+                record = session.get(ResearchRunRecord, run.id)
+                if record is None:
+                    raise PaperPersistenceError("The research run was not found.")
+                values = run.model_dump()
+                values["status"] = run.status.value
+                for key, value in values.items():
+                    setattr(record, key, value)
+            return run
+        except PaperPersistenceError:
+            raise
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The research run could not be updated.") from exc
+
+    def save_research_plan(self, run_id: str, plan: ResearchPlan) -> None:
+        try:
+            with self.session_factory.begin() as session:
+                record = session.get(ResearchRunPlanRecord, run_id)
+                values = {"payload": plan.model_dump(mode="json"), "updated_at": datetime.now(timezone.utc)}
+                if record is None:
+                    session.add(ResearchRunPlanRecord(run_id=run_id, **values))
+                else:
+                    record.payload = values["payload"]
+                    record.updated_at = values["updated_at"]
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The research plan could not be saved.") from exc
+
+    def get_research_plan(self, run_id: str) -> ResearchPlan | None:
+        with self.session_factory() as session:
+            record = session.get(ResearchRunPlanRecord, run_id)
+            if record is None:
+                return None
+            try:
+                return ResearchPlan.model_validate(record.payload)
+            except ValueError as exc:
+                raise PaperPersistenceError("The stored research plan is invalid.") from exc
+
+    def add_research_query(self, run_id: str, query: str, iteration: int) -> None:
+        try:
+            with self.session_factory.begin() as session:
+                session.add(ResearchRunQueryRecord(id=f"query_{uuid4().hex}", run_id=run_id, query=query, iteration=iteration, created_at=datetime.now(timezone.utc)))
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The research query could not be saved.") from exc
+
+    def get_research_queries(self, run_id: str) -> list[str]:
+        with self.session_factory() as session:
+            records = session.scalars(select(ResearchRunQueryRecord).where(ResearchRunQueryRecord.run_id == run_id).order_by(ResearchRunQueryRecord.created_at, ResearchRunQueryRecord.id)).all()
+            return [record.query for record in records]
+
+    def save_research_candidates(self, run_id: str, candidates: list[PaperCandidate]) -> None:
+        try:
+            with self.session_factory.begin() as session:
+                for candidate in candidates:
+                    record_id = f"{run_id}:{candidate.candidate_id}"
+                    record = session.get(ResearchRunCandidateRecord, record_id)
+                    values = {
+                        "run_id": run_id,
+                        "candidate_id": candidate.candidate_id,
+                        "payload": candidate.model_dump(mode="json"),
+                        "ranking_score": candidate.ranking_score,
+                        "selected": candidate.selected,
+                        "ingestion_status": candidate.ingestion_status,
+                        "paper_id": candidate.paper_id,
+                        "error": candidate.error,
+                    }
+                    if record is None:
+                        session.add(ResearchRunCandidateRecord(id=record_id, **values))
+                    else:
+                        for key, value in values.items():
+                            setattr(record, key, value)
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The research candidates could not be saved.") from exc
+
+    def get_research_candidates(self, run_id: str) -> list[PaperCandidate]:
+        with self.session_factory() as session:
+            records = session.scalars(select(ResearchRunCandidateRecord).where(ResearchRunCandidateRecord.run_id == run_id).order_by(ResearchRunCandidateRecord.ranking_score.desc(), ResearchRunCandidateRecord.candidate_id)).all()
+            try:
+                return [PaperCandidate.model_validate(record.payload) for record in records]
+            except ValueError as exc:
+                raise PaperPersistenceError("The stored research candidates are invalid.") from exc
+
+    def add_research_event(self, event: ResearchRunEvent) -> None:
+        try:
+            with self.session_factory.begin() as session:
+                session.add(ResearchRunEventRecord(id=event.id, run_id=event.research_run_id, event_type=event.event_type, message=event.message, event_metadata=event.metadata, created_at=event.created_at))
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The research event could not be saved.") from exc
+
+    def get_research_events(self, run_id: str) -> list[ResearchRunEvent]:
+        with self.session_factory() as session:
+            records = session.scalars(select(ResearchRunEventRecord).where(ResearchRunEventRecord.run_id == run_id).order_by(ResearchRunEventRecord.created_at, ResearchRunEventRecord.id)).all()
+            return [ResearchRunEvent(id=record.id, research_run_id=record.run_id, event_type=record.event_type, message=record.message, metadata=dict(record.event_metadata or {}), created_at=record.created_at) for record in records]
+
+    def save_research_report(self, run_id: str, report: ResearchReportIR) -> None:
+        try:
+            with self.session_factory.begin() as session:
+                record = session.get(ResearchRunReportRecord, run_id)
+                values = {"coverage": report.coverage.model_dump(mode="json"), "payload": report.model_dump(mode="json"), "updated_at": datetime.now(timezone.utc)}
+                if record is None:
+                    session.add(ResearchRunReportRecord(run_id=run_id, **values))
+                else:
+                    record.coverage = values["coverage"]
+                    record.payload = values["payload"]
+                    record.updated_at = values["updated_at"]
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The research report could not be saved.") from exc
+
+    def get_research_report(self, run_id: str) -> ResearchReportIR | None:
+        with self.session_factory() as session:
+            record = session.get(ResearchRunReportRecord, run_id)
+            if record is None:
+                return None
+            try:
+                return ResearchReportIR.model_validate(record.payload)
+            except ValueError as exc:
+                raise PaperPersistenceError("The stored research report is invalid.") from exc
+
     def get_source_pdf_path(self, paper_id: str) -> Path | None:
         """Return a persisted PDF path only for a completed paper."""
 
@@ -1022,3 +1237,22 @@ def _to_chat_message(record: ChatMessageRecord) -> ChatMessage:
 
 def _to_workspace(record: WorkspaceRecord) -> Workspace:
     return Workspace(id=record.id, name=record.name, created_at=record.created_at, updated_at=record.updated_at)
+
+
+def _to_research_run(record: ResearchRunRecord) -> ResearchRun:
+    return ResearchRun(
+        id=record.id,
+        workspace_id=record.workspace_id,
+        research_question=record.research_question,
+        status=ResearchRunStatus(record.status),
+        created_at=record.created_at,
+        updated_at=record.updated_at,
+        completed_at=record.completed_at,
+        max_iterations=record.max_iterations,
+        max_candidates=record.max_candidates,
+        max_ingested_papers=record.max_ingested_papers,
+        planner_provider=record.planner_provider,
+        planner_model=record.planner_model,
+        prompt_version=record.prompt_version,
+        schema_version=record.schema_version,
+    )

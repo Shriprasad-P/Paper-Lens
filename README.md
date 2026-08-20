@@ -105,6 +105,20 @@ npm run dev
 The reader shell is available at `http://localhost:3000`.
 The workspace shell is available at `http://localhost:3000/workspaces`.
 
+### Phase 9 Research Agent
+
+The research shell is available at `http://localhost:3000/research`. It creates a persistent, bounded run and reports observable planning, official arXiv discovery, candidate normalization/ranking, ingestion, extraction, synthesis, and verification events.
+
+```text
+POST /api/research/runs
+GET  /api/research/runs/{run_id}
+POST /api/research/runs/{run_id}/execute
+POST /api/research/runs/{run_id}/cancel
+GET  /api/research/runs/{run_id}/report
+```
+
+Without credentials, planning and ranking remain deterministic, arXiv metadata is discovery-only, reports cite only persisted Evidence Registry tuples, and claims remain `UNVERIFIED`. Defaults are bounded by `RESEARCH_MAX_SEARCH_QUERIES=6`, `RESEARCH_MAX_CANDIDATES=30`, `RESEARCH_MAX_INGESTED_PAPERS=8`, `RESEARCH_MAX_ITERATIONS=3`, and ingestion concurrency `2`.
+
 ## Validation
 
 ```bash

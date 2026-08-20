@@ -34,6 +34,13 @@ class Settings:
     semantic_retrieval_top_k: int = 8
     hybrid_retrieval_enabled: bool = False
     retrieval_mode: str = "LEXICAL"
+    research_max_search_queries: int = 6
+    research_max_candidates: int = 30
+    research_max_ingested_papers: int = 8
+    research_max_iterations: int = 3
+    research_ingestion_concurrency: int = 2
+    research_max_context_chars: int = 12_000
+    research_max_provider_calls: int = 32
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -67,4 +74,11 @@ class Settings:
             semantic_retrieval_top_k=max(1, min(int(os.getenv("SEMANTIC_RETRIEVAL_TOP_K", str(defaults.semantic_retrieval_top_k))), 20)),
             hybrid_retrieval_enabled=os.getenv("HYBRID_RETRIEVAL_ENABLED", str(defaults.hybrid_retrieval_enabled)).lower() in {"1", "true", "yes", "on"},
             retrieval_mode=os.getenv("RETRIEVAL_MODE", defaults.retrieval_mode).upper(),
+            research_max_search_queries=max(3, min(int(os.getenv("RESEARCH_MAX_SEARCH_QUERIES", str(defaults.research_max_search_queries))), 8)),
+            research_max_candidates=max(1, min(int(os.getenv("RESEARCH_MAX_CANDIDATES", str(defaults.research_max_candidates))), 30)),
+            research_max_ingested_papers=max(1, min(int(os.getenv("RESEARCH_MAX_INGESTED_PAPERS", str(defaults.research_max_ingested_papers))), 8)),
+            research_max_iterations=max(1, min(int(os.getenv("RESEARCH_MAX_ITERATIONS", str(defaults.research_max_iterations))), 3)),
+            research_ingestion_concurrency=max(1, min(int(os.getenv("RESEARCH_INGESTION_CONCURRENCY", str(defaults.research_ingestion_concurrency))), 4)),
+            research_max_context_chars=max(2_000, min(int(os.getenv("RESEARCH_MAX_CONTEXT_CHARS", str(defaults.research_max_context_chars))), 24_000)),
+            research_max_provider_calls=max(1, min(int(os.getenv("RESEARCH_MAX_PROVIDER_CALLS", str(defaults.research_max_provider_calls))), 64)),
         )
