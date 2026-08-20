@@ -70,11 +70,11 @@ Phase 10 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/Evi
 
 ## Current Phase
 
-Phase 12 — Deployment & Public Beta
+Phase 12 — Deployment & Public Beta (complete)
 
 ## Current Task
 
-Prepare and validate a reproducible, migration-safe, observable public-beta
+Prepared and validated a reproducible, migration-safe, observable public-beta
 deployment without changing Phase 1–11 semantic behavior.
 
 ## Validation

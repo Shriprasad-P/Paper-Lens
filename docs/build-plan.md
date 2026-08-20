@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase 12 — Deployment & Public Beta
+Phase 12 — Deployment & Public Beta (complete)
 
 ## Current Milestone
 
 Reproducible production-like packaging, PostgreSQL migration validation, public-beta
 capability gating, release gates, smoke/load checks, backup/rollback guidance,
-and deployment documentation.
+and deployment documentation — all validated for `v0.1.0-beta`.
 
 ## Completed
 
