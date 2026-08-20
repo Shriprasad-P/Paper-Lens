@@ -128,3 +128,12 @@ test("ingestion failure is visible and does not navigate", async ({ page }) => {
   await expect(page.locator(".error-card")).toContainText("could not prepare");
   await expect(page).toHaveURL("http://127.0.0.1:3000/");
 });
+
+test("plain-text ingestion failures retain the upstream reason", async ({ page }) => {
+  await page.route("**/api/papers/ingest", async (route) => route.fulfill({ status: 502, contentType: "text/plain", body: "arXiv is temporarily unavailable." }));
+  await page.goto("/");
+  await page.getByLabel("arXiv URL or identifier").fill("1706.03762");
+  await page.getByRole("button", { name: "Open visual reader" }).click();
+  await expect(page.locator(".error-card")).toContainText("arXiv is temporarily unavailable.");
+  await expect(page.locator(".error-card")).not.toContainText("Request failed.");
+});

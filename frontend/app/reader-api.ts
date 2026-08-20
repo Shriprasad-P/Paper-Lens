@@ -2,6 +2,11 @@ import type { ChatAnswerResponse, ChatSession, ChatSessionResponse, CitationGrap
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
+type ErrorPayload = {
+  detail?: unknown;
+  error?: { message?: unknown; request_id?: unknown } | unknown;
+};
+
 function runtimeValue(key: "apiBaseUrl" | "desktopToken"): string | null {
   if (typeof window === "undefined") return null;
   const storageKey = `paperlens.${key}`;
@@ -28,21 +33,47 @@ export type CapabilityFlags = {
 
 export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const desktopToken = runtimeValue("desktopToken");
-  const response = await fetch(`${resolvedApiBaseUrl()}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(desktopToken ? { "X-PaperLens-Desktop-Token": desktopToken } : {}),
-      ...(init?.headers ?? {}),
-    },
-  });
-  const payload = (await response.json().catch(() => null)) as T | { detail?: string } | null;
+  let response: Response;
+  try {
+    response = await fetch(`${resolvedApiBaseUrl()}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(desktopToken ? { "X-PaperLens-Desktop-Token": desktopToken } : {}),
+        ...(init?.headers ?? {}),
+      },
+    });
+  } catch (requestError) {
+    const reason = requestError instanceof Error && requestError.message ? ` (${requestError.message})` : "";
+    throw new Error(`PaperLens could not reach its local API${reason}`);
+  }
+
+  const rawBody = await response.text();
+  let payload: T | ErrorPayload | string | null = null;
+  if (rawBody.trim()) {
+    try {
+      payload = JSON.parse(rawBody) as T | ErrorPayload;
+    } catch {
+      payload = rawBody.trim();
+    }
+  }
   if (!response.ok) {
-    const detail = payload && typeof payload === "object" && "detail" in payload && payload.detail ? String(payload.detail) : "Request failed.";
-    const requestId = payload && typeof payload === "object" && "error" in payload && payload.error && typeof payload.error === "object" && "request_id" in payload.error
-      ? String(payload.error.request_id)
-      : null;
-    throw new Error(requestId && requestId !== "unknown" ? `${detail} Request ID: ${requestId}` : detail);
+    const errorPayload = payload && typeof payload === "object" && !Array.isArray(payload) ? payload as ErrorPayload : null;
+    const nestedError = errorPayload?.error && typeof errorPayload.error === "object" ? errorPayload.error as { message?: unknown; request_id?: unknown } : null;
+    const detail = typeof payload === "string" && payload ? payload.slice(0, 300)
+      : errorPayload?.detail ? String(errorPayload.detail)
+        : nestedError?.message ? String(nestedError.message)
+          : `Request failed (HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ""}).`;
+    const requestId = nestedError?.request_id ? String(nestedError.request_id) : null;
+    const retryAfter = response.status === 429 ? response.headers.get("Retry-After") : null;
+    const retryMessage = retryAfter ? ` Try again in ${retryAfter} seconds.` : "";
+    throw new Error(`${detail}${retryMessage}${requestId && requestId !== "unknown" ? ` Request ID: ${requestId}` : ""}`);
+  }
+  if (payload === null) {
+    throw new Error(`PaperLens returned an empty response (HTTP ${response.status}).`);
+  }
+  if (typeof payload === "string") {
+    throw new Error(`PaperLens returned an invalid response (HTTP ${response.status}).`);
   }
   return payload as T;
 }
