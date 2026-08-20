@@ -15,6 +15,7 @@ from ..ingestion.errors import (
     PaperPersistenceError,
     PdfDownloadError,
 )
+from ..models.document import Evidence, StructuredDocument
 from ..models.paper import IngestRequest, IngestedPaper
 
 router = APIRouter()
@@ -62,3 +63,23 @@ async def get_paper(paper_id: str, request: Request) -> IngestedPaper:
     if paper is None:
         raise HTTPException(status_code=404, detail="Paper not found.")
     return paper
+
+
+@router.get("/api/papers/{paper_id}/document", response_model=StructuredDocument)
+async def get_document(paper_id: str, request: Request) -> StructuredDocument:
+    """Return the source-preserving normalized document for a paper."""
+
+    document = request.app.state.database.get_document(paper_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="Structured document not found.")
+    return document
+
+
+@router.get("/api/papers/{paper_id}/evidence/{evidence_id}", response_model=Evidence)
+async def get_evidence(paper_id: str, evidence_id: str, request: Request) -> Evidence:
+    """Return one provenance record scoped to its paper."""
+
+    evidence = request.app.state.database.get_evidence(paper_id, evidence_id)
+    if evidence is None:
+        raise HTTPException(status_code=404, detail="Evidence not found.")
+    return evidence

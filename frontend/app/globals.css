@@ -62,6 +62,28 @@ button:disabled { cursor: wait; opacity: 0.7; }
 .section-list { display: grid; gap: 22px; margin: 20px 0 0; padding-left: 24px; }
 .section-list h3 { margin: 0; font-family: Georgia, serif; font-size: 22px; font-weight: 500; }
 .section-list p { margin-bottom: 0; }
+.document-note { margin-top: 28px; color: var(--muted); font-size: 12px; }
+.document-section { border-top: 1px solid var(--line); padding-top: 18px; }
+.document-section + .document-section { margin-top: 30px; }
+.section-heading-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.section-heading-row span { color: var(--muted); font-size: 12px; }
+.paragraph-row { margin-top: 15px; border-left: 2px solid #e8c1b7; padding-left: 14px; }
+.paragraph-row p { margin: 0; }
+.paragraph-tools { display: flex; align-items: center; gap: 12px; margin-top: 9px; color: var(--muted); font-size: 11px; }
+.evidence-button { border: 1px solid var(--accent); background: transparent; padding: 6px 9px; color: var(--accent-dark); font-size: 11px; }
+.evidence-button:hover { background: #fff2ee; }
+.drawer-backdrop { position: fixed; inset: 0; z-index: 10; display: flex; justify-content: flex-end; background: rgba(24, 33, 31, 0.32); }
+.evidence-drawer { width: min(460px, 100%); height: 100%; overflow-y: auto; background: var(--paper); padding: 28px; box-shadow: -12px 0 30px rgba(24, 33, 31, 0.14); }
+.drawer-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--line); padding-bottom: 18px; }
+.drawer-header h3 { margin: 8px 0 0; font-family: Georgia, serif; font-size: 28px; font-weight: 500; }
+.close-button { border: 1px solid var(--line); background: transparent; padding: 3px 10px; color: var(--ink); font-size: 24px; line-height: 1; }
+.close-button:hover { background: #fff; }
+.evidence-details { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin: 26px 0; }
+.evidence-details div { border-bottom: 1px solid var(--line); padding-bottom: 9px; }
+.evidence-details dt { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+.evidence-details dd { margin: 5px 0 0; font-size: 13px; overflow-wrap: anywhere; }
+.source-quote { border: 1px solid var(--line); background: #fff; padding: 18px; }
+.source-quote p { margin: 13px 0 0; color: var(--ink); line-height: 1.65; }
 
 footer { display: flex; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 16px; color: var(--muted); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
 

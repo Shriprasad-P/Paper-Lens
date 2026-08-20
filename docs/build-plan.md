@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 2 — arXiv Ingestion
+Phase 3 — Structured Document + Evidence Registry
 
 ## Current Milestone
 
-End-to-end arXiv ingestion with normalized sections, persistence, API response, and frontend rendering.
+Source-preserving structured document, paragraph evidence, persistence, APIs, and minimal traceability UI.
 
 ## Completed
 
@@ -22,6 +22,12 @@ End-to-end arXiv ingestion with normalized sections, persistence, API response, 
 - [x] Add typed ingestion and retrieval API endpoints.
 - [x] Connect the landing page to ingestion and render normalized papers.
 - [x] Validate backend, frontend, and live arXiv integration.
+- [x] Add parser-neutral raw sections with page/source-region provenance.
+- [x] Add StructuredDocument normalization, stable IDs, and content hashes.
+- [x] Add paragraph EvidenceRegistry and typed PaperIR shell.
+- [x] Persist and retrieve documents, paragraphs, and evidence transactionally.
+- [x] Add document/evidence APIs and frontend evidence drawer.
+- [x] Validate Phase 2 regression and live Phase 3 structure/evidence flow.
 
 ## Current
 
@@ -29,7 +35,6 @@ End-to-end arXiv ingestion with normalized sections, persistence, API response, 
 
 ## Later
 
-- [ ] Normalize parsed documents with stable paragraph/section IDs and register evidence.
 - [ ] Add semantic extraction with typed PaperIR components.
 - [ ] Add deterministic visual reader and evidence drawer.
 - [ ] Add verification, retrieval, and paper-grounded chat.
@@ -42,3 +47,4 @@ End-to-end arXiv ingestion with normalized sections, persistence, API response, 
 ## Explicitly Out of Scope for Current Phase
 
 - Semantic extraction, vector search, chat, generated code, animations, and distributed workers.
+- Figure/table/equation/reference extraction beyond typed empty models.

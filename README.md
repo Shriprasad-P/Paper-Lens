@@ -33,6 +33,15 @@ curl -X POST http://localhost:8000/api/papers/ingest \
   -d '{"source":"https://arxiv.org/abs/1706.03762"}'
 ```
 
+After ingestion, the normalized source document and paragraph evidence are available through:
+
+```text
+GET /api/papers/{paper_id}/document
+GET /api/papers/{paper_id}/evidence/{evidence_id}
+```
+
+The document layer preserves source text, section/paragraph ordering, page numbers, and parser-provided coordinates. It does not generate research interpretations yet.
+
 Relevant environment variables are documented in `.env.example`: database URL, arXiv timeout, local PDF storage path, PDF size limit, and frontend origin.
 
 ### Frontend

@@ -7,7 +7,10 @@ from pathlib import Path
 
 from ..core.config import Settings
 from ..db.database import SQLDatabase
+from ..document.normalizer import DocumentNormalizer
+from ..evidence.registry import EvidenceRegistry
 from ..models.paper import IngestedPaper
+from .raw import ParsedPaper
 from .arxiv.client import ArxivClient
 from .arxiv.parser import normalize_arxiv_input
 from .errors import IngestionError, PaperParseError, PdfDownloadError
@@ -26,6 +29,8 @@ class IngestionService:
         arxiv_client: ArxivClient | None = None,
         parser: PaperParser | None = None,
         storage: PaperStorage | None = None,
+        normalizer: DocumentNormalizer | None = None,
+        evidence_registry: EvidenceRegistry | None = None,
     ) -> None:
         resolved = settings or Settings.from_env()
         self.database = database
@@ -33,6 +38,8 @@ class IngestionService:
         self.parser = parser
         self.storage = storage or PaperStorage(resolved.paper_storage_path)
         self.max_pdf_size = resolved.max_pdf_size
+        self.normalizer = normalizer or DocumentNormalizer()
+        self.evidence_registry = evidence_registry or EvidenceRegistry()
 
     async def ingest(self, source: str) -> IngestedPaper:
         identifier = normalize_arxiv_input(source)
@@ -40,6 +47,14 @@ class IngestionService:
 
         existing = self.database.get_by_source_identity(identifier.source_identity)
         if existing is not None:
+            if self.database.get_document(existing.id) is None:
+                parsed_paper = ParsedPaper.from_legacy_sections(existing.sections, parser_name="legacy")
+                document = self.normalizer.normalize(
+                    parsed_paper,
+                    paper_id=existing.id,
+                    metadata=existing.metadata,
+                )
+                self.database.replace_document(document, self.evidence_registry.build_for_document(document))
             return existing
 
         self.database.create_placeholder(
@@ -61,9 +76,24 @@ class IngestionService:
             self.database.update_status(paper_id, "PARSING")
             parser = self.parser or _default_parser()
             sections = await parser.parse(local_pdf_path)
-            if not sections:
+            parse_document = getattr(parser, "parse_document", None)
+            if callable(parse_document):
+                parsed_paper = await parse_document(local_pdf_path)
+            else:
+                parsed_paper = ParsedPaper.from_legacy_sections(sections, parser_name=parser.__class__.__name__)
+            if not sections or not parsed_paper.sections:
                 raise PaperParseError("The paper was retrieved, but its structure could not be extracted reliably.")
-            return self.database.save_parsed(paper_id, metadata, sections, local_pdf_path)
+            completed = self.database.save_parsed(paper_id, metadata, sections, local_pdf_path)
+            source_hash = hashlib.sha256(pdf_content).hexdigest()
+            document = self.normalizer.normalize(
+                parsed_paper,
+                paper_id=paper_id,
+                metadata=metadata,
+                source_hash=source_hash,
+            )
+            evidence = self.evidence_registry.build_for_document(document)
+            self.database.replace_document(document, evidence)
+            return completed
         except IngestionError as exc:
             self.database.update_status(paper_id, "FAILED", error_message=str(exc))
             raise
