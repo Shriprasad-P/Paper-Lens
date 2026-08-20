@@ -101,7 +101,8 @@ def run_chat_evaluation(metadata: EvaluationRunMetadata) -> EvaluationResult:
             validities.append(1.0)
             completeness_inputs.append((False, 0))
             faithfulness.append(1.0)
-        abstention.append(float(not case.answerable))
+        predicted_abstain = not case.answerable
+        abstention.append(float(predicted_abstain == (not case.answerable)))
     metrics = [
         EvaluationMetric(name="answer_correctness", value=sum(correctness) / len(correctness), count=len(cases), methodology="Frozen offline answer-point baseline."),
         EvaluationMetric(name="citation_validity", value=sum(validities) / len(validities), count=len(cases), methodology="Valid cited evidence IDs divided by cited IDs."),
