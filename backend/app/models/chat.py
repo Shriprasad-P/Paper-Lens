@@ -55,6 +55,7 @@ class RetrievedEvidence(BaseModel):
     score: float = Field(ge=0)
     section_id: str | None = None
     page: int | None = None
+    evidence_type: str = "PARAGRAPH"
     source_text: str
     retrieval_method: str = "bm25"
     rank: int = Field(ge=1)

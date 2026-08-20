@@ -79,6 +79,19 @@ POST /api/papers/{paper_id}/chat/sessions/{session_id}/messages
 
 Chat retrieves only bounded paragraph evidence from the current paper using deterministic BM25 ranking. Every assistant turn is persisted with document-bound citations; insufficient retrieval and missing AI credentials remain explicit safe states. `CHAT_RETRIEVAL_TOP_K`, `CHAT_MAX_CONTEXT_CHARS`, `CHAT_MIN_RELEVANCE`, and `CHAT_MAX_QUESTION_CHARS` tune the boundary.
 
+Phase 8 research-intelligence endpoints are:
+
+```text
+POST /api/workspaces
+GET  /api/workspaces
+GET  /api/workspaces/{workspace_id}
+POST /api/workspaces/{workspace_id}/papers/{paper_id}
+POST /api/workspaces/{workspace_id}/compare
+GET  /api/papers/{paper_id}/citation-graph
+```
+
+Phase 8 extracts source-first figure, table, equation, and reference artifacts into the Evidence Registry. `RETRIEVAL_MODE` supports `LEXICAL`, `SEMANTIC`, and `HYBRID`; BM25 remains the default, while optional provider-neutral semantic embeddings use a local SQLite cache and reciprocal-rank fusion when `HYBRID_RETRIEVAL_ENABLED=true` or hybrid mode is selected. The workspace UI provides persistent paper sets, evidence-preserving comparison IR, and bounded citation-graph matching over the local corpus. `EMBEDDING_PROVIDER=hash` is available for deterministic local evaluation; the default `none` provider never makes a network call.
+
 Relevant environment variables are documented in `.env.example`: database URL, arXiv timeout, local PDF storage path, PDF size limit, and frontend origin.
 
 ### Frontend
@@ -90,6 +103,7 @@ npm run dev
 ```
 
 The reader shell is available at `http://localhost:3000`.
+The workspace shell is available at `http://localhost:3000/workspaces`.
 
 ## Validation
 

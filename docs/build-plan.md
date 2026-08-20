@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 7 — Evidence-Grounded Paper Chat
+Phase 8 — Advanced Research Intelligence
 
 ## Current Milestone
 
-Single-paper conversational retrieval and answer generation over persisted Evidence Registry records.
+Source-first artifacts, optional hybrid retrieval, persistent research workspaces, evidence-safe comparison, and a bounded citation graph.
 
 ## Completed
 
@@ -56,6 +56,13 @@ Single-paper conversational retrieval and answer generation over persisted Evide
 - [x] Add structured chat output validation for supplied-context citations, wrong-paper/document rejection, missing citations, numeric fidelity, and first-class insufficient evidence.
 - [x] Add chat APIs and a responsive reader Paper Chat panel that reuses the evidence drawer and PDF page navigation.
 - [x] Add deterministic retrieval, grounding, persistence, API, prompt-injection, no-credential, and out-of-scope chat tests.
+- [x] Add source-first figure, table, equation, and reference extraction with Evidence Registry links and typed reader sections.
+- [x] Add provider-neutral semantic embedding interfaces, SQLite embedding cache/invalidation, cosine retrieval, RRF hybrid fusion, and deterministic Recall@K/MRR/Hit@K evaluation.
+- [x] Keep BM25 as the default retrieval path and add safe semantic-provider fallback behavior.
+- [x] Add persistent workspaces and workspace-paper membership APIs/UI.
+- [x] Add evidence-preserving multi-paper comparison IR with comparability and numeric-safety rules.
+- [x] Add bounded local citation-graph matching API/UI and multi-document ID collision protection.
+- [x] Add Phase 8 artifact, retrieval, workspace, comparison, and citation graph regression tests.
 
 ## Current
 
@@ -63,7 +70,7 @@ Single-paper conversational retrieval and answer generation over persisted Evide
 
 ## Later
 
-- [ ] Add semantic/hybrid retrieval only if lexical retrieval no longer meets measured quality needs.
+- [ ] Begin Phase 9 — Research Agent and Literature Discovery.
 - [ ] Consider animation only after the reader is stable.
 
 ## Blockers
@@ -72,6 +79,6 @@ Single-paper conversational retrieval and answer generation over persisted Evide
 
 ## Explicitly Out of Scope for Current Phase
 
-- Vector search, multi-paper chat, generated code, animations, and distributed workers.
-- Reliable parser-level figure/table/equation/reference extraction beyond the typed source models.
+- External literature discovery, autonomous research agents, multi-paper chat, generated code, animations, and distributed workers.
+- Image understanding or arbitrary image/file serving; artifacts remain caption/table/equation/reference evidence.
 - Live external AI extraction without configured credentials.

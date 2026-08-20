@@ -9,7 +9,7 @@ from typing import Protocol
 
 from ..db.database import SQLDatabase
 from ..models.chat import RetrievedEvidence
-from ..models.document import Evidence, EvidenceType
+from ..models.document import Evidence
 
 RETRIEVER_VERSION = "bm25-v1"
 _TOKEN_RE = re.compile(r"[A-Za-z0-9]+(?:[-_/+.][A-Za-z0-9]+)*|±|%")
@@ -93,8 +93,7 @@ class BM25EvidenceRetriever:
         paragraphs = [
             item
             for item in evidence
-            if item.evidence_type is EvidenceType.PARAGRAPH
-            and item.source_text.strip()
+            if item.source_text.strip()
             and (len(item.source_text.strip()) >= 24 or len(tokenize(item.source_text)) >= 5)
             and not (_HEADING_NOISE_RE.match(item.source_text.strip()) and len(tokenize(item.source_text)) <= 8)
         ]
@@ -127,6 +126,7 @@ class BM25EvidenceRetriever:
                 paper_id=item.paper_id,
                 document_id=item.document_id,
                 score=round(score, 6),
+                evidence_type=item.evidence_type.value,
                 section_id=item.section_id,
                 page=item.page,
                 source_text=item.source_text,

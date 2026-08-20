@@ -82,6 +82,10 @@ class DocumentNormalizer:
             parser_version=parsed_paper.parser_version,
             source_hash=source_hash,
             created_at=datetime.now(timezone.utc),
+            figures=[item.model_copy(deep=True) for item in parsed_paper.figures],
+            tables=[item.model_copy(deep=True) for item in parsed_paper.tables],
+            equations=[item.model_copy(deep=True) for item in parsed_paper.equations],
+            references=[item.model_copy(deep=True) for item in parsed_paper.references],
         )
         canonical = document.model_dump(mode="json", exclude={"document_hash", "created_at"})
         document.document_hash = _digest(json.dumps(canonical, sort_keys=True, separators=(",", ":")))

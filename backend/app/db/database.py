@@ -5,8 +5,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol
+from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, JSON, String, Text, create_engine, select
+from sqlalchemy import DateTime, ForeignKey, JSON, String, Text, UniqueConstraint, create_engine, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, selectinload, sessionmaker
@@ -16,6 +17,10 @@ from ..ingestion.errors import PaperPersistenceError
 from ..models.document import (
     Evidence,
     EvidenceType,
+    PaperEquation,
+    PaperFigure,
+    PaperReference,
+    PaperTable,
     PaperParagraph,
     PaperSection,
     SourceRegion,
@@ -25,6 +30,8 @@ from ..models.document import PaperIR
 from ..models.paper import IngestedPaper, PaperMetadata, ParsedSection
 from ..models.verification import VerificationResult
 from ..models.chat import ChatMessage, ChatMessageStatus, ChatRole, ChatSession
+from ..models.research import Workspace, WorkspacePaper, WorkspacePaperView
+from ..retrieval.embeddings import EmbeddingProvider
 
 
 class Database(Protocol):
@@ -93,6 +100,9 @@ class DocumentRecord(Base):
     evidence: Mapped[list["EvidenceRecord"]] = relationship(
         back_populates="document", cascade="all, delete-orphan", order_by="EvidenceRecord.id"
     )
+    artifacts: Mapped[list["ArtifactRecord"]] = relationship(
+        back_populates="document", cascade="all, delete-orphan", order_by="ArtifactRecord.id"
+    )
 
 
 class DocumentSectionRecord(Base):
@@ -151,6 +161,55 @@ class EvidenceRecord(Base):
     y1: Mapped[float | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     document: Mapped[DocumentRecord] = relationship(back_populates="evidence")
+
+
+class ArtifactRecord(Base):
+    __tablename__ = "document_artifacts"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    document_id: Mapped[str] = mapped_column(ForeignKey("structured_documents.id", ondelete="CASCADE"), index=True)
+    paper_id: Mapped[str] = mapped_column(ForeignKey("papers.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(32))
+    payload: Mapped[dict[str, object]] = mapped_column(JSON)
+    document: Mapped[DocumentRecord] = relationship(back_populates="artifacts")
+
+
+class EvidenceEmbeddingRecord(Base):
+    __tablename__ = "evidence_embeddings"
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    evidence_id: Mapped[str] = mapped_column(String(64), index=True)
+    paper_id: Mapped[str] = mapped_column(String(64), index=True)
+    document_id: Mapped[str] = mapped_column(String(64), index=True)
+    embedding_model: Mapped[str] = mapped_column(String(128))
+    embedding_version: Mapped[str] = mapped_column(String(32))
+    dimension: Mapped[int] = mapped_column()
+    vector: Mapped[list[float]] = mapped_column(JSON)
+    evidence_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class WorkspaceRecord(Base):
+    __tablename__ = "workspaces"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    papers: Mapped[list["WorkspacePaperRecord"]] = relationship(
+        back_populates="workspace", cascade="all, delete-orphan", order_by="WorkspacePaperRecord.added_at"
+    )
+
+
+class WorkspacePaperRecord(Base):
+    __tablename__ = "workspace_papers"
+    __table_args__ = (UniqueConstraint("workspace_id", "paper_id", name="uq_workspace_paper"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True)
+    paper_id: Mapped[str] = mapped_column(ForeignKey("papers.id", ondelete="CASCADE"), index=True)
+    added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    workspace: Mapped[WorkspaceRecord] = relationship(back_populates="papers")
 
 
 class AnalysisRecord(Base):
@@ -256,6 +315,11 @@ class SQLDatabase:
             record = session.get(PaperRecord, paper_id)
             return _to_model(record) if record and record.status == "COMPLETED" else None
 
+    def list_papers(self) -> list[IngestedPaper]:
+        with self.session_factory() as session:
+            records = session.scalars(select(PaperRecord).where(PaperRecord.status == "COMPLETED").order_by(PaperRecord.created_at)).all()
+            return [_to_model(record) for record in records]
+
     def create_placeholder(self, *, paper_id: str, source_identity: str, arxiv_id: str) -> None:
         try:
             with self.session_factory.begin() as session:
@@ -332,6 +396,7 @@ class SQLDatabase:
                 existing = session.scalar(
                     select(DocumentRecord).where(DocumentRecord.paper_id == document.paper_id)
                 )
+                _namespace_colliding_ids(session, document, evidence)
                 if existing is not None:
                     session.delete(existing)
                     session.flush()
@@ -387,6 +452,22 @@ class SQLDatabase:
                     )
                     for item in evidence
                 )
+                for kind, items in (
+                    ("figure", document.figures),
+                    ("table", document.tables),
+                    ("equation", document.equations),
+                    ("reference", document.references),
+                ):
+                    record.artifacts.extend(
+                        ArtifactRecord(
+                            id=f"{document.id}:{kind}:{item.id}",
+                            document_id=document.id,
+                            paper_id=document.paper_id,
+                            kind=kind,
+                            payload=item.model_dump(mode="json"),
+                        )
+                        for item in items
+                    )
                 session.add(record)
         except PaperPersistenceError:
             raise
@@ -397,7 +478,10 @@ class SQLDatabase:
         with self.session_factory() as session:
             record = session.scalar(
                 select(DocumentRecord)
-                .options(selectinload(DocumentRecord.sections).selectinload(DocumentSectionRecord.paragraphs))
+                .options(
+                    selectinload(DocumentRecord.sections).selectinload(DocumentSectionRecord.paragraphs),
+                    selectinload(DocumentRecord.artifacts),
+                )
                 .where(DocumentRecord.paper_id == paper_id)
             )
             paper = session.get(PaperRecord, paper_id)
@@ -435,6 +519,60 @@ class SQLDatabase:
                 .order_by(EvidenceRecord.id)
             ).all()
             return [_to_evidence(record) for record in records]
+
+    def get_embeddings(
+        self,
+        paper_id: str,
+        document_id: str,
+        embedding_model: str,
+        embedding_version: str,
+    ) -> dict[str, tuple[list[float], str]]:
+        with self.session_factory() as session:
+            records = session.scalars(
+                select(EvidenceEmbeddingRecord).where(
+                    EvidenceEmbeddingRecord.paper_id == paper_id,
+                    EvidenceEmbeddingRecord.document_id == document_id,
+                    EvidenceEmbeddingRecord.embedding_model == embedding_model,
+                    EvidenceEmbeddingRecord.embedding_version == embedding_version,
+                )
+            ).all()
+            return {record.evidence_id: (list(record.vector or []), record.evidence_hash) for record in records}
+
+    def save_embeddings(
+        self,
+        paper_id: str,
+        document_id: str,
+        provider: EmbeddingProvider,
+        items: list[tuple[Evidence, list[float]]],
+    ) -> None:
+        import hashlib
+
+        try:
+            with self.session_factory.begin() as session:
+                for evidence, vector in items:
+                    record_id = hashlib.sha256(
+                        f"{paper_id}|{document_id}|{evidence.id}|{provider.model}|{provider.version}".encode("utf-8")
+                    ).hexdigest()
+                    values = {
+                        "id": record_id,
+                        "evidence_id": evidence.id,
+                        "paper_id": paper_id,
+                        "document_id": document_id,
+                        "embedding_model": provider.model,
+                        "embedding_version": provider.version,
+                        "dimension": len(vector),
+                        "vector": vector,
+                        "evidence_hash": hashlib.sha256(evidence.source_text.encode("utf-8")).hexdigest(),
+                        "created_at": datetime.now(timezone.utc),
+                    }
+                    existing = session.get(EvidenceEmbeddingRecord, record_id)
+                    if existing is None:
+                        session.add(EvidenceEmbeddingRecord(**values))
+                    else:
+                        for key, value in values.items():
+                            setattr(existing, key, value)
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The evidence embeddings could not be saved.") from exc
 
     def create_chat_session(self, session: ChatSession) -> ChatSession:
         try:
@@ -494,6 +632,70 @@ class SQLDatabase:
                 .order_by(ChatMessageRecord.created_at, ChatMessageRecord.id)
             ).all()
             return [_to_chat_message(record) for record in records]
+
+    def create_workspace(self, name: str) -> Workspace:
+        now = datetime.now(timezone.utc)
+        workspace = Workspace(id=f"workspace_{uuid4().hex}", name=name.strip(), created_at=now, updated_at=now)
+        try:
+            with self.session_factory.begin() as session:
+                session.add(WorkspaceRecord(**workspace.model_dump()))
+            return workspace
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The workspace could not be saved.") from exc
+
+    def get_workspace(self, workspace_id: str) -> Workspace | None:
+        with self.session_factory() as session:
+            record = session.get(WorkspaceRecord, workspace_id)
+            return _to_workspace(record) if record else None
+
+    def list_workspaces(self) -> list[Workspace]:
+        with self.session_factory() as session:
+            return [_to_workspace(record) for record in session.scalars(select(WorkspaceRecord).order_by(WorkspaceRecord.created_at)).all()]
+
+    def get_workspace_papers(self, workspace_id: str) -> list[WorkspacePaperView]:
+        with self.session_factory() as session:
+            rows = session.scalars(
+                select(WorkspacePaperRecord).where(WorkspacePaperRecord.workspace_id == workspace_id).order_by(WorkspacePaperRecord.added_at)
+            ).all()
+            result: list[WorkspacePaperView] = []
+            for row in rows:
+                paper = session.get(PaperRecord, row.paper_id)
+                if paper is None or paper.title is None:
+                    continue
+                analysis = session.scalar(select(AnalysisRecord).where(AnalysisRecord.paper_id == row.paper_id))
+                result.append(WorkspacePaperView(paper_id=row.paper_id, title=paper.title, arxiv_id=paper.arxiv_id, analyzed=analysis is not None, added_at=row.added_at))
+            return result
+
+    def add_workspace_paper(self, workspace_id: str, paper_id: str) -> WorkspacePaper:
+        if self.get_workspace(workspace_id) is None or self.get_by_id(paper_id) is None:
+            raise PaperPersistenceError("The workspace or paper was not found.")
+        now = datetime.now(timezone.utc)
+        item = WorkspacePaper(workspace_id=workspace_id, paper_id=paper_id, added_at=now)
+        try:
+            with self.session_factory.begin() as session:
+                existing = session.scalar(select(WorkspacePaperRecord).where(WorkspacePaperRecord.workspace_id == workspace_id, WorkspacePaperRecord.paper_id == paper_id))
+                if existing is None:
+                    session.add(WorkspacePaperRecord(workspace_id=workspace_id, paper_id=paper_id, added_at=now))
+                workspace = session.get(WorkspaceRecord, workspace_id)
+                if workspace is not None:
+                    workspace.updated_at = now
+            return item
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The paper could not be added to the workspace.") from exc
+
+    def remove_workspace_paper(self, workspace_id: str, paper_id: str) -> bool:
+        try:
+            with self.session_factory.begin() as session:
+                row = session.scalar(select(WorkspacePaperRecord).where(WorkspacePaperRecord.workspace_id == workspace_id, WorkspacePaperRecord.paper_id == paper_id))
+                if row is None:
+                    return False
+                session.delete(row)
+                workspace = session.get(WorkspaceRecord, workspace_id)
+                if workspace is not None:
+                    workspace.updated_at = datetime.now(timezone.utc)
+            return True
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The paper could not be removed from the workspace.") from exc
 
     def get_source_pdf_path(self, paper_id: str) -> Path | None:
         """Return a persisted PDF path only for a completed paper."""
@@ -614,6 +816,51 @@ class SQLiteDatabase(SQLDatabase):
         super().__init__(database_url)
 
 
+def _namespace_colliding_ids(session: object, document: StructuredDocument, evidence: list[Evidence]) -> None:
+    """Keep legacy per-document IDs readable while making the global SQL keys safe."""
+
+    prefix = f"{document.id}__"
+    section_ids = [section.id for section in document.sections]
+    if section_ids and session.scalar(
+        select(DocumentSectionRecord.id).where(
+            DocumentSectionRecord.id.in_(section_ids),
+            DocumentSectionRecord.document_id != document.id,
+        )
+    ) is not None:
+        section_map = {section.id: f"{prefix}{section.id}" for section in document.sections}
+        paragraph_map = {
+            paragraph.id: f"{prefix}{paragraph.id}"
+            for section in document.sections
+            for paragraph in section.paragraphs
+        }
+        for section in document.sections:
+            old_id = section.id
+            section.id = section_map[old_id]
+            section.parent_id = section_map.get(section.parent_id, section.parent_id)
+            for paragraph in section.paragraphs:
+                paragraph.id = paragraph_map[paragraph.id]
+                paragraph.section_id = section.id
+        for item in evidence:
+            item.section_id = section_map.get(item.section_id, item.section_id)
+            item.paragraph_id = paragraph_map.get(item.paragraph_id, item.paragraph_id)
+
+    evidence_ids = [item.id for item in evidence]
+    if evidence_ids and session.scalar(
+        select(EvidenceRecord.id).where(
+            EvidenceRecord.id.in_(evidence_ids),
+            EvidenceRecord.document_id != document.id,
+        )
+    ) is not None:
+        evidence_map = {item.id: f"{prefix}{item.id}" for item in evidence}
+        for item in evidence:
+            item.id = evidence_map[item.id]
+        for section in document.sections:
+            for paragraph in section.paragraphs:
+                paragraph.evidence_id = evidence_map.get(paragraph.evidence_id, paragraph.evidence_id)
+        for artifact in (*document.figures, *document.tables, *document.equations, *document.references):
+            artifact.evidence_ids = [evidence_map.get(item, item) for item in artifact.evidence_ids]
+
+
 def _to_model(record: PaperRecord) -> IngestedPaper:
     if record.title is None or record.source_url is None or record.pdf_url is None:
         raise PaperPersistenceError("The paper is not complete.")
@@ -695,6 +942,9 @@ def _to_document(record: DocumentRecord, paper: PaperRecord) -> StructuredDocume
         )
         for section in record.sections
     ]
+    artifacts = {item.kind: [] for item in record.artifacts}
+    for item in record.artifacts:
+        artifacts.setdefault(item.kind, []).append(item.payload)
     return StructuredDocument(
         id=record.id,
         paper_id=record.paper_id,
@@ -706,6 +956,10 @@ def _to_document(record: DocumentRecord, paper: PaperRecord) -> StructuredDocume
         source_hash=record.source_hash,
         document_hash=record.document_hash,
         created_at=record.created_at,
+        figures=[PaperFigure.model_validate(item) for item in artifacts.get("figure", [])],
+        tables=[PaperTable.model_validate(item) for item in artifacts.get("table", [])],
+        equations=[PaperEquation.model_validate(item) for item in artifacts.get("equation", [])],
+        references=[PaperReference.model_validate(item) for item in artifacts.get("reference", [])],
     )
 
 
@@ -764,3 +1018,7 @@ def _to_chat_message(record: ChatMessageRecord) -> ChatMessage:
         model=record.model,
         created_at=record.created_at,
     )
+
+
+def _to_workspace(record: WorkspaceRecord) -> Workspace:
+    return Workspace(id=record.id, name=record.name, created_at=record.created_at, updated_at=record.updated_at)

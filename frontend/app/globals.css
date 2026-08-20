@@ -258,6 +258,46 @@ footer { display: flex; justify-content: space-between; border-top: 1px solid va
 .reference-index { color: var(--accent-dark); font-family: monospace; font-size: 12px; }
 .reference-item strong { font-size: 13px; }
 .reference-item p { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+/* Phase 8 artifacts and research workspaces */
+.artifact-grid { display: grid; gap: 14px; }
+.artifact-card p { color: var(--muted); line-height: 1.55; }
+.artifact-image { display: block; max-width: 100%; max-height: 420px; margin: 12px 0; object-fit: contain; }
+.artifact-meta { display: flex; gap: 10px; margin-top: 12px; color: var(--muted); font-size: 11px; }
+.artifact-meta button { border: 1px solid var(--line); background: transparent; padding: 5px 8px; color: var(--accent-dark); font-size: 11px; }
+.artifact-raw { overflow-x: auto; margin: 12px 0; white-space: pre-wrap; color: var(--muted); font: 12px/1.5 monospace; }
+.artifact-table-wrap, .comparison-table-wrap { overflow-x: auto; margin: 14px 0; }
+.artifact-table, .artifact-card table, .comparison-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.artifact-card th, .artifact-card td, .comparison-table th, .comparison-table td { border: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; }
+.artifact-card th, .comparison-table th { background: #eee8df; font-weight: 700; }
+.workspace-shell { justify-content: flex-start; gap: 28px; }
+.workspace-topline { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; }
+.workspace-topline .back-link { margin: 0; }
+.workspace-hero { max-width: 850px; }
+.workspace-hero h1 { margin: 14px 0; font-size: clamp(40px, 6vw, 72px); }
+.workspace-hero p { max-width: 680px; color: var(--muted); font-size: 16px; line-height: 1.6; }
+.workspace-create { max-width: 760px; margin-top: 10px; }
+.workspace-create label { display: block; margin-bottom: 10px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.workspace-list, .comparison-panel { max-width: 1120px; margin-top: 25px; border-top: 1px solid var(--line); padding-top: 20px; }
+.workspace-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 15px; }
+.workspace-card { display: grid; gap: 9px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.6); padding: 18px; color: var(--ink); text-decoration: none; }
+.workspace-card span, .workspace-muted { color: var(--muted); font-size: 13px; }
+.workspace-paper-list { display: grid; gap: 8px; margin-top: 15px; }
+.workspace-paper-row { display: grid; grid-template-columns: auto minmax(0,1fr) auto auto; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); padding: 12px 0; }
+.workspace-paper-row span { display: grid; gap: 4px; min-width: 0; }
+.workspace-paper-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace-paper-row small, .comparison-table small { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; }
+.workspace-paper-row a { color: var(--accent-dark); font-size: 11px; font-weight: 700; text-decoration: none; }
+.workspace-compare-button { margin-top: 18px; min-height: 38px; padding: 0 15px; font-size: 12px; }
+.comparison-panel p { line-height: 1.5; }
+.comparison-table { min-width: 720px; }
+.citation-list { margin: 12px 0 0; padding-left: 20px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+
+@media (max-width: 760px) {
+  .workspace-topline { align-items: flex-start; flex-direction: column-reverse; }
+  .workspace-paper-row { grid-template-columns: auto minmax(0, 1fr); }
+  .workspace-paper-row a, .workspace-paper-row button { justify-self: start; }
+}
 .reference-item small { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; }
 .source-panel { position: sticky; top: 20px; display: flex; min-width: 0; height: calc(100vh - 40px); flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #deded8; box-shadow: 0 12px 28px rgba(24,33,31,.08); }
 .source-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--paper); padding: 13px 15px; }

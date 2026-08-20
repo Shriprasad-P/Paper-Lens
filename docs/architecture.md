@@ -53,7 +53,7 @@ Paragraph IDs are deterministic within a document (`sec_001`, `para_0001`) and e
 
 The database stores `structured_documents`, `structured_document_sections`, `structured_document_paragraphs`, and `evidence` as related tables. A paper has one active normalized document: re-normalization transactionally replaces the previous document and all of its evidence, preventing stale mappings or orphan records. Phase 4 semantic claims can reference evidence IDs without coupling to parser objects.
 
-Figures, tables, equations, and references have typed models but remain empty in the current parser because reliable source extraction is not yet implemented. Phase 4 now populates the semantic portions of `PaperIR` through the evidence-grounded extraction flow below; parser output itself remains source-preserving and non-interpretive.
+Figures, tables, equations, and references are source-first parser artifacts. PyMuPDF caption/label extraction preserves page and region metadata, structured table rows are only emitted when delimiters make them reliable, equations remain raw expressions, and references retain raw text plus deterministic arXiv/DOI/URL matches. Each artifact receives an Evidence Registry ID and is persisted in `document_artifacts`; image bytes are not exposed as an arbitrary file endpoint. Phase 4 populates the semantic portions of `PaperIR` through the evidence-grounded extraction flow below; parser output itself remains source-preserving and non-interpretive.
 
 ## Evidence-grounded extraction
 
@@ -148,3 +148,19 @@ question → history resolver → query normalizer → BM25 evidence retrieval
 `PaperChatService` may use recent turns to resolve pronouns, but history is labeled context and never evidence. Sessions persist their `document_id` and `document_hash`; historical sessions remain readable after re-ingestion, while new turns are frozen until a new session is created. The provider receives `paper_chat.md`, the question, bounded history, and delimited `[EVIDENCE ev_…]` passages. Structured claims are accepted only when every factual claim cites a supplied current-paper ID. Missing, fabricated, outside-context, wrong-document, or numerically unfaithful citations are rejected and persisted as a failure state. Missing credentials never trigger general-knowledge fallback.
 
 The reader's optional Paper Chat panel renders plain text, explicit insufficient/failure states, and compact citation buttons. Citations reuse the existing evidence drawer and set the existing PDF viewer to the cited page; no second provenance or navigation system is introduced.
+
+## Advanced research intelligence
+
+Phase 8 keeps lexical retrieval as the safe baseline and adds an optional semantic lane:
+
+```text
+Evidence Registry → BM25 (default)
+                  ↘ provider-neutral embeddings → SQLite cache → cosine ranking
+BM25 + semantic ranks → reciprocal-rank fusion (hybrid-rrf-v1)
+```
+
+`EmbeddingProvider` is intentionally vendor-neutral. `RetrievalMethod` exposes `LEXICAL`, `SEMANTIC`, and `HYBRID`; the default is lexical. The deterministic `HashEmbeddingProvider` supports local evaluation; unavailable providers raise a safe error and Paper Chat falls back to BM25. Embeddings are keyed by paper, document, model/version, and SHA-256 evidence text, so document replacement invalidates stale vectors without cross-paper leakage. `RetrievalCase`/`evaluate_retriever` report deterministic Recall@K, MRR, and Hit@K values; no quality claim is made without a measured fixture.
+
+Persistent `WorkspaceRecord`/`WorkspacePaperRecord` models support the `/workspaces` UI and allow the same paper in multiple workspaces. Comparison IR aligns only persisted PaperIR dimensions, retains paper/document/evidence identity, marks missing or mismatched datasets/metrics/results as partial or not comparable, and never emits an unsupported winner. Legacy per-document section/evidence IDs are namespaced on collision when multiple documents share one database.
+
+The citation graph is bounded to extracted references and papers already in the local database. Exact arXiv IDs are preferred, with normalized reference-title matching as a deterministic fallback; matched papers create `CITES` edges and unmatched references remain reference nodes. It does not perform external literature discovery in Phase 8.

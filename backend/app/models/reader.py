@@ -6,7 +6,7 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .document import PaperIR, PaperMetadata
+from .document import PaperEquation, PaperFigure, PaperIR, PaperMetadata, PaperReference, PaperTable
 from .verification import PaperVerificationResponse
 
 
@@ -59,6 +59,11 @@ class ReaderReference(BaseModel):
     title: str | None = None
     authors: list[str] | None = None
     year: int | None = None
+    venue: str | None = None
+    doi: str | None = None
+    arxiv_id: str | None = None
+    url: str | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
 
 
 class ReaderDocumentSummary(BaseModel):
@@ -72,6 +77,9 @@ class ReaderDocumentSummary(BaseModel):
     document_hash: str | None = None
     sections: list[ReaderSectionSummary] = Field(default_factory=list)
     references: list[ReaderReference] = Field(default_factory=list)
+    figures: list[PaperFigure] = Field(default_factory=list)
+    tables: list[PaperTable] = Field(default_factory=list)
+    equations: list[PaperEquation] = Field(default_factory=list)
     section_count: int = Field(ge=0)
     paragraph_count: int = Field(ge=0)
     figure_count: int = Field(ge=0)

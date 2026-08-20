@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import mimetypes
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +34,9 @@ from ..verification.service import PaperVerificationError
 from ..visualization.planner import plan_visualizations
 from ..chat.service import ChatDocumentChanged, ChatGenerationUnavailable, ChatSessionNotFound, PaperChatError
 from ..models.chat import ChatAnswerResponse, ChatQuestion, ChatSessionCreateResponse, ChatSessionResponse
+from ..models.research import CitationGraph, ComparisonRequest, PaperComparisonIR, WorkspaceCreate, WorkspaceResponse, Workspace
+from ..comparison.service import ComparisonError, PaperComparisonService
+from ..citation_graph.service import build_citation_graph
 
 router = APIRouter()
 
@@ -141,6 +145,11 @@ async def get_reader(paper_id: str, request: Request) -> ReaderResponse:
                     title=reference.title,
                     authors=reference.authors,
                     year=reference.year,
+                    venue=reference.venue,
+                    doi=reference.doi,
+                    arxiv_id=reference.arxiv_id,
+                    url=reference.url,
+                    evidence_ids=reference.evidence_ids,
                 )
                 for reference in document.references
             ],
@@ -150,6 +159,9 @@ async def get_reader(paper_id: str, request: Request) -> ReaderResponse:
             table_count=len(document.tables),
             equation_count=len(document.equations),
             reference_count=len(document.references),
+            figures=document.figures,
+            tables=document.tables,
+            equations=document.equations,
         ),
         analysis=analysis_record[0] if analysis_record else None,
         visualizations=plan_visualizations(analysis_record[0] if analysis_record else None),
@@ -178,6 +190,23 @@ async def get_source(paper_id: str, request: Request) -> FileResponse:
         filename=f"{paper.metadata.arxiv_id.replace('/', '_')}.pdf",
         content_disposition_type="inline",
     )
+
+
+@router.get("/api/papers/{paper_id}/documents/{document_id}/figures/{figure_id}")
+async def get_figure_image(paper_id: str, document_id: str, figure_id: str, request: Request) -> FileResponse:
+    """Serve only a parser-recorded figure image below the configured paper root."""
+
+    document = request.app.state.database.get_document(paper_id)
+    if document is None or document.id != document_id:
+        raise HTTPException(status_code=404, detail="Structured document not found.")
+    figure = next((item for item in document.figures if item.id == figure_id), None)
+    if figure is None or not figure.image_reference:
+        raise HTTPException(status_code=404, detail="Figure image is unavailable.")
+    image_path = _safe_source_path(request, Path(figure.image_reference))
+    if image_path is None:
+        raise HTTPException(status_code=404, detail="Figure image is unavailable.")
+    media_type = mimetypes.guess_type(image_path.name)[0] or "application/octet-stream"
+    return FileResponse(image_path, media_type=media_type, filename=image_path.name, content_disposition_type="inline")
 
 
 @router.post("/api/papers/{paper_id}/extract", response_model=PaperIR)
@@ -268,6 +297,73 @@ async def send_chat_message(paper_id: str, session_id: str, payload: ChatQuestio
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except PaperPersistenceError as exc:
         raise HTTPException(status_code=500, detail="The chat turn could not be saved.") from exc
+
+
+@router.post("/api/workspaces", response_model=Workspace, status_code=status.HTTP_201_CREATED)
+async def create_workspace(payload: WorkspaceCreate, request: Request) -> Workspace:
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Workspace name is required.")
+    try:
+        return request.app.state.database.create_workspace(name)
+    except PaperPersistenceError as exc:
+        raise HTTPException(status_code=500, detail="The workspace could not be saved.") from exc
+
+
+@router.get("/api/workspaces", response_model=list[Workspace])
+async def list_workspaces(request: Request) -> list[Workspace]:
+    return request.app.state.database.list_workspaces()
+
+
+@router.get("/api/workspaces/{workspace_id}", response_model=WorkspaceResponse)
+async def get_workspace(workspace_id: str, request: Request) -> WorkspaceResponse:
+    workspace = request.app.state.database.get_workspace(workspace_id)
+    if workspace is None:
+        raise HTTPException(status_code=404, detail="Workspace not found.")
+    return WorkspaceResponse(workspace=workspace, papers=request.app.state.database.get_workspace_papers(workspace_id))
+
+
+@router.post("/api/workspaces/{workspace_id}/papers/{paper_id}", response_model=WorkspaceResponse)
+async def add_workspace_paper(workspace_id: str, paper_id: str, request: Request) -> WorkspaceResponse:
+    try:
+        request.app.state.database.add_workspace_paper(workspace_id, paper_id)
+        workspace = request.app.state.database.get_workspace(workspace_id)
+        if workspace is None:
+            raise HTTPException(status_code=404, detail="Workspace not found.")
+        return WorkspaceResponse(workspace=workspace, papers=request.app.state.database.get_workspace_papers(workspace_id))
+    except PaperPersistenceError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.delete("/api/workspaces/{workspace_id}/papers/{paper_id}", response_model=WorkspaceResponse)
+async def remove_workspace_paper(workspace_id: str, paper_id: str, request: Request) -> WorkspaceResponse:
+    if not request.app.state.database.remove_workspace_paper(workspace_id, paper_id):
+        raise HTTPException(status_code=404, detail="Workspace paper not found.")
+    workspace = request.app.state.database.get_workspace(workspace_id)
+    if workspace is None:
+        raise HTTPException(status_code=404, detail="Workspace not found.")
+    return WorkspaceResponse(workspace=workspace, papers=request.app.state.database.get_workspace_papers(workspace_id))
+
+
+@router.post("/api/workspaces/{workspace_id}/compare", response_model=PaperComparisonIR)
+async def compare_workspace(payload: ComparisonRequest, workspace_id: str, request: Request) -> PaperComparisonIR:
+    if request.app.state.database.get_workspace(workspace_id) is None:
+        raise HTTPException(status_code=404, detail="Workspace not found.")
+    allowed = {item.paper_id for item in request.app.state.database.get_workspace_papers(workspace_id)}
+    if any(paper_id not in allowed for paper_id in payload.paper_ids):
+        raise HTTPException(status_code=422, detail="Comparison papers must belong to the workspace.")
+    try:
+        return PaperComparisonService(request.app.state.database).compare(payload.paper_ids)
+    except ComparisonError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/api/papers/{paper_id}/citation-graph", response_model=CitationGraph)
+async def citation_graph(paper_id: str, request: Request) -> CitationGraph:
+    try:
+        return build_citation_graph(request.app.state.database, paper_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 def _safe_source_path(request: Request, source_path: object) -> Path | None:

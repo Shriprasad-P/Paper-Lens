@@ -51,9 +51,12 @@ class PaperFigure(BaseModel):
 
     id: str
     label: str | None = None
+    number: str | None = None
     caption: str | None = None
     page: int | None = None
     source_region: SourceRegion | None = None
+    image_reference: str | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
 
 
 class PaperTable(BaseModel):
@@ -61,10 +64,14 @@ class PaperTable(BaseModel):
 
     id: str
     label: str | None = None
+    number: str | None = None
     caption: str | None = None
     page: int | None = None
     raw_text: str | None = None
     source_region: SourceRegion | None = None
+    headers: list[str] = Field(default_factory=list)
+    rows: list[list[str]] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
 
 
 class PaperEquation(BaseModel):
@@ -75,6 +82,8 @@ class PaperEquation(BaseModel):
     label: str | None = None
     page: int | None = None
     source_region: SourceRegion | None = None
+    explanation: str | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
 
 
 class PaperReference(BaseModel):
@@ -86,6 +95,11 @@ class PaperReference(BaseModel):
     title: str | None = None
     authors: list[str] | None = None
     year: int | None = None
+    venue: str | None = None
+    doi: str | None = None
+    arxiv_id: str | None = None
+    url: str | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
 
 
 class StructuredDocument(BaseModel):
@@ -113,6 +127,8 @@ class EvidenceType(str, Enum):
     TABLE = "TABLE"
     EQUATION = "EQUATION"
     CAPTION = "CAPTION"
+    FIGURE_CAPTION = "FIGURE_CAPTION"
+    TABLE_CAPTION = "TABLE_CAPTION"
     REFERENCE = "REFERENCE"
 
 

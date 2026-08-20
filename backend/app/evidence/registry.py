@@ -31,6 +31,65 @@ class EvidenceRegistry:
                 )
                 records.append(evidence)
                 self._records[evidence.id] = evidence
+        for figure in document.figures:
+            evidence_id = f"ev_{len(records) + 1:04d}"
+            figure.evidence_ids = [evidence_id]
+            evidence = Evidence(
+                id=evidence_id,
+                paper_id=document.paper_id,
+                document_id=document.id,
+                evidence_type=EvidenceType.FIGURE_CAPTION,
+                source_text=figure.caption or figure.label or "",
+                page=figure.page,
+                figure_id=figure.id,
+                source_region=figure.source_region,
+            )
+            records.append(evidence)
+            self._records[evidence.id] = evidence
+        for table in document.tables:
+            evidence_id = f"ev_{len(records) + 1:04d}"
+            table.evidence_ids = [evidence_id]
+            evidence = Evidence(
+                id=evidence_id,
+                paper_id=document.paper_id,
+                document_id=document.id,
+                evidence_type=EvidenceType.TABLE,
+                source_text=table.raw_text or table.caption or table.label or "",
+                page=table.page,
+                table_id=table.id,
+                source_region=table.source_region,
+            )
+            records.append(evidence)
+            self._records[evidence.id] = evidence
+        for equation in document.equations:
+            evidence_id = f"ev_{len(records) + 1:04d}"
+            equation.evidence_ids = [evidence_id]
+            evidence = Evidence(
+                id=evidence_id,
+                paper_id=document.paper_id,
+                document_id=document.id,
+                evidence_type=EvidenceType.EQUATION,
+                source_text=equation.raw_text,
+                page=equation.page,
+                equation_id=equation.id,
+                source_region=equation.source_region,
+            )
+            records.append(evidence)
+            self._records[evidence.id] = evidence
+        for reference in document.references:
+            evidence_id = f"ev_{len(records) + 1:04d}"
+            reference.evidence_ids = [evidence_id]
+            evidence = Evidence(
+                id=evidence_id,
+                paper_id=document.paper_id,
+                document_id=document.id,
+                evidence_type=EvidenceType.REFERENCE,
+                source_text=reference.raw_text,
+                page=None,
+                source_region=None,
+            )
+            records.append(evidence)
+            self._records[evidence.id] = evidence
         return records
 
     def get(self, evidence_id: str) -> Evidence | None:

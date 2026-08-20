@@ -27,6 +27,9 @@ from ..models.chat import (
 )
 from ..models.document import Evidence
 from .retrieval import BM25EvidenceRetriever, EvidenceRetriever, normalize_query
+from ..retrieval.embeddings import create_embedding_provider
+from ..retrieval.hybrid import HybridEvidenceRetriever, SemanticEvidenceRetriever
+from ..retrieval import RetrievalMethod
 
 
 class PaperChatError(Exception):
@@ -62,7 +65,23 @@ class PaperChatService:
         self.database = database
         self.provider = provider
         self.settings = settings or Settings.from_env()
-        self.retriever = retriever or BM25EvidenceRetriever(database)
+        if retriever is not None:
+            self.retriever = retriever
+        elif self.settings.hybrid_retrieval_enabled or self.settings.retrieval_mode == RetrievalMethod.HYBRID.value:
+            semantic = SemanticEvidenceRetriever(
+                database,
+                create_embedding_provider(self.settings),
+                top_k=self.settings.semantic_retrieval_top_k,
+            )
+            self.retriever = HybridEvidenceRetriever(database, semantic)
+        elif self.settings.retrieval_mode == RetrievalMethod.SEMANTIC.value:
+            self.retriever = SemanticEvidenceRetriever(
+                database,
+                create_embedding_provider(self.settings),
+                top_k=self.settings.semantic_retrieval_top_k,
+            )
+        else:
+            self.retriever = BM25EvidenceRetriever(database)
         self.prompt_dir = prompt_dir or Path(__file__).parents[1] / "prompts"
 
     def create_session(self, paper_id: str) -> ChatSession:
@@ -103,11 +122,26 @@ class PaperChatService:
             )
 
         retrieval_query = self._resolve_query(question, history)
-        retrieved = self.retriever.retrieve(
-            paper_id,
-            retrieval_query,
-            limit=self.settings.chat_retrieval_top_k,
-        )
+        if hasattr(self.retriever, "retrieve_async"):
+            try:
+                retrieved = await self.retriever.retrieve_async(
+                    paper_id,
+                    retrieval_query,
+                    limit=self.settings.chat_retrieval_top_k,
+                )
+            except AIProviderError:
+                # Semantic credentials are optional; lexical retrieval remains the safe baseline.
+                retrieved = BM25EvidenceRetriever(self.database).retrieve(
+                    paper_id,
+                    retrieval_query,
+                    limit=self.settings.chat_retrieval_top_k,
+                )
+        else:
+            retrieved = self.retriever.retrieve(
+                paper_id,
+                retrieval_query,
+                limit=self.settings.chat_retrieval_top_k,
+            )
         user_message = self._message(
             session,
             ChatRole.USER,
@@ -287,7 +321,8 @@ def _assemble_context(items: list[RetrievedEvidence], max_chars: int) -> str:
         text = item.source_text.strip()
         chunk = (
             f"[EVIDENCE {item.evidence_id}]\nSection: {item.section_id or 'Unavailable'}\n"
-            f"Page: {item.page if item.page is not None else 'Unavailable'}\nText:\n{text}"
+            f"Page: {item.page if item.page is not None else 'Unavailable'}\n"
+            f"Type: {item.evidence_type}\nText:\n{text}"
         )
         separator = "\n\n" if chunks else ""
         if total + len(separator) + len(chunk) > max_chars:

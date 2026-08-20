@@ -1,4 +1,4 @@
-import type { ChatAnswerResponse, ChatSession, ChatSessionResponse, Evidence, ReaderResponse } from "./reader-models";
+import type { ChatAnswerResponse, ChatSession, ChatSessionResponse, CitationGraph, Evidence, PaperComparisonIR, ReaderResponse, Workspace, WorkspaceResponse } from "./reader-models";
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -51,4 +51,32 @@ export async function sendChatMessage(paperId: string, sessionId: string, questi
     method: "POST",
     body: JSON.stringify({ question }),
   });
+}
+
+export async function listWorkspaces(): Promise<Workspace[]> {
+  return requestJson<Workspace[]>("/api/workspaces");
+}
+
+export async function createWorkspace(name: string): Promise<Workspace> {
+  return requestJson<Workspace>("/api/workspaces", { method: "POST", body: JSON.stringify({ name }) });
+}
+
+export async function loadWorkspace(workspaceId: string): Promise<WorkspaceResponse> {
+  return requestJson<WorkspaceResponse>(`/api/workspaces/${encodeURIComponent(workspaceId)}`);
+}
+
+export async function addPaperToWorkspace(workspaceId: string, paperId: string): Promise<WorkspaceResponse> {
+  return requestJson<WorkspaceResponse>(`/api/workspaces/${encodeURIComponent(workspaceId)}/papers/${encodeURIComponent(paperId)}`, { method: "POST" });
+}
+
+export async function removePaperFromWorkspace(workspaceId: string, paperId: string): Promise<WorkspaceResponse> {
+  return requestJson<WorkspaceResponse>(`/api/workspaces/${encodeURIComponent(workspaceId)}/papers/${encodeURIComponent(paperId)}`, { method: "DELETE" });
+}
+
+export async function compareWorkspace(workspaceId: string, paperIds: string[]): Promise<PaperComparisonIR> {
+  return requestJson<PaperComparisonIR>(`/api/workspaces/${encodeURIComponent(workspaceId)}/compare`, { method: "POST", body: JSON.stringify({ paper_ids: paperIds }) });
+}
+
+export async function loadCitationGraph(paperId: string): Promise<CitationGraph> {
+  return requestJson<CitationGraph>(`/api/papers/${encodeURIComponent(paperId)}/citation-graph`);
 }

@@ -27,6 +27,13 @@ class Settings:
     chat_max_context_chars: int = 12_000
     chat_min_relevance: float = 0.1
     chat_max_question_chars: int = 4_000
+    embedding_provider: str = "none"
+    embedding_model: str = "hash-v1"
+    embedding_dimension: int = 64
+    embedding_version: str = "v1"
+    semantic_retrieval_top_k: int = 8
+    hybrid_retrieval_enabled: bool = False
+    retrieval_mode: str = "LEXICAL"
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -53,4 +60,11 @@ class Settings:
             chat_max_context_chars=max(1_000, int(os.getenv("CHAT_MAX_CONTEXT_CHARS", str(defaults.chat_max_context_chars)))),
             chat_min_relevance=max(0.0, float(os.getenv("CHAT_MIN_RELEVANCE", str(defaults.chat_min_relevance)))),
             chat_max_question_chars=max(100, int(os.getenv("CHAT_MAX_QUESTION_CHARS", str(defaults.chat_max_question_chars)))),
+            embedding_provider=os.getenv("EMBEDDING_PROVIDER", defaults.embedding_provider),
+            embedding_model=os.getenv("EMBEDDING_MODEL", defaults.embedding_model),
+            embedding_dimension=max(8, int(os.getenv("EMBEDDING_DIMENSION", str(defaults.embedding_dimension)))),
+            embedding_version=os.getenv("EMBEDDING_VERSION", defaults.embedding_version),
+            semantic_retrieval_top_k=max(1, min(int(os.getenv("SEMANTIC_RETRIEVAL_TOP_K", str(defaults.semantic_retrieval_top_k))), 20)),
+            hybrid_retrieval_enabled=os.getenv("HYBRID_RETRIEVAL_ENABLED", str(defaults.hybrid_retrieval_enabled)).lower() in {"1", "true", "yes", "on"},
+            retrieval_mode=os.getenv("RETRIEVAL_MODE", defaults.retrieval_mode).upper(),
         )

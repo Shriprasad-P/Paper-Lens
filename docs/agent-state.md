@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Phase 7 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/EvidenceRegistry, Phase 4 evidence-grounded PaperIR, Phase 5 deterministic visual reader, Phase 6 claim-level faithfulness verification, and single-paper evidence-grounded chat.
+Phase 8 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/EvidenceRegistry, Phase 4 evidence-grounded PaperIR, Phase 5 deterministic visual reader, Phase 6 claim-level faithfulness verification, Phase 7 single-paper evidence-grounded chat, and advanced research intelligence.
 
 ## Implemented
 
@@ -38,14 +38,20 @@ Phase 7 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/Evid
 - Persistent `ChatSession`/`ChatMessage` records bound to `document_id` and `document_hash`; historical sessions freeze when the paper is re-ingested.
 - Structured Paper Chat output, citation/document-version validation, numeric fidelity checks, prompt-injection boundaries, and explicit insufficient/generation-failure states.
 - Session/history/message APIs and reader Paper Chat panel with citation buttons wired to the existing evidence drawer and PDF page navigation.
+- Source-first figure/table/equation/reference parsing, typed artifact persistence, registry evidence IDs, and reader artifact sections.
+- Provider-neutral semantic retrieval with deterministic hash provider, SQLite embedding cache keyed by evidence hash/model/version, cosine scoring, RRF fusion, and lexical fallback.
+- Retrieval evaluation fixtures for Recall@K, MRR, and Hit@K.
+- Persistent workspaces, paper membership APIs/UI, comparison IR with paper/document/evidence identity, safe comparability labels, and numeric-rank suppression.
+- Bounded citation graph API/UI matching exact extracted arXiv references to papers already in the local database.
+- Namespaced persistence safeguard for legacy section/paragraph/evidence IDs when multiple documents share a database.
 
 ## Current Phase
 
-Phase 7 — Evidence-Grounded Paper Chat
+Phase 8 — Advanced Research Intelligence
 
 ## Current Task
 
-Complete and validate single-paper chat over persisted Evidence Registry evidence.
+Complete and validate advanced source-grounded retrieval, artifacts, workspaces, comparisons, and local citation graph over persisted Evidence Registry evidence.
 
 ## Validation
 
@@ -73,22 +79,27 @@ Complete and validate single-paper chat over persisted Evidence Registry evidenc
 - `npm run lint` — passed.
 - `npm run build` — passed with verification summary/badges in the dynamic reader route.
 - Live external verification — not run; no AI credentials configured. The no-credential path persists safe `UNVERIFIED` results.
-- `.venv/bin/python -m unittest discover -s backend/tests` — 42 tests passed, including deterministic BM25 retrieval, section boosts, follow-up history routing, chat persistence, wrong-source/citation rejection, numeric fidelity, document-version freeze, unavailable-provider, out-of-scope insufficiency, and API session coverage.
+- `.venv/bin/python -m unittest discover -s backend/tests` — 46 tests passed, including all Phase 1–7 regressions plus Phase 8 artifact persistence, semantic cache/retrieval, RRF hybrid, evaluation, workspace, comparison, citation-graph, and multi-document collision coverage.
 - `.venv/bin/python -m compileall -q backend/app backend/tests` — passed after Paper Chat integration.
 - `npm run typecheck` — passed after clearing stale generated `.next/* 2` artifacts from the unrelated backup copy.
 - `npm run lint` — passed.
 - Live external Paper Chat generation — not run; no AI credentials configured. Retrieval remains locally testable and mocked generation is covered.
 - Live retrieval smoke for `1706.03762` — temporary in-memory ingest returned 538 normalized paragraphs. Attention queries ranked application/multi-head attention passages on pages 5; dataset queries surfaced the WMT 2014 training passage on page 7; results queries surfaced narrative/table-result passages on pages 9–10; contribution queries ranked the introduction contribution passage on page 1. No live external chat generation was attempted.
+- `npm run typecheck` — passed with Phase 8 workspace/comparison models and artifact reader sections.
+- `npm run lint` — passed with Phase 8 workspace/comparison pages.
+- Semantic live-provider benchmark — not run; default `EMBEDDING_PROVIDER=none` keeps lexical retrieval active. Deterministic hash-provider cache and hybrid tests passed.
 
 ## Known Problems
 
 - `npm install` reports 3 high-severity transitive audit findings; no automatic force-fix was applied.
 - Frontend browser-level interaction has not been automated; no Playwright setup existed and build/typecheck/lint plus API tests cover the reader boundary.
-- Figure, table, equation, and reference extraction models exist but are intentionally empty.
+- Figure/table/equation/reference extraction is deterministic and source-first; image bytes and visual interpretation remain unavailable.
 - No AI credentials are configured, so live external model extraction was not run.
 - Source-region PDF highlighting is intentionally deferred; page navigation is supported.
 - Verification uses concise provider rationales only; raw model reasoning is never exposed.
 - Paper Chat citations use only current retrieved Evidence Registry IDs; history is reference context, never evidence, and old sessions are frozen across document replacement.
+- Comparison does not rank papers unless structured comparability is explicit; results retain paper-specific context.
+- Citation graph matching is local, preferring exact arXiv IDs with normalized-title fallback; no external citation discovery is attempted.
 
 ## Important Decisions
 
@@ -111,4 +122,4 @@ Complete and validate single-paper chat over persisted Evidence Registry evidenc
 
 ## Next Recommended Task
 
-Phase 7 — Evidence-Grounded Paper Chat validation and handoff.
+Phase 9 — Research Agent and Literature Discovery.

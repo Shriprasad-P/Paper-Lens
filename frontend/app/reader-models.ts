@@ -118,6 +118,45 @@ export type ReaderReference = {
   title: string | null;
   authors: string[] | null;
   year: number | null;
+  venue: string | null;
+  doi: string | null;
+  arxiv_id: string | null;
+  url: string | null;
+  evidence_ids: string[];
+};
+
+export type ReaderFigure = {
+  id: string;
+  label: string | null;
+  number: string | null;
+  caption: string | null;
+  page: number | null;
+  source_region: Evidence["source_region"];
+  image_reference: string | null;
+  evidence_ids: string[];
+};
+
+export type ReaderTable = {
+  id: string;
+  label: string | null;
+  number: string | null;
+  caption: string | null;
+  headers: string[];
+  rows: string[][];
+  raw_text: string | null;
+  page: number | null;
+  source_region: Evidence["source_region"];
+  evidence_ids: string[];
+};
+
+export type ReaderEquation = {
+  id: string;
+  raw_text: string;
+  label: string | null;
+  explanation: string | null;
+  page: number | null;
+  source_region: Evidence["source_region"];
+  evidence_ids: string[];
 };
 
 export type ReaderDocumentSummary = {
@@ -129,6 +168,9 @@ export type ReaderDocumentSummary = {
   document_hash: string | null;
   sections: ReaderSectionSummary[];
   references: ReaderReference[];
+  figures: ReaderFigure[];
+  tables: ReaderTable[];
+  equations: ReaderEquation[];
   section_count: number;
   paragraph_count: number;
   figure_count: number;
@@ -235,6 +277,70 @@ export type ChatSession = {
   document_hash: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type Workspace = {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WorkspacePaper = {
+  paper_id: string;
+  title: string;
+  arxiv_id: string;
+  analyzed: boolean;
+  added_at: string;
+};
+
+export type WorkspaceResponse = {
+  workspace: Workspace;
+  papers: WorkspacePaper[];
+};
+
+export type ComparisonEntry = {
+  paper_id: string;
+  document_id: string | null;
+  statement: string | null;
+  values: string[];
+  evidence_ids: string[];
+};
+
+export type ComparisonDimension = {
+  name: string;
+  entries: ComparisonEntry[];
+  comparability: "COMPARABLE" | "PARTIALLY_COMPARABLE" | "NOT_COMPARABLE" | null;
+  note: string | null;
+};
+
+export type PaperComparisonIR = {
+  paper_ids: string[];
+  dimensions: ComparisonDimension[];
+};
+
+export type CitationNode = {
+  id: string;
+  type: string;
+  title: string;
+  paper_id: string | null;
+  reference_id: string | null;
+  authors: string[];
+  year: number | null;
+  raw_text: string | null;
+};
+
+export type CitationEdge = {
+  source_paper_id: string;
+  reference_id: string;
+  target_node_id: string;
+  relationship: string;
+};
+
+export type CitationGraph = {
+  paper_id: string;
+  nodes: CitationNode[];
+  edges: CitationEdge[];
 };
 
 export type ChatSessionResponse = {

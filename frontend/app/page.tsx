@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
@@ -47,6 +48,7 @@ export default function HomePage() {
         {isLoading ? <div className="status-card" aria-live="polite"><div className="status-heading">Preparing source document</div><p>Ingesting the arXiv paper and registering its source evidence.</p></div> : null}
         {error ? <div className="status-card error-card" role="alert"><div className="status-heading">PaperLens could not prepare this paper</div><p>{error}</p></div> : null}
       </section>
+      <div className="landing-links"><Link href="/workspaces">Open research workspaces →</Link></div>
       <footer><span>Evidence first.</span><span>Unknown stays unknown.</span></footer>
     </main>
   );

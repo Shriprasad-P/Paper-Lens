@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..models.document import SourceRegion
+from ..models.document import PaperEquation, PaperFigure, PaperReference, PaperTable, SourceRegion
 
 
 class RawParagraph(BaseModel):
@@ -33,6 +33,10 @@ class ParsedPaper(BaseModel):
     page_count: int | None = None
     parser_name: str
     parser_version: str | None = None
+    figures: list[PaperFigure] = Field(default_factory=list)
+    tables: list[PaperTable] = Field(default_factory=list)
+    equations: list[PaperEquation] = Field(default_factory=list)
+    references: list[PaperReference] = Field(default_factory=list)
 
     @classmethod
     def from_legacy_sections(cls, sections: list[object], *, parser_name: str) -> "ParsedPaper":
