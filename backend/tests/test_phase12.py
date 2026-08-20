@@ -57,6 +57,35 @@ class Phase12Tests(unittest.TestCase):
             with self.assertRaises(ConfigurationError):
                 settings.validate()
 
+    def test_desktop_token_protects_api_and_allows_cors_preflight(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            token = "desktop-test-token-1234"
+            settings = Settings(
+                database_url="sqlite:///:memory:",
+                paper_storage_path=directory,
+                desktop_token=token,
+                frontend_origin="http://127.0.0.1:13000",
+            )
+            client = TestClient(create_app(settings=settings, database=SQLDatabase("sqlite:///:memory:")))
+            unauthorized = client.get("/api/workspaces")
+            self.assertEqual(unauthorized.status_code, 401)
+            self.assertEqual(unauthorized.json()["error"]["code"], "DESKTOP_AUTH_REQUIRED")
+
+            preflight = client.options(
+                "/api/workspaces",
+                headers={
+                    "Origin": "http://127.0.0.1:13000",
+                    "Access-Control-Request-Method": "GET",
+                    "Access-Control-Request-Headers": "X-PaperLens-Desktop-Token",
+                },
+            )
+            self.assertEqual(preflight.status_code, 200)
+            self.assertEqual(preflight.headers.get("access-control-allow-origin"), "http://127.0.0.1:13000")
+
+            authorized = client.get("/api/workspaces", headers={"X-PaperLens-Desktop-Token": token})
+            self.assertEqual(authorized.status_code, 200)
+            self.assertEqual(authorized.json(), [])
+
 
 if __name__ == "__main__":
     unittest.main()

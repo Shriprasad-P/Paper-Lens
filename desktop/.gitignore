@@ -1,0 +1,10 @@
+node_modules/
+.build/
+src-tauri/resources/paperlens-backend
+src-tauri/resources/node
+src-tauri/resources/frontend/
+src-tauri/target/
+src-tauri/gen/
+src-tauri/icons/android/
+dist/
+*.log

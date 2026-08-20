@@ -70,7 +70,7 @@ Phase 10 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/Evi
 
 ## Current Phase
 
-Phase 12 — Deployment & Public Beta (complete)
+Phase 12 — Deployment & Public Beta (complete); macOS local validation complete
 
 ## Current Task
 
@@ -78,6 +78,19 @@ Prepared and validated a reproducible, migration-safe, observable public-beta
 deployment without changing Phase 1–11 semantic behavior.
 
 ## Validation
+
+- macOS toolchain (`tauri info`) — macOS 26.6.2 arm64, Xcode 26.6, Rust/Cargo, Tauri CLI 2.11.4 — passed.
+- Standalone PyInstaller sidecar — fresh SQLite/Alembic migration, loopback readiness, unauthorized 401, authorized 200, clean stop — passed.
+- Release bundle — `PaperLens.app` built with `com.paperlens.app`, version `0.1.0`, generated icon, embedded backend/Node/frontend resources, and no detected secret strings — passed.
+- Real app launch — Tauri window rendered the existing PaperLens landing UI; dynamic ports, Application Support directories, desktop logs, and child readiness were observed.
+- Desktop auth regression — CORS preflight, token rejection, and token acceptance covered by backend tests.
+- Process lifecycle — backend/frontend process groups were terminated on close with no remaining PaperLens sidecars — passed.
+- Desktop Rust helper tests — `cargo test` passed (2 tests covering loopback free-port selection and URL encoding).
+- One-button run action — `./script/build_and_run.sh --verify` built and launched the final bundle to `desktop_ready`; fresh startup sample was 15 seconds.
+- Port conflict — an occupied `127.0.0.1:18000` was bypassed with dynamic ports `50148`/`50149`.
+- Crash detection — terminating the supervised backend recorded `backend_stopped`, followed by clean app shutdown.
+- Bundle footprint — 219 MB; observed resident sample was approximately 102 MB Tauri shell, 124 MB backend process group, and 94 MB Next.js server.
+- Detailed macOS commands and known boundaries are recorded in [docs/macos.md](macos.md).
 
 - `.venv/bin/python -m unittest discover -s backend/tests` — 11 tests passed.
 - `.venv/bin/python -m compileall -q backend/app backend/tests` — passed.
@@ -121,7 +134,7 @@ deployment without changing Phase 1–11 semantic behavior.
 - Phase 11 frontend gates — `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run test:e2e` passed.
 - Phase 11 compile/evaluation smoke — passed after middleware, migration, recovery, provider, and resource-limit changes.
 - Phase 11 local performance sample (fixture, 40–50 iterations, TestClient): `/health/live` p50 1.297 ms / p95 1.783 ms; document reader endpoint p50 2.734 ms / p95 3.325 ms; BM25 retrieval p50 1.220 ms / p95 1.438 ms. These are local reference measurements, not production SLAs.
-- Phase 12 backend regression suite — 66 tests passed; compileall and evaluation smoke passed.
+- Phase 12 backend regression suite — 67 tests passed; compileall and evaluation smoke passed.
 - Phase 12 frontend typecheck, lint, production build, and Playwright — passed; 3 browser tests passed.
 - Real PostgreSQL 15.17 migration upgrade/current and base→head migration drill — passed; container PostgreSQL 16 Compose migration/readiness — passed.
 - PostgreSQL persistence smoke covered paper/document/evidence, PaperIR, verification, chat, workspace, research run, embeddings, and idempotency — passed.

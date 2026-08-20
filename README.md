@@ -190,3 +190,19 @@ are explicitly `PRELIMINARY` and are not claims of scientific accuracy.
 ## Current phase
 
 Phase 12 — Deployment & Public Beta (`v0.1.0-beta`).
+
+## macOS local app
+
+PaperLens also ships a local Tauri 2 macOS shell. It bundles the FastAPI
+backend as a PyInstaller sidecar, the Next.js standalone server, and Node.js;
+the app selects loopback ports at runtime and stores SQLite, PDFs, caches, and
+logs under `~/Library/Application Support/com.paperlens.app/`.
+
+```bash
+cd desktop && npm install
+cd .. && ./script/build_and_run.sh --verify
+```
+
+The release bundle is `desktop/src-tauri/target/release/bundle/macos/PaperLens.app`.
+See [docs/macos.md](docs/macos.md) for lifecycle, token, data, signing, and
+validation details.

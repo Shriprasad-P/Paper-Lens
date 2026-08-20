@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 12 — Deployment & Public Beta (complete)
+Phase 12 — Deployment & Public Beta (complete); macOS local validation complete
 
 ## Current Milestone
 
@@ -101,6 +101,16 @@ and deployment documentation — all validated for `v0.1.0-beta`.
 - [x] Add immutable-SHA CI release workflow, image/security scans, backup/restore and maintenance scripts.
 - [x] Add public-beta support, release checklist/notes, security record, rollback/retention guidance, and issue templates.
 - [x] Validate real PostgreSQL migrations/persistence, container startup, health/readiness, and bounded load.
+
+## macOS local validation
+
+- [x] Add a Tauri 2 shell with bundle metadata, icon, CSP, single-instance focus, and window sizing.
+- [x] Bundle the backend as a PyInstaller sidecar and the Next.js standalone runtime with a bundled Node executable.
+- [x] Create Application Support SQLite/PDF/artifact/cache/log directories and run Alembic before readiness.
+- [x] Select dynamic loopback ports, pass a per-launch desktop token, support development mode, and keep web mode unchanged.
+- [x] Supervise process groups, detect child crashes, and cleanly terminate backend/frontend children on close or exit.
+- [x] Add `script/build_and_run.sh`, Codex Run action metadata, macOS documentation, and desktop lifecycle regression coverage.
+- [x] Build and launch the local `.app`; validate readiness, UI rendering, token/CORS behavior, persistence, and clean shutdown.
 
 ## Blockers
 

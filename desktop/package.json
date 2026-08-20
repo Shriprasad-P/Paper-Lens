@@ -1,0 +1,16 @@
+{
+  "name": "paperlens-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tauri shell for local PaperLens validation",
+  "scripts": {
+    "desktop:dev": "bash scripts/dev.sh",
+    "desktop:build:backend": "bash scripts/build-backend.sh",
+    "desktop:build:runtime": "bash scripts/build-runtime.sh",
+    "desktop:build": "bash scripts/build-app.sh",
+    "desktop:check": "bash scripts/check.sh"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4"
+  }
+}

@@ -165,6 +165,30 @@ Persistent `WorkspaceRecord`/`WorkspacePaperRecord` models support the `/workspa
 
 The citation graph is bounded to extracted references and papers already in the local database. Exact arXiv IDs are preferred, with normalized reference-title matching as a deterministic fallback; matched papers create `CITES` edges and unmatched references remain reference nodes. It does not perform external literature discovery in Phase 8.
 
+## macOS desktop runtime
+
+The desktop surface is a thin process supervisor around the same web
+application; it does not fork a second frontend or API implementation:
+
+```text
+Tauri window (CSP + single instance)
+          │
+          ├── bundled Node → Next.js standalone reader
+          │                         │
+          │                         └── session URL: API URL + desktop token
+          │
+          └── PyInstaller → FastAPI + explicit Alembic upgrade
+                              │
+                              └── SQLite / PDFs / logs in app_data_dir()
+```
+
+The shell chooses free `127.0.0.1` ports, waits for backend readiness and the
+frontend root, supervises both process groups, and tears them down on close or
+exit. A per-launch token protects non-health API routes; the token is passed in
+memory through the webview session and is never persisted. The packaged runtime
+uses no arbitrary system Python/Node process. Web mode continues to use the
+existing `NEXT_PUBLIC_API_BASE_URL` behavior.
+
 ## Evidence-grounded research agent (Phase 9)
 
 Phase 9 adds a persistent, bounded orchestration boundary. A `ResearchRun` stores the immutable question, budgets, status, and timestamps; append-only `ResearchRunEvent` records make every stage observable. `ResearchPlanner` first attempts the configured structured provider and falls back to deterministic query variants when credentials or schema output are unavailable.

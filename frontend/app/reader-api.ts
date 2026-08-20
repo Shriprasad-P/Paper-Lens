@@ -2,6 +2,22 @@ import type { ChatAnswerResponse, ChatSession, ChatSessionResponse, CitationGrap
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
+function runtimeValue(key: "apiBaseUrl" | "desktopToken"): string | null {
+  if (typeof window === "undefined") return null;
+  const storageKey = `paperlens.${key}`;
+  const queryKey = key === "apiBaseUrl" ? "paperlens_api" : "desktop_token";
+  const queryValue = new URLSearchParams(window.location.search).get(queryKey);
+  if (queryValue) {
+    window.sessionStorage.setItem(storageKey, queryValue);
+    return queryValue;
+  }
+  return window.sessionStorage.getItem(storageKey);
+}
+
+function resolvedApiBaseUrl(): string {
+  return runtimeValue("apiBaseUrl") || API_BASE_URL;
+}
+
 export type CapabilityFlags = {
   ai_analysis_enabled: boolean;
   semantic_retrieval_enabled: boolean;
@@ -11,9 +27,14 @@ export type CapabilityFlags = {
 };
 
 export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const desktopToken = runtimeValue("desktopToken");
+  const response = await fetch(`${resolvedApiBaseUrl()}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(desktopToken ? { "X-PaperLens-Desktop-Token": desktopToken } : {}),
+      ...(init?.headers ?? {}),
+    },
   });
   const payload = (await response.json().catch(() => null)) as T | { detail?: string } | null;
   if (!response.ok) {

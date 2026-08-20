@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PaperLens",
+  "version": "0.1.0",
+  "identifier": "com.paperlens.app",
+  "build": {
+    "devUrl": "http://127.0.0.1:13000"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "security": {
+      "csp": "default-src 'self' http://127.0.0.1:*; connect-src 'self' http://127.0.0.1:*; img-src 'self' data: blob: http://127.0.0.1:*; font-src 'self' data: http://127.0.0.1:*; style-src 'self' 'unsafe-inline' http://127.0.0.1:*; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://127.0.0.1:*; frame-src 'self' http://127.0.0.1:*"
+    },
+    "windows": []
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app"],
+    "icon": ["icons/icon.icns", "icons/icon.png"],
+    "resources": [
+      "resources/paperlens-backend",
+      "resources/node",
+      "resources/frontend"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "13.0",
+      "signingIdentity": null
+    }
+  }
+}

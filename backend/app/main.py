@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from .ai.provider import AIProvider, create_ai_provider
 from .api.routes import router
 from .core.config import ConfigurationError, Settings
-from .core.hardening import Metrics, RateLimitMiddleware, RequestBodyLimitMiddleware, RequestContextMiddleware, SecurityHeadersMiddleware, error_body
+from .core.hardening import DesktopTokenMiddleware, Metrics, RateLimitMiddleware, RequestBodyLimitMiddleware, RequestContextMiddleware, SecurityHeadersMiddleware, error_body
 from .db.database import SQLDatabase
 from .extraction.service import ResearchExtractionService
 from .ingestion.service import IngestionService
@@ -80,8 +80,10 @@ def create_app(
         allow_origins=resolved_settings.allowed_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-        allow_headers=["Accept", "Content-Type", "Authorization", "Idempotency-Key", "X-Request-ID"],
+        allow_headers=["Accept", "Content-Type", "Authorization", "Idempotency-Key", "X-Request-ID", "X-PaperLens-Desktop-Token"],
     )
+    if resolved_settings.desktop_token:
+        app.add_middleware(DesktopTokenMiddleware, token=resolved_settings.desktop_token)
     app.add_middleware(RequestBodyLimitMiddleware, max_bytes=resolved_settings.max_request_body_size)
     if resolved_settings.rate_limits_enabled:
         app.add_middleware(

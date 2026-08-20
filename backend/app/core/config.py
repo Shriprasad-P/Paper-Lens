@@ -76,6 +76,7 @@ class Settings:
     ai_analysis_enabled: bool = False
     semantic_retrieval_enabled: bool = False
     research_agent_enabled: bool = False
+    desktop_token: str | None = None
 
     _allowed_environments: ClassVar[frozenset[str]] = frozenset({"development", "test", "staging", "production"})
 
@@ -150,6 +151,7 @@ class Settings:
             ai_analysis_enabled=_as_bool(ai_enabled_raw) if ai_enabled_raw is not None else bool(ai_api_key and ai_provider.lower() not in {"none", "disabled"}),
             semantic_retrieval_enabled=_as_bool(semantic_enabled_raw) if semantic_enabled_raw is not None else embedding_provider.lower() not in {"none", "disabled"},
             research_agent_enabled=_as_bool(research_enabled_raw) if research_enabled_raw is not None else bool(ai_api_key and ai_provider.lower() not in {"none", "disabled"}),
+            desktop_token=os.getenv("PAPERLENS_DESKTOP_TOKEN") or None,
         )
         return result
 
@@ -212,6 +214,8 @@ class Settings:
             raise ConfigurationError("Rate limits must be positive.")
         if not self.release_version.strip() or not re.fullmatch(r"[0-9A-Za-z][0-9A-Za-z.+-]*", self.release_version.strip()):
             raise ConfigurationError("PAPERLENS_RELEASE_VERSION must be a safe release identifier.")
+        if self.desktop_token is not None and len(self.desktop_token) < 16:
+            raise ConfigurationError("PAPERLENS_DESKTOP_TOKEN must contain at least 16 characters when configured.")
         storage = Path(self.paper_storage_path).expanduser()
         if storage.exists() and not storage.is_dir():
             raise ConfigurationError("PAPERLENS_STORAGE_PATH must point to a directory.")

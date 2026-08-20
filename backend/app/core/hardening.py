@@ -119,6 +119,36 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class DesktopTokenMiddleware(BaseHTTPMiddleware):
+    """Require the per-launch desktop token when the local shell configures one."""
+
+    def __init__(self, app: Any, *, token: str | None) -> None:
+        super().__init__(app)
+        self.token = token
+
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        # CORS preflight requests do not carry the application header by design.
+        # Let CORSMiddleware answer them so browser clients can make the first
+        # authenticated request with the per-launch token.
+        if self.token is None or request.method == "OPTIONS" or request.url.path in {
+            "/health/live",
+            "/health/ready",
+            "/health/version",
+            "/api/capabilities",
+            "/docs",
+            "/openapi.json",
+        }:
+            return await call_next(request)
+        supplied = request.headers.get("X-PaperLens-Desktop-Token")
+        if supplied != self.token:
+            request_id = getattr(request.state, "request_id", "unknown")
+            return JSONResponse(
+                status_code=401,
+                content=error_body("DESKTOP_AUTH_REQUIRED", "This local PaperLens session requires its desktop token.", request_id),
+            )
+        return await call_next(request)
+
+
 class RequestBodyLimitMiddleware(BaseHTTPMiddleware):
     """Reject oversized JSON requests before FastAPI parses them."""
 
