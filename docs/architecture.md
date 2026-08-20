@@ -1,6 +1,6 @@
 # PaperLens Architecture
 
-Phase 4 extends the Phase 2/3 vertical slice with source-preserving documents and evidence-grounded semantic extraction while keeping parser and semantic stages separate:
+Phase 5 extends the Phase 2–4 vertical slice with a deterministic visual reader while keeping parser, extraction, verification, and rendering stages separate:
 
 ```text
 arXiv input
@@ -23,9 +23,11 @@ FastAPI + Next.js reader shell
         ↓
 Evidence-grounded extractors → PaperIR
         ↓
-verification (later phase)
+VisualizationSpec + typed Reader API
         ↓
-VisualizationSpec and deterministic reader (later phase)
+Next.js visual reader + evidence/PDF interaction
+        ↓
+verification (later phase)
 ```
 
 The current runtime has two independently deployable surfaces:
@@ -76,3 +78,25 @@ The section classifier uses heading rules for obvious labels and only invokes AI
 Every semantic payload is validated against supplied evidence IDs after provider parsing. Missing or unknown IDs fail that component; they never become normal PaperIR claims. `AUTHOR_EXPLICIT` and `MODEL_INFERRED` origins are preserved in the models and frontend. Extractors run independently, so a failed component records `FAILED` while successful components remain persisted. Empty relevant evidence is recorded as `NO_EVIDENCE`.
 
 Analysis cache keys hash document hash, extractor prompt/schema versions, provider, and model. One active analysis is stored per paper and replaced when the cache key changes. Without configured credentials, extraction safely persists failure/no-evidence states; no fake semantic content is generated.
+
+## Visual reader
+
+Phase 5 adds a compact reader boundary rather than sending all paragraph evidence to the browser:
+
+```text
+PaperIR + StructuredDocument metadata
+        ↓
+GET /api/papers/{paper_id}/reader
+        ↓
+typed ReaderResponse + VisualizationSpec[]
+        ├── overview and semantic sections
+        ├── deterministic method-flow spec
+        ├── deterministic numeric-result chart/table specs
+        └── source availability metadata
+```
+
+`ReaderResponse` contains paper metadata, section/paragraph counts, parsed reference summaries when available, persisted `PaperIR`, visualization specs, and a source endpoint. Evidence bodies remain lazy through `GET /api/papers/{paper_id}/evidence/{evidence_id}`. The frontend caches evidence records for the current session and opens all evidence IDs linked to a claim in one drawer.
+
+The method graph transformation is frontend application code: `MethodIR` steps become deterministic top-to-bottom React Flow nodes and persisted relations become edges. A textual outline remains alongside the graph for keyboard and no-graph fallback use. Result visualization is deterministic: comparable numeric results may become a bar chart, a single numeric result a metric view, and mixed/non-numeric results a table/text view. No runtime AI call is used for rendering.
+
+`GET /api/papers/{paper_id}/source` serves only a completed paper's persisted PDF after ownership and storage-root validation. The reader uses the browser's established PDF viewer in a split view and navigates to evidence pages with `#page=N`. Source-region coordinates remain visible as preserved provenance but are not highlighted until coordinate mapping is reliable across PDF rendering scales.

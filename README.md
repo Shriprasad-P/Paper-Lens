@@ -51,6 +51,15 @@ GET  /api/papers/{paper_id}/analysis
 
 Extraction is provider-neutral and evidence-grounded. Configure an OpenAI-compatible provider with the `AI_*` variables in `.env.example`. Without credentials, the API records safe `FAILED`/`NO_EVIDENCE` component states rather than fabricating analysis.
 
+Phase 5 reader endpoints are:
+
+```text
+GET /api/papers/{paper_id}/reader
+GET /api/papers/{paper_id}/source
+```
+
+Open the visual reader at `http://localhost:3000/papers/{paper_id}`. It loads compact persisted PaperIR metadata, fetches evidence passages only when requested, and opens the persisted PDF through the ownership-checked source endpoint.
+
 Relevant environment variables are documented in `.env.example`: database URL, arXiv timeout, local PDF storage path, PDF size limit, and frontend origin.
 
 ### Frontend

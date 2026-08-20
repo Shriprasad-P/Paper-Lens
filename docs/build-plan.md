@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 4 — Evidence-Grounded Research Extraction
+Phase 5 — Visual Reader
 
 ## Current Milestone
 
-Provider-neutral, evidence-validated research extraction and persisted PaperIR.
+Interactive, evidence-linked visual reader over persisted PaperIR and source PDFs.
 
 ## Completed
 
@@ -36,6 +36,14 @@ Provider-neutral, evidence-validated research extraction and persisted PaperIR.
 - [x] Persist PaperIR and expose extraction/analysis APIs.
 - [x] Add minimal analysis UI with evidence interaction.
 - [x] Validate mocked provider grounding/retry/cache tests and safe no-credential live path.
+- [x] Add compact typed ReaderResponse and secure persisted-PDF source endpoint.
+- [x] Add deterministic VisualizationSpec planner for method flows and result views.
+- [x] Add `/papers/{paper_id}` visual reader route with responsive section navigation.
+- [x] Add React Flow method visualization and accessible textual fallback.
+- [x] Add KaTeX equation explorer and safe original-expression fallback.
+- [x] Add Recharts numeric result view with table/text fallback.
+- [x] Add lazy multi-record evidence drawer and source PDF page navigation.
+- [x] Validate reader API/source safety, backend regressions, frontend build, and dependency audit.
 
 ## Current
 
@@ -43,7 +51,6 @@ Provider-neutral, evidence-validated research extraction and persisted PaperIR.
 
 ## Later
 
-- [ ] Add deterministic visual reader and evidence drawer.
 - [ ] Add verification, retrieval, and paper-grounded chat.
 - [ ] Consider animation only after the reader is stable.
 
@@ -53,6 +60,6 @@ Provider-neutral, evidence-validated research extraction and persisted PaperIR.
 
 ## Explicitly Out of Scope for Current Phase
 
-- Vector search, paper-grounded chat, generated code, animations, and distributed workers.
+- Verification, vector search, paper-grounded chat, generated code, animations, and distributed workers.
 - Reliable parser-level figure/table/equation/reference extraction beyond the typed source models.
 - Live external AI extraction without configured credentials.

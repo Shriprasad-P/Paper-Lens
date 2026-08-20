@@ -363,6 +363,15 @@ class SQLDatabase:
             )
             return _to_evidence(record) if record else None
 
+    def get_source_pdf_path(self, paper_id: str) -> Path | None:
+        """Return a persisted PDF path only for a completed paper."""
+
+        with self.session_factory() as session:
+            record = session.get(PaperRecord, paper_id)
+            if record is None or record.status != "COMPLETED" or not record.local_pdf_path:
+                return None
+            return Path(record.local_pdf_path)
+
     def get_analysis_record(self, paper_id: str) -> tuple[PaperIR, str] | None:
         with self.session_factory() as session:
             record = session.scalar(select(AnalysisRecord).where(AnalysisRecord.paper_id == paper_id))
