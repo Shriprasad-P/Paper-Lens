@@ -1,0 +1,359 @@
+{
+  "completed_count": 35,
+  "corpus_hash": "eb3925e01260897f383c9832e1c564aeff7197e192a62d19ce63cc0f1a0309c1",
+  "failed_count": 0,
+  "owner_id": "user_legacy_local",
+  "papers": [
+    {
+      "document_hash": "fe485327ec57f6f92134d3668967c7f04244ee6f12de38419677ad275feeca59",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_count": 337,
+      "paper_id": "paper_faf637554e628847",
+      "parser_version": "1.28.2",
+      "source_hash": "ff5819e3a7b713c3bd3107b7de3d51fe0a347aa5d8444f0efdcf2345ef0a8b63",
+      "source_identifier": "1406.2661",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "05cc6c815a4dded2def1ff9311a0a88573617c4f359d44dadd5e1690e5bd8253",
+      "document_id": "doc_f9178cbdbb8aeb8d",
+      "evidence_count": 456,
+      "paper_id": "paper_97a7a16b0c2954ff",
+      "parser_version": "1.28.2",
+      "source_hash": "bdc69e0b568f41d8d3181cc9077a461f58fcdd1c70c9f49efe60a05ee6109655",
+      "source_identifier": "1502.03167",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "e5b7728feba1981ca71c7b617ddc33640441eb11c749a562fff3c95c051b45b3",
+      "document_id": "doc_1edd5ee717b59aec",
+      "evidence_count": 268,
+      "paper_id": "paper_d273258f3fde97e3",
+      "parser_version": "1.28.2",
+      "source_hash": "ff433aab020c62f784ba66ce031669538e3dde1769bb2d326ba0ebed5e822faa",
+      "source_identifier": "1505.00387",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "893c8d9ee7b8e21de2ec9ed60c2e268e0544a68cde245ee3d006721c63b85e57",
+      "document_id": "doc_b87100da882de413",
+      "evidence_count": 665,
+      "paper_id": "paper_1cae1253f0be4de4",
+      "parser_version": "1.28.2",
+      "source_hash": "1e0651b6810ecba34a3dbc5b5b0209226f889004607c1f203540a48d64e5a93a",
+      "source_identifier": "1512.03385",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "6b52a1455a28076ed6ec076923a6e9e9c95f8fe2d66661d3e382c37b6d8fdc05",
+      "document_id": "doc_396765f56159e764",
+      "evidence_count": 461,
+      "paper_id": "paper_e23d2927321347ea",
+      "parser_version": "1.28.2",
+      "source_hash": "cbca3e2a3e93317534336896b2678f0ba75b898b272fdd864312311a7e23291e",
+      "source_identifier": "1602.07360",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "f5ce4ac471eb8896110f31e350b64c7f9da72c934d6857368719d7fbcb177dcb",
+      "document_id": "doc_cd135acb31d725ca",
+      "evidence_count": 1333,
+      "paper_id": "paper_6013769fe2bf2f51",
+      "parser_version": "1.28.2",
+      "source_hash": "816a722de230d1ff7a8fc64921e2fa8dce502e83b786be75f6ac10e0b54e6cae",
+      "source_identifier": "1603.00856",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "07228291b179905e138399a04909ae746a66cb9820d7d86990b32b9926753a75",
+      "document_id": "doc_5f0ba0897a8bf946",
+      "evidence_count": 519,
+      "paper_id": "paper_2af37c042853cb96",
+      "parser_version": "1.28.2",
+      "source_hash": "a71f1294a021cebc6939ec977fc073b6d7b4f183950eba761ec55364d30b729f",
+      "source_identifier": "1611.03530",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "42ff23fd5a9c60505a2b0bfd23465cde3100a0cf3a4fca34d2dd06a43c0066d4",
+      "document_id": "doc_1033c5f9bd933ade",
+      "evidence_count": 298,
+      "paper_id": "paper_12ddc107fbf6e2bc",
+      "parser_version": "1.28.2",
+      "source_hash": "7f2fa4aa0ac16f46f9d2459ff432d740b5ac8c36bcea598ba95ec34ef1d126bd",
+      "source_identifier": "1703.06103",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "2ab02169a4520a1d7c91d77fcf7019cc235f520b5dd504c1e01692a69cbf359c",
+      "document_id": "doc_08d1b46560c7eaac",
+      "evidence_count": 290,
+      "paper_id": "paper_c8707185ed7e2ec0",
+      "parser_version": "1.28.2",
+      "source_hash": "9fd87b02ecc96c1ecf2b8c2166faf969a2acb187ab3e1e9333b26d226387ff55",
+      "source_identifier": "1704.04861",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "2e983368880035564846db61216db1726fdd566fb2e51cf350dbd733ceebf6fb",
+      "document_id": "doc_bbf3618a7efd3753",
+      "evidence_count": 667,
+      "paper_id": "paper_f8845ba8b861835d",
+      "parser_version": "1.28.2",
+      "source_hash": "e1f354eb12011cde24af1eb500d72463fc971b09d26b55688c7f918a86e31ce8",
+      "source_identifier": "1706.02216",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "26fa33c9679a9dccffb4e5cc5840d55f5e1e70f88b9ac82c361fbd7bfd03591f",
+      "document_id": "doc_9793a052b7692d76",
+      "evidence_count": 931,
+      "paper_id": "paper_52ca75845163f8af",
+      "parser_version": "1.28.2",
+      "source_hash": "bdfaa68d8984f0dc02beaca527b76f207d99b666d31d1da728ee0728182df697",
+      "source_identifier": "1706.03762",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "82f0e4e14de6ee766d5c4357480e19ad3cf341aa176cd8fc3196f9dc6fd20b0d",
+      "document_id": "doc_8ae772552e130ad8",
+      "evidence_count": 428,
+      "paper_id": "paper_4f20a20229c481f2",
+      "parser_version": "1.28.2",
+      "source_hash": "4b0c648b33d6835b3d0ae9651a410f3a5bf871a64ca8afe044f4fa6a3bce5788",
+      "source_identifier": "1709.07876",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "b9e9416a947d12f239b6ddb96aa3551ee18b3e489226b9aa3dc67805683f3c68",
+      "document_id": "doc_1f0214c145fbc9cb",
+      "evidence_count": 436,
+      "paper_id": "paper_e9918fc84f76384b",
+      "parser_version": "1.28.2",
+      "source_hash": "9d5af48931e773d6983d167e15c06ef594475b751c1f263827f5ed3c7a00d0d8",
+      "source_identifier": "1711.05101",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "345123942470e776aae8d7cccaa460b567e59c80035ef4e1572b85e1f8815378",
+      "document_id": "doc_f9655223c9a32c16",
+      "evidence_count": 5017,
+      "paper_id": "paper_925c3af69344124c",
+      "parser_version": "1.28.2",
+      "source_hash": "2e12542dfbe2d6ce879f6dea15814a97fdc2eccd3867cc0df09dc2cf80e4e0d7",
+      "source_identifier": "1802.05352",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "fd06af0de7565c1bda86fe44483b2b0813b04180defd4d1282802a98fff3f0d8",
+      "document_id": "doc_e995d4f02b074689",
+      "evidence_count": 197,
+      "paper_id": "paper_f478c9778b23cff7",
+      "parser_version": "1.28.2",
+      "source_hash": "400e02a3d2030452bca54b12a371198f8a3cd2215e19c14400f15729faea8c5f",
+      "source_identifier": "1804.06439",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "8614f7593f600ac72ba3f378cd841b9c5d95ca1fb168b64570b41dde3c49d12a",
+      "document_id": "doc_8e019d9545db6080",
+      "evidence_count": 283,
+      "paper_id": "paper_89a2222a732127bd",
+      "parser_version": "1.28.2",
+      "source_hash": "c388a8aec010d9d45eba85dd06f81e8412e60e643bea99c173842d2caf3e5850",
+      "source_identifier": "1805.02262",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "515fcdf7ea22b0da135ccf68dc381f00b758e413a742a97996c7a13cc4e69df6",
+      "document_id": "doc_ef76e0ddb970d58c",
+      "evidence_count": 263,
+      "paper_id": "paper_9d98ba9c32c61341",
+      "parser_version": "1.28.2",
+      "source_hash": "1ce53b64dc454bf1d819f03c413c040c3ae9ed3e3dde4ae393c63ab76dfa77f5",
+      "source_identifier": "1807.01587",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "54f2491f5dde0532d4c828f1cd0bad31590a42746b661db0e30ecfc729f5f2dc",
+      "document_id": "doc_8ea108e044aea8bd",
+      "evidence_count": 750,
+      "paper_id": "paper_839a1a7bab24a4c7",
+      "parser_version": "1.28.2",
+      "source_hash": "5692a5514787a8c6727b4ff3b726a3385798bc68e12138d1d4af83947e2acf6e",
+      "source_identifier": "1810.04805",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "1f8bbe748bd8209bf59208f73353c93e232429607aa5750f1d54d21e9e5a06b1",
+      "document_id": "doc_2ae3f7dce0f1e0c5",
+      "evidence_count": 559,
+      "paper_id": "paper_b2453393f6974d0e",
+      "parser_version": "1.28.2",
+      "source_hash": "418ab1586fcee19234214c48385a8f37040acea7de120ec0da413344bb9c63db",
+      "source_identifier": "1902.06705",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "a83b5a1ea063adc731c9642f06ea1f36c183e8abcc6e8691cfccbd999fa11a91",
+      "document_id": "doc_964e8ac6be7a870a",
+      "evidence_count": 211,
+      "paper_id": "paper_23d5f59f1284c1cb",
+      "parser_version": "1.28.2",
+      "source_hash": "ae7ba200f53ac3beb3d9c9c6797226ffd4029b9cb6bd3495e3b65169554c55e5",
+      "source_identifier": "1904.08375",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "d28cb53cd483235b58ede63116c9e7d1cb3f8225c5cb581fd6315be0faf00483",
+      "document_id": "doc_3f7c33e4d492bc04",
+      "evidence_count": 610,
+      "paper_id": "paper_1bcf06014b25d84e",
+      "parser_version": "1.28.2",
+      "source_hash": "af6b1bd620f81bfaea81edf8227484588e1fcc2427d6b5020fa17454d7566c70",
+      "source_identifier": "1905.11946",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "a54079da705af8bdced4062b9497334ac261ad92871b40d2c1b72aa0c1da558e",
+      "document_id": "doc_76a63ddbfc5d9c97",
+      "evidence_count": 337,
+      "paper_id": "paper_7ab27658c93abd4d",
+      "parser_version": "1.28.2",
+      "source_hash": "d87d742de3c8945a6e1920831521ca8833d83b33d2a373c520e07c00d4c55448",
+      "source_identifier": "1909.02130",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "9774ff1f5f1af61adf1099330f1504816503472b490a028fb693dd052fe37c35",
+      "document_id": "doc_5ed89b4846a4ca0a",
+      "evidence_count": 1262,
+      "paper_id": "paper_b893dbbf3837c71a",
+      "parser_version": "1.28.2",
+      "source_hash": "a41bd7877fd1a6bcbba096b2619618bd2f90e02488f2365644903eb2f7c6a494",
+      "source_identifier": "2001.08361",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "9ab61afe12e014d137e819170acc2fa107395ff59555e613f09d895506f6d25e",
+      "document_id": "doc_7add698830bd13fa",
+      "evidence_count": 862,
+      "paper_id": "paper_6d51877988de5ef3",
+      "parser_version": "1.28.2",
+      "source_hash": "c7fc70b38f84cb2e42890a69a7c9b9c26ded464b221e0355031004f24fb8e727",
+      "source_identifier": "2003.08934",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "4800493c5bee8bd80e3ee909db1e0e3cd2aac536ab817186b29d5de64bc0eec8",
+      "document_id": "doc_873ada84ada60cf7",
+      "evidence_count": 598,
+      "paper_id": "paper_4ca114d0e7d1d934",
+      "parser_version": "1.28.2",
+      "source_hash": "23e3249e9a1e75418d82efecab0ea8c4d033b89c93742f63208d47ce01f21233",
+      "source_identifier": "2005.11401",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "5bbcc5ae62db916cc20ba1f39492db8ba33354d083c1d5ccd0fbd84934a36633",
+      "document_id": "doc_1635d5141185f37a",
+      "evidence_count": 479,
+      "paper_id": "paper_0e941fb049d311f6",
+      "parser_version": "1.28.2",
+      "source_hash": "e9db7bdd8670226700eccbbd1841a8531ab4ab1154d3158ac34f0cf3f4eeba3e",
+      "source_identifier": "2006.03031",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "42ffa0eb58feedb2fc354062ff80f07bf9eb89bc088b3ecbf41b76cd919b40e4",
+      "document_id": "doc_0bcc72dc1f53e520",
+      "evidence_count": 1028,
+      "paper_id": "paper_151329599c00365b",
+      "parser_version": "1.28.2",
+      "source_hash": "f340f6ace31abf7d0730ef461404279f40d3c890e9cc2daeb7068b3304afdbd6",
+      "source_identifier": "2101.03961",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "bf91122cfbeae86d7bdd26f7804ab89a9931559a8de806d83e33190c83068096",
+      "document_id": "doc_f90931907f4b8800",
+      "evidence_count": 638,
+      "paper_id": "paper_f468b57b72ccaf42",
+      "parser_version": "1.28.2",
+      "source_hash": "c1485f4c4349307ba87fe4e0c196b224037ea40e56208420c29ac5acbe29ceac",
+      "source_identifier": "2104.07653",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "6cbafa00a1112a3472778965a8100d19a0eb77ebb3f695c5a8d317b5d4a08306",
+      "document_id": "doc_7d95858ff1479191",
+      "evidence_count": 1080,
+      "paper_id": "paper_039c3cf447050520",
+      "parser_version": "1.28.2",
+      "source_hash": "e9a0d3128767db616085dc0f4e6e455e672e89af823e8ed1282793682787395a",
+      "source_identifier": "2106.09685",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "b95cc3b96990b7f34d55f3fc2911053c955f39a919aff62616c3edf701e10aea",
+      "document_id": "doc_978bf2d6e3b18c32",
+      "evidence_count": 4886,
+      "paper_id": "paper_b4ca13a37cf26171",
+      "parser_version": "1.28.2",
+      "source_hash": "05e867e3c710a3b0c0e13eb372d013c3511f2ee114bace5ca5c402d6341e92dd",
+      "source_identifier": "2108.07258",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "4a9213e41f0c9a4c1218a775d7a82905773098987a7438a4bbf5a447000afd50",
+      "document_id": "doc_3b626fa1b96e4b22",
+      "evidence_count": 913,
+      "paper_id": "paper_004d2c4a944fda91",
+      "parser_version": "1.28.2",
+      "source_hash": "d66db391c923a70146386c53b4d8e28a824549f04d8bf5638dc8b4729b1cf300",
+      "source_identifier": "2201.07243",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "34a896ae0525bd4303e06e9a2f83af3dfb888538056417e1ac83d15956d5df2d",
+      "document_id": "doc_870fb18cbcd17cb7",
+      "evidence_count": 1226,
+      "paper_id": "paper_f945e362bb68d520",
+      "parser_version": "1.28.2",
+      "source_hash": "1a49ce0373afc89d2d6e97fb1aa8230f6b818c70590d732a3187f753f4df6aba",
+      "source_identifier": "2203.11171",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "2b81090bbc507bbdea454034f17a6eb08e1185980872f0fb1bbc00d61de5d00a",
+      "document_id": "doc_4114f6c9734f94cb",
+      "evidence_count": 1991,
+      "paper_id": "paper_f6b69496d93a19be",
+      "parser_version": "1.28.2",
+      "source_hash": "b57ae6d6321a7c065e1a62320db8224dd768ffe5b4f47b796b6f5cea84169ed3",
+      "source_identifier": "2301.08727",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "7bdd220ef7631bf1508d8dedfc38de08aaae913eb61d62d85184362dc11f6cc5",
+      "document_id": "doc_676af3c1b769ba5a",
+      "evidence_count": 371,
+      "paper_id": "paper_397515aaad7f7925",
+      "parser_version": "1.28.2",
+      "source_hash": "ffa03c6ae46f3122570bacd7da358cae8659b6421162bbc25088622fd4889c37",
+      "source_identifier": "2302.01318",
+      "status": "COMPLETED"
+    },
+    {
+      "document_hash": "a424b3325c020d2b630184cbfce60da93501a042998ca0b2d4698720c0318485",
+      "document_id": "doc_c12fcefde3142b84",
+      "evidence_count": 3467,
+      "paper_id": "paper_79f9b8c0d802c69e",
+      "parser_version": "1.28.2",
+      "source_hash": "c33a66dadca2388d7b172d6293b00dc32b71110c6f38fafe0d41112e61be7774",
+      "source_identifier": "2303.08774",
+      "status": "COMPLETED"
+    }
+  ],
+  "schema_version": "1.0"
+}

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from fastapi.responses import FileResponse, PlainTextResponse
 
 from ..ingestion.errors import (
@@ -19,7 +19,11 @@ from ..ingestion.errors import (
     PaperParseError,
     PaperPersistenceError,
     PdfDownloadError,
+    PdfTooLargeError,
+    PdfValidationError,
 )
+from ..auth import audit, clear_session_cookie, get_current_user, issue_session, normalize_email, password_hash, require_current_user, revoke_presented_session, set_session_cookie, verify_password
+from ..models.auth import UserLogin, UserRegistration, UserResponse
 from ..extraction.service import ResearchExtractionError
 from ..models.document import Evidence, PaperIR, StructuredDocument
 from ..models.paper import IngestRequest, IngestedPaper
@@ -44,6 +48,53 @@ from ..citation_graph.service import build_citation_graph
 from ..research.agent import ResearchAgentError
 
 router = APIRouter()
+
+
+@router.post("/api/auth/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register(payload: UserRegistration, request: Request, response: Response) -> UserResponse:
+    email = normalize_email(payload.email)
+    if "@" not in email or email.startswith("@") or email.endswith("@"):
+        raise HTTPException(status_code=422, detail="A valid email address is required.")
+    if request.app.state.database.get_user_by_email(email) is not None:
+        audit(request, "registration_failed", None, {"reason": "duplicate_identifier"})
+        raise HTTPException(status_code=409, detail="An account with that email already exists.")
+    try:
+        user = request.app.state.database.create_user(f"user_{uuid4().hex}", email, password_hash(payload.password))
+    except PaperPersistenceError as exc:
+        audit(request, "registration_failed", None, {"reason": "persistence"})
+        raise HTTPException(status_code=409, detail="An account with that email already exists.") from exc
+    token = issue_session(request, user.id)
+    set_session_cookie(request, response, token)
+    audit(request, "registration", user.id)
+    return UserResponse(user=user)
+
+
+@router.post("/api/auth/login", response_model=UserResponse)
+async def login(payload: UserLogin, request: Request, response: Response) -> UserResponse:
+    email = normalize_email(payload.email)
+    found = request.app.state.database.get_user_by_email(email)
+    if found is None or not verify_password(payload.password, found[1]):
+        audit(request, "login_failed", None, {"reason": "invalid_credentials"})
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    user = found[0]
+    token = issue_session(request, user.id)
+    set_session_cookie(request, response, token)
+    audit(request, "login_success", user.id)
+    return UserResponse(user=user)
+
+
+@router.post("/api/auth/logout")
+async def logout(request: Request, response: Response) -> dict[str, bool]:
+    user = get_current_user(request)
+    revoked = revoke_presented_session(request)
+    clear_session_cookie(request, response)
+    audit(request, "logout", user.id if user else None, {"session_revoked": revoked})
+    return {"ok": True}
+
+
+@router.get("/api/auth/me", response_model=UserResponse)
+async def current_user(request: Request) -> UserResponse:
+    return UserResponse(user=require_current_user(request))
 
 
 @router.get("/api/capabilities", response_model=CapabilityFlags)
@@ -108,21 +159,31 @@ async def metrics(request: Request) -> PlainTextResponse:
 
     if not request.app.state.settings.metrics_enabled:
         raise HTTPException(status_code=404, detail="Metrics are disabled.")
-    return PlainTextResponse(request.app.state.metrics.prometheus(), media_type="text/plain; version=0.0.4")
+    body = request.app.state.metrics.prometheus()
+    execution = request.app.state.database.research_execution_metrics()
+    body += "\n".join(f"paperlens_research_{key} {value}" for key, value in sorted(execution.items())) + "\n"
+    parser = getattr(getattr(request.app.state, "ingestion_service", None), "pdf_parser", None)
+    if parser is not None:
+        parse_metrics = dict(getattr(parser, "metrics", {}))
+        parse_metrics["active_processes"] = int(getattr(parser, "active_processes", 0))
+        parse_metrics["max_active_processes"] = int(getattr(parser, "max_active_processes", 0))
+        body += "\n".join(f"paperlens_pdf_parse_{key} {value}" for key, value in sorted(parse_metrics.items())) + "\n"
+    return PlainTextResponse(body, media_type="text/plain; version=0.0.4")
 
 
 @router.post("/api/papers/ingest", response_model=IngestedPaper, status_code=status.HTTP_200_OK)
 async def ingest_paper(payload: IngestRequest, request: Request) -> IngestedPaper:
     """Ingest an arXiv paper and return its normalized document structure."""
 
+    owner_id = require_current_user(request).id
     idempotency_key = _idempotency_key(request)
-    scope = f"ingest:{_scope_digest(payload.source.strip())}"
+    scope = f"ingest:{owner_id}:{_scope_digest(payload.source.strip())}"
     if idempotency_key:
         cached = request.app.state.database.get_idempotent_response(scope, idempotency_key)
         if cached is not None:
             return IngestedPaper.model_validate(cached)
     try:
-        result = await request.app.state.ingestion_service.ingest(payload.source)
+        result = await request.app.state.ingestion_service.ingest(payload.source, owner_id)
         if idempotency_key:
             request.app.state.database.save_idempotent_response(scope, idempotency_key, result.model_dump(mode="json"))
         return result
@@ -132,10 +193,14 @@ async def ingest_paper(payload: IngestRequest, request: Request) -> IngestedPape
         raise HTTPException(status_code=404, detail="The arXiv paper was not found.") from exc
     except ArxivMetadataError as exc:
         raise HTTPException(status_code=502, detail="Unable to retrieve metadata from arXiv.") from exc
+    except PdfTooLargeError as exc:
+        raise HTTPException(status_code=413, detail={"code": exc.code, "message": "The paper exceeds the configured size limit."}) from exc
+    except PdfValidationError as exc:
+        raise HTTPException(status_code=422, detail={"code": getattr(exc, "code", "PDF_MALFORMED"), "message": "The downloaded paper is not a usable PDF."}) from exc
     except PdfDownloadError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        raise HTTPException(status_code=502, detail="Unable to retrieve the paper PDF.") from exc
     except PaperParseError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail={"code": getattr(exc, "code", "PDF_PARSE_FAILED"), "message": str(exc)}) from exc
     except PaperPersistenceError as exc:
         raise HTTPException(status_code=500, detail="The paper could not be saved.") from exc
     except IngestionError as exc:
@@ -146,7 +211,8 @@ async def ingest_paper(payload: IngestRequest, request: Request) -> IngestedPape
 async def get_paper(paper_id: str, request: Request) -> IngestedPaper:
     """Return a completed normalized paper by its stable internal ID."""
 
-    paper = request.app.state.database.get_by_id(paper_id)
+    owner_id = require_current_user(request).id
+    paper = request.app.state.database.get_by_id(paper_id, owner_id)
     if paper is None:
         raise HTTPException(status_code=404, detail="Paper not found.")
     return paper
@@ -156,7 +222,8 @@ async def get_paper(paper_id: str, request: Request) -> IngestedPaper:
 async def get_document(paper_id: str, request: Request) -> StructuredDocument:
     """Return the source-preserving normalized document for a paper."""
 
-    document = request.app.state.database.get_document(paper_id)
+    owner_id = require_current_user(request).id
+    document = request.app.state.database.get_document(paper_id, owner_id)
     if document is None:
         raise HTTPException(status_code=404, detail="Structured document not found.")
     return document
@@ -166,7 +233,8 @@ async def get_document(paper_id: str, request: Request) -> StructuredDocument:
 async def get_evidence(paper_id: str, evidence_id: str, request: Request) -> Evidence:
     """Return one provenance record scoped to its paper."""
 
-    evidence = request.app.state.database.get_evidence(paper_id, evidence_id)
+    owner_id = require_current_user(request).id
+    evidence = request.app.state.database.get_evidence(paper_id, evidence_id, owner_id)
     if evidence is None:
         raise HTTPException(status_code=404, detail="Evidence not found.")
     return evidence
@@ -176,13 +244,14 @@ async def get_evidence(paper_id: str, evidence_id: str, request: Request) -> Evi
 async def get_reader(paper_id: str, request: Request) -> ReaderResponse:
     """Return the small reader payload; evidence bodies are loaded on demand."""
 
-    paper = request.app.state.database.get_by_id(paper_id)
-    document = request.app.state.database.get_document(paper_id)
+    owner_id = require_current_user(request).id
+    paper = request.app.state.database.get_by_id(paper_id, owner_id)
+    document = request.app.state.database.get_document(paper_id, owner_id)
     if paper is None or document is None:
         raise HTTPException(status_code=404, detail="Paper reader data not found.")
-    analysis_record = request.app.state.database.get_analysis_record(paper_id)
-    verification = request.app.state.verification_service.current(paper_id)
-    source_path = request.app.state.database.get_source_pdf_path(paper_id)
+    analysis_record = request.app.state.database.get_analysis_record(paper_id, owner_id)
+    verification = request.app.state.verification_service.current(paper_id, owner_id)
+    source_path = request.app.state.database.get_source_pdf_path(paper_id, owner_id)
     source_available = _safe_source_path(request, source_path) is not None
     return ReaderResponse(
         paper=ReaderPaperView(id=paper.id, status=paper.status, metadata=paper.metadata),
@@ -250,10 +319,11 @@ async def get_reader(paper_id: str, request: Request) -> ReaderResponse:
 async def get_source(paper_id: str, request: Request) -> FileResponse:
     """Serve the paper's persisted PDF without exposing filesystem paths."""
 
-    paper = request.app.state.database.get_by_id(paper_id)
+    owner_id = require_current_user(request).id
+    paper = request.app.state.database.get_by_id(paper_id, owner_id)
     if paper is None:
         raise HTTPException(status_code=404, detail="Paper not found.")
-    source_path = _safe_source_path(request, request.app.state.database.get_source_pdf_path(paper_id))
+    source_path = _safe_source_path(request, request.app.state.database.get_source_pdf_path(paper_id, owner_id))
     if source_path is None:
         raise HTTPException(status_code=404, detail="Original PDF is unavailable.")
     return FileResponse(
@@ -268,7 +338,8 @@ async def get_source(paper_id: str, request: Request) -> FileResponse:
 async def get_figure_image(paper_id: str, document_id: str, figure_id: str, request: Request) -> FileResponse:
     """Serve only a parser-recorded figure image below the configured paper root."""
 
-    document = request.app.state.database.get_document(paper_id)
+    owner_id = require_current_user(request).id
+    document = request.app.state.database.get_document(paper_id, owner_id)
     if document is None or document.id != document_id:
         raise HTTPException(status_code=404, detail="Structured document not found.")
     figure = next((item for item in document.figures if item.id == figure_id), None)
@@ -287,8 +358,9 @@ async def extract_paper(paper_id: str, request: Request) -> PaperIR:
 
     if _capability_disabled(request, "ai_analysis_enabled"):
         raise HTTPException(status_code=503, detail="AI analysis is not enabled for this deployment.")
+    owner_id = require_current_user(request).id
     try:
-        return await request.app.state.extraction_service.extract(paper_id)
+        return await request.app.state.extraction_service.extract(paper_id, owner_id)
     except ResearchExtractionError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -297,7 +369,8 @@ async def extract_paper(paper_id: str, request: Request) -> PaperIR:
 async def get_analysis(paper_id: str, request: Request) -> PaperIR:
     """Return the persisted PaperIR for a paper."""
 
-    analysis = request.app.state.database.get_analysis_record(paper_id)
+    owner_id = require_current_user(request).id
+    analysis = request.app.state.database.get_analysis_record(paper_id, owner_id)
     if analysis is None:
         raise HTTPException(status_code=404, detail="Paper analysis not found.")
     return analysis[0]
@@ -309,8 +382,9 @@ async def verify_paper(paper_id: str, request: Request) -> PaperVerificationResp
 
     if _capability_disabled(request, "ai_analysis_enabled"):
         raise HTTPException(status_code=503, detail="AI verification is not enabled for this deployment.")
+    owner_id = require_current_user(request).id
     try:
-        return await request.app.state.verification_service.verify(paper_id)
+        return await request.app.state.verification_service.verify(paper_id, owner_id)
     except PaperVerificationError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except PaperPersistenceError as exc:
@@ -321,10 +395,11 @@ async def verify_paper(paper_id: str, request: Request) -> PaperVerificationResp
 async def get_verification(paper_id: str, request: Request) -> PaperVerificationResponse:
     """Return only verification results current for the stored analysis/document."""
 
-    if request.app.state.database.get_by_id(paper_id) is None:
+    owner_id = require_current_user(request).id
+    if request.app.state.database.get_by_id(paper_id, owner_id) is None:
         raise HTTPException(status_code=404, detail="Paper not found.")
     try:
-        return request.app.state.verification_service.current(paper_id)
+        return request.app.state.verification_service.current(paper_id, owner_id)
     except PaperPersistenceError as exc:
         raise HTTPException(status_code=500, detail="The paper verification could not be loaded.") from exc
 
@@ -335,8 +410,9 @@ async def create_chat_session(paper_id: str, request: Request) -> ChatSessionCre
 
     if _capability_disabled(request, "ai_analysis_enabled"):
         raise HTTPException(status_code=503, detail="Paper Chat is not enabled for this deployment.")
+    owner_id = require_current_user(request).id
     try:
-        session = request.app.state.chat_service.create_session(paper_id)
+        session = request.app.state.chat_service.create_session(paper_id, owner_id)
         return ChatSessionCreateResponse(session_id=session.id, **session.model_dump(exclude={"id"}))
     except ChatSessionNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -346,8 +422,9 @@ async def create_chat_session(paper_id: str, request: Request) -> ChatSessionCre
 
 @router.get("/api/papers/{paper_id}/chat/sessions/{session_id}", response_model=ChatSessionResponse)
 async def get_chat_session(paper_id: str, session_id: str, request: Request) -> ChatSessionResponse:
+    owner_id = require_current_user(request).id
     try:
-        session, messages = request.app.state.chat_service.get_session(paper_id, session_id)
+        session, messages = request.app.state.chat_service.get_session(paper_id, session_id, owner_id)
         return ChatSessionResponse(session=session, messages=messages)
     except ChatSessionNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -357,14 +434,15 @@ async def get_chat_session(paper_id: str, session_id: str, request: Request) -> 
 async def send_chat_message(paper_id: str, session_id: str, payload: ChatQuestion, request: Request) -> ChatAnswerResponse:
     if _capability_disabled(request, "ai_analysis_enabled"):
         raise HTTPException(status_code=503, detail="Paper Chat is not enabled for this deployment.")
+    owner_id = require_current_user(request).id
     idempotency_key = _idempotency_key(request)
-    scope = f"chat:{_scope_digest(f'{paper_id}:{session_id}:{payload.question.strip()}')}"
+    scope = f"chat:{owner_id}:{_scope_digest(f'{paper_id}:{session_id}:{payload.question.strip()}')}"
     if idempotency_key:
         cached = request.app.state.database.get_idempotent_response(scope, idempotency_key)
         if cached is not None:
             return ChatAnswerResponse.model_validate(cached)
     try:
-        message = await request.app.state.chat_service.answer(paper_id, session_id, payload.question)
+        message = await request.app.state.chat_service.answer(paper_id, session_id, payload.question, owner_id)
         assert message.status is not None
         response = ChatAnswerResponse(
             message_id=message.id,
@@ -390,67 +468,93 @@ async def send_chat_message(paper_id: str, session_id: str, payload: ChatQuestio
 
 @router.post("/api/workspaces", response_model=Workspace, status_code=status.HTTP_201_CREATED)
 async def create_workspace(payload: WorkspaceCreate, request: Request) -> Workspace:
+    owner_id = require_current_user(request).id
     name = payload.name.strip()
     if not name:
         raise HTTPException(status_code=422, detail="Workspace name is required.")
     try:
-        return request.app.state.database.create_workspace(name)
+        return request.app.state.database.create_workspace(name, owner_id)
     except PaperPersistenceError as exc:
         raise HTTPException(status_code=500, detail="The workspace could not be saved.") from exc
 
 
 @router.get("/api/workspaces", response_model=list[Workspace])
 async def list_workspaces(request: Request) -> list[Workspace]:
-    return request.app.state.database.list_workspaces()
+    return request.app.state.database.list_workspaces(require_current_user(request).id)
 
 
 @router.get("/api/workspaces/{workspace_id}", response_model=WorkspaceResponse)
 async def get_workspace(workspace_id: str, request: Request) -> WorkspaceResponse:
-    workspace = request.app.state.database.get_workspace(workspace_id)
+    owner_id = require_current_user(request).id
+    workspace = request.app.state.database.get_workspace(workspace_id, owner_id)
     if workspace is None:
         raise HTTPException(status_code=404, detail="Workspace not found.")
-    return WorkspaceResponse(workspace=workspace, papers=request.app.state.database.get_workspace_papers(workspace_id))
+    return WorkspaceResponse(workspace=workspace, papers=request.app.state.database.get_workspace_papers(workspace_id, owner_id))
+
+
+@router.patch("/api/workspaces/{workspace_id}", response_model=Workspace)
+async def update_workspace(workspace_id: str, payload: WorkspaceCreate, request: Request) -> Workspace:
+    owner_id = require_current_user(request).id
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Workspace name is required.")
+    workspace = request.app.state.database.update_workspace(workspace_id, name, owner_id)
+    if workspace is None:
+        raise HTTPException(status_code=404, detail="Workspace not found.")
+    return workspace
+
+
+@router.delete("/api/workspaces/{workspace_id}")
+async def delete_workspace(workspace_id: str, request: Request) -> dict[str, bool]:
+    owner_id = require_current_user(request).id
+    if not request.app.state.database.delete_workspace(workspace_id, owner_id):
+        raise HTTPException(status_code=404, detail="Workspace not found.")
+    return {"ok": True}
 
 
 @router.post("/api/workspaces/{workspace_id}/papers/{paper_id}", response_model=WorkspaceResponse)
 async def add_workspace_paper(workspace_id: str, paper_id: str, request: Request) -> WorkspaceResponse:
+    owner_id = require_current_user(request).id
     try:
-        request.app.state.database.add_workspace_paper(workspace_id, paper_id)
-        workspace = request.app.state.database.get_workspace(workspace_id)
+        request.app.state.database.add_workspace_paper(workspace_id, paper_id, owner_id)
+        workspace = request.app.state.database.get_workspace(workspace_id, owner_id)
         if workspace is None:
             raise HTTPException(status_code=404, detail="Workspace not found.")
-        return WorkspaceResponse(workspace=workspace, papers=request.app.state.database.get_workspace_papers(workspace_id))
+        return WorkspaceResponse(workspace=workspace, papers=request.app.state.database.get_workspace_papers(workspace_id, owner_id))
     except PaperPersistenceError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.delete("/api/workspaces/{workspace_id}/papers/{paper_id}", response_model=WorkspaceResponse)
 async def remove_workspace_paper(workspace_id: str, paper_id: str, request: Request) -> WorkspaceResponse:
-    if not request.app.state.database.remove_workspace_paper(workspace_id, paper_id):
+    owner_id = require_current_user(request).id
+    if not request.app.state.database.remove_workspace_paper(workspace_id, paper_id, owner_id):
         raise HTTPException(status_code=404, detail="Workspace paper not found.")
-    workspace = request.app.state.database.get_workspace(workspace_id)
+    workspace = request.app.state.database.get_workspace(workspace_id, owner_id)
     if workspace is None:
         raise HTTPException(status_code=404, detail="Workspace not found.")
-    return WorkspaceResponse(workspace=workspace, papers=request.app.state.database.get_workspace_papers(workspace_id))
+    return WorkspaceResponse(workspace=workspace, papers=request.app.state.database.get_workspace_papers(workspace_id, owner_id))
 
 
 @router.post("/api/workspaces/{workspace_id}/compare", response_model=PaperComparisonIR)
 async def compare_workspace(payload: ComparisonRequest, workspace_id: str, request: Request) -> PaperComparisonIR:
-    if request.app.state.database.get_workspace(workspace_id) is None:
+    owner_id = require_current_user(request).id
+    if request.app.state.database.get_workspace(workspace_id, owner_id) is None:
         raise HTTPException(status_code=404, detail="Workspace not found.")
-    allowed = {item.paper_id for item in request.app.state.database.get_workspace_papers(workspace_id)}
+    allowed = {item.paper_id for item in request.app.state.database.get_workspace_papers(workspace_id, owner_id)}
     if any(paper_id not in allowed for paper_id in payload.paper_ids):
         raise HTTPException(status_code=422, detail="Comparison papers must belong to the workspace.")
     try:
-        return PaperComparisonService(request.app.state.database).compare(payload.paper_ids)
+        return PaperComparisonService(request.app.state.database).compare(payload.paper_ids, owner_id)
     except ComparisonError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.get("/api/papers/{paper_id}/citation-graph", response_model=CitationGraph)
 async def citation_graph(paper_id: str, request: Request) -> CitationGraph:
+    owner_id = require_current_user(request).id
     try:
-        return build_citation_graph(request.app.state.database, paper_id)
+        return build_citation_graph(request.app.state.database, paper_id, owner_id)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -459,10 +563,11 @@ async def citation_graph(paper_id: str, request: Request) -> CitationGraph:
 async def create_research_run(payload: ResearchRunCreate, request: Request) -> ResearchRunResponse:
     if _capability_disabled(request, "research_agent_enabled"):
         raise HTTPException(status_code=503, detail="The Research Agent is not enabled for this deployment.")
+    owner_id = require_current_user(request).id
     question = payload.question.strip()
     if not question:
         raise HTTPException(status_code=422, detail="Research question is required.")
-    if payload.workspace_id and request.app.state.database.get_workspace(payload.workspace_id) is None:
+    if payload.workspace_id and request.app.state.database.get_workspace(payload.workspace_id, owner_id) is None:
         raise HTTPException(status_code=404, detail="Workspace not found.")
     defaults = {
         ResearchDepth.QUICK: (1, 10, 3),
@@ -482,41 +587,43 @@ async def create_research_run(payload: ResearchRunCreate, request: Request) -> R
         planner_model=getattr(getattr(request.app.state.research_agent, "planner", None), "provider", None) and getattr(request.app.state.research_agent.planner.provider, "model", None),
     )
     try:
-        request.app.state.database.create_research_run(run)
-        request.app.state.database.add_research_event(ResearchRunEvent(id=f"event_{uuid4().hex}", research_run_id=run.id, event_type="RUN_CREATED", message="Research run created.", metadata={"depth": payload.depth.value}))
+        request.app.state.database.create_research_run(run, owner_id)
+        request.app.state.database.add_research_event(ResearchRunEvent(id=f"event_{uuid4().hex}", research_run_id=run.id, event_type="RUN_CREATED", message="Research run created.", metadata={"depth": payload.depth.value}), owner_id)
     except PaperPersistenceError as exc:
         raise HTTPException(status_code=500, detail="The research run could not be saved.") from exc
-    return _research_response(request, run.id)
+    return _research_response(request, run.id, owner_id)
 
 
 @router.get("/api/research/runs/{run_id}", response_model=ResearchRunResponse)
 async def get_research_run(run_id: str, request: Request) -> ResearchRunResponse:
-    return _research_response(request, run_id)
+    return _research_response(request, run_id, require_current_user(request).id)
 
 
-@router.post("/api/research/runs/{run_id}/execute", response_model=ResearchRunResponse)
+@router.post("/api/research/runs/{run_id}/execute", response_model=ResearchRunResponse, status_code=status.HTTP_202_ACCEPTED)
 async def execute_research_run(run_id: str, request: Request) -> ResearchRunResponse:
-    try:
-        await request.app.state.research_agent.execute(run_id)
-    except ResearchAgentError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return _research_response(request, run_id)
+    owner_id = require_current_user(request).id
+    queued = request.app.state.database.queue_research_run(run_id, owner_id)
+    if queued is None:
+        raise HTTPException(status_code=404, detail="Research run not found.")
+    return _research_response(request, run_id, owner_id)
 
 
 @router.post("/api/research/runs/{run_id}/cancel", response_model=ResearchRunResponse)
 async def cancel_research_run(run_id: str, request: Request) -> ResearchRunResponse:
+    owner_id = require_current_user(request).id
     try:
-        await request.app.state.research_agent.cancel(run_id)
+        await request.app.state.research_agent.cancel(run_id, owner_id)
     except ResearchAgentError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return _research_response(request, run_id)
+    return _research_response(request, run_id, owner_id)
 
 
 @router.get("/api/research/runs/{run_id}/report")
 async def get_research_report(run_id: str, request: Request) -> object:
-    if request.app.state.database.get_research_run(run_id) is None:
+    owner_id = require_current_user(request).id
+    if request.app.state.database.get_research_run(run_id, owner_id) is None:
         raise HTTPException(status_code=404, detail="Research run not found.")
-    report = request.app.state.database.get_research_report(run_id)
+    report = request.app.state.database.get_research_report(run_id, owner_id)
     if report is None:
         raise HTTPException(status_code=404, detail="Research report not found.")
     return report
@@ -556,18 +663,19 @@ def _capability_disabled(request: Request, name: str) -> bool:
     return settings.environment in {"staging", "production"} and not bool(getattr(settings, name, False))
 
 
-def _research_response(request: Request, run_id: str) -> ResearchRunResponse:
-    run = request.app.state.database.get_research_run(run_id)
+def _research_response(request: Request, run_id: str, owner_id: str) -> ResearchRunResponse:
+    run = request.app.state.database.get_research_run(run_id, owner_id)
     if run is None:
         raise HTTPException(status_code=404, detail="Research run not found.")
-    report = request.app.state.database.get_research_report(run_id)
+    report = request.app.state.database.get_research_report(run_id, owner_id)
     coverage = report.coverage if report else None
     return ResearchRunResponse(
         run=run,
-        plan=request.app.state.database.get_research_plan(run_id),
-        queries=request.app.state.database.get_research_queries(run_id),
-        candidates=request.app.state.database.get_research_candidates(run_id),
-        events=request.app.state.database.get_research_events(run_id),
+        plan=request.app.state.database.get_research_plan(run_id, owner_id),
+        queries=request.app.state.database.get_research_queries(run_id, owner_id),
+        candidates=request.app.state.database.get_research_candidates(run_id, owner_id),
+        events=request.app.state.database.get_research_events(run_id, owner_id),
         coverage=coverage,
         report=report,
+        attempt=request.app.state.database.get_research_attempt(run_id, owner_id),
     )

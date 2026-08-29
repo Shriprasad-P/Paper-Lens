@@ -7,7 +7,7 @@ import re
 from collections import Counter
 from statistics import mean
 from time import perf_counter
-from typing import Iterable, Sequence
+from typing import Any, Iterable, Mapping, Sequence
 
 
 def _bounded_k(k: int) -> int:
@@ -61,11 +61,26 @@ def ndcg_at_k(ranked: Sequence[str], relevant: Iterable[str], k: int) -> float:
     return dcg / idcg if idcg else 0.0
 
 
+def graded_ndcg_at_k(ranked: Sequence[str], relevance: Mapping[str, int], k: int) -> float:
+    """nDCG for optional 0--3 graded evidence relevance labels."""
+
+    items = _ranked(ranked, k)
+    grades = {str(item): max(0, int(score)) for item, score in relevance.items()}
+
+    def gain(score: int) -> float:
+        return float((2**score) - 1)
+
+    dcg = sum(gain(grades.get(item, 0)) / math.log2(index + 2) for index, item in enumerate(items))
+    ideal = sorted(grades.values(), reverse=True)[:k]
+    idcg = sum(gain(score) / math.log2(index + 2) for index, score in enumerate(ideal))
+    return dcg / idcg if idcg else 0.0
+
+
 def f1(precision: float, recall: float) -> float:
     return 2 * precision * recall / (precision + recall) if precision + recall else 0.0
 
 
-def classification_metrics(gold: Sequence[str], predicted: Sequence[str], labels: Sequence[str] | None = None) -> dict[str, float | dict[str, dict[str, int]]]:
+def classification_metrics(gold: Sequence[str], predicted: Sequence[str], labels: Sequence[str] | None = None) -> dict[str, float | dict[str, dict[str, int]] | dict[str, dict[str, float]]]:
     if len(gold) != len(predicted):
         raise ValueError("gold and predicted must have equal length")
     classes = list(dict.fromkeys(labels or [*gold, *predicted]))
@@ -75,6 +90,7 @@ def classification_metrics(gold: Sequence[str], predicted: Sequence[str], labels
         matrix[actual].setdefault(guess, 0)
         matrix[actual][guess] += 1
     per_class: list[float] = []
+    per_label: dict[str, dict[str, float]] = {}
     for label in classes:
         tp = matrix.get(label, {}).get(label, 0)
         fp = sum(matrix.get(actual, {}).get(label, 0) for actual in classes if actual != label)
@@ -82,14 +98,42 @@ def classification_metrics(gold: Sequence[str], predicted: Sequence[str], labels
         p = tp / (tp + fp) if tp + fp else 0.0
         r = tp / (tp + fn) if tp + fn else 0.0
         per_class.append(f1(p, r))
+        per_label[label] = {"precision": p, "recall": r, "f1": f1(p, r), "support": float(tp + fn)}
     accuracy = sum(actual == guess for actual, guess in zip(gold, predicted)) / len(gold) if gold else 0.0
-    return {"accuracy": accuracy, "macro_f1": mean(per_class) if per_class else 0.0, "confusion_matrix": matrix}
+    return {"accuracy": accuracy, "macro_f1": mean(per_class) if per_class else 0.0, "per_label": per_label, "confusion_matrix": matrix}
+
+
+def false_support_rate(gold: Sequence[str], predicted: Sequence[str], *, supported_label: str = "SUPPORTED") -> float:
+    """Fraction of non-supported gold claims incorrectly marked supported."""
+
+    if len(gold) != len(predicted):
+        raise ValueError("gold and predicted must have equal length")
+    negatives = sum(actual != supported_label for actual in gold)
+    return sum(actual != supported_label and guess == supported_label for actual, guess in zip(gold, predicted)) / negatives if negatives else 0.0
+
+
+def false_rejection_rate(gold: Sequence[str], predicted: Sequence[str], *, supported_label: str = "SUPPORTED") -> float:
+    """Fraction of supported gold claims rejected or left unverified."""
+
+    if len(gold) != len(predicted):
+        raise ValueError("gold and predicted must have equal length")
+    positives = sum(actual == supported_label for actual in gold)
+    return sum(actual == supported_label and guess != supported_label for actual, guess in zip(gold, predicted)) / positives if positives else 0.0
 
 
 def citation_validity(cited_ids: Iterable[str], valid_ids: Iterable[str]) -> float:
     cited = list(cited_ids)
     valid = set(valid_ids)
     return sum(item in valid for item in cited) / len(cited) if cited else 1.0
+
+
+def citation_precision_recall(cited_ids: Iterable[str], required_ids: Iterable[str]) -> dict[str, float]:
+    """Precision/recall of citations against required evidence IDs."""
+
+    cited, required = set(cited_ids), set(required_ids)
+    precision = len(cited & required) / len(cited) if cited else (1.0 if not required else 0.0)
+    recall = len(cited & required) / len(required) if required else float(not cited)
+    return {"precision": precision, "recall": recall, "f1": f1(precision, recall)}
 
 
 def citation_completeness(claim_evidence_counts: Sequence[tuple[bool, int]]) -> float:
@@ -112,6 +156,82 @@ def numeric_fidelity(predicted: Sequence[str], source_texts: Sequence[str]) -> f
         source_numbers = set(_numbers(source))
         scores.append(float(numbers.issubset(source_numbers)))
     return mean(scores)
+
+
+def numeric_fidelity_strict(predicted: Sequence[str], source_texts: Sequence[str]) -> float:
+    """Require the complete numeric multiset to be preserved, not merely a subset."""
+
+    if len(predicted) != len(source_texts):
+        raise ValueError("predicted and source_texts must have equal length")
+    if not predicted:
+        return 1.0
+    return mean(float(Counter(_numbers(statement)) == Counter(_numbers(source))) for statement, source in zip(predicted, source_texts))
+
+
+def aggregate_retrieval_metrics(
+    rankings: Sequence[Sequence[str]],
+    relevants: Sequence[Iterable[str]],
+    *,
+    graded: Sequence[Mapping[str, int]] | None = None,
+    ks: Sequence[int] = (1, 3, 5),
+) -> dict[str, float]:
+    """Compute a consistent retrieval metric bundle for one lane."""
+
+    if len(rankings) != len(relevants) or (graded is not None and len(rankings) != len(graded)):
+        raise ValueError("rankings, relevants, and graded labels must have equal length")
+    if not rankings:
+        return {name: 0.0 for k in ks for name in (f"recall_at_{k}", f"ndcg_at_{k}")} | {"mrr": 0.0}
+    metrics: dict[str, float] = {}
+    for k in ks:
+        metrics[f"recall_at_{k}"] = mean(recall_at_k(rank, truth, k) for rank, truth in zip(rankings, relevants))
+        if graded is None:
+            metrics[f"ndcg_at_{k}"] = mean(ndcg_at_k(rank, truth, k) for rank, truth in zip(rankings, relevants))
+        else:
+            metrics[f"ndcg_at_{k}"] = mean(graded_ndcg_at_k(rank, labels, k) for rank, labels in zip(rankings, graded))
+    metrics["mrr"] = mean_reciprocal_rank(rankings, relevants)
+    return metrics
+
+
+def retrieval_failure_category(
+    *,
+    query_category: str,
+    ranked: Sequence[str],
+    relevant: Iterable[str],
+    has_table_or_equation: bool = False,
+    multiple_passages: bool = False,
+) -> str | None:
+    """Assign one review category to a retrieval miss for error analysis."""
+
+    relevant_set = set(relevant)
+    if any(item in relevant_set for item in ranked[:5]):
+        return None
+    category = query_category.lower().replace(" ", "_")
+    if multiple_passages:
+        return "multiple_passages"
+    if has_table_or_equation or category in {"table", "equation", "numeric"}:
+        return "table_or_equation_evidence"
+    if category in {"ambiguous", "terminology"}:
+        return category
+    if category in {"section", "method", "results", "limitation"}:
+        return "section_or_chunk_boundary"
+    return "lexical_or_embedding_miss"
+
+
+def retrieval_failure_counts(cases: Iterable[Mapping[str, Any]], *, mode: str = "BM25") -> dict[str, int]:
+    """Count deterministic review categories from case dictionaries."""
+
+    counts: Counter[str] = Counter()
+    for case in cases:
+        category = retrieval_failure_category(
+            query_category=str(case.get("category", "unknown")),
+            ranked=list((case.get("predictions") or {}).get(mode, case.get("ranking", []))),
+            relevant=case.get("relevant_evidence_ids", []),
+            has_table_or_equation=bool(case.get("has_table_or_equation", False)),
+            multiple_passages=bool(case.get("multiple_passages", False)),
+        )
+        if category:
+            counts[category] += 1
+    return dict(counts)
 
 
 def evidence_attribution(predicted: Sequence[Iterable[str]], gold: Sequence[Iterable[str]]) -> dict[str, float]:

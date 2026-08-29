@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-08-29T12:15:55.726082+00:00",
+  "prediction_hash": "ab51abfee8e981ad3d1798b6f279ae18b22156fa0d119102d317f128fd3fb52b",
+  "dataset_hash": "eb3925e01260897f383c9832e1c564aeff7197e192a62d19ce63cc0f1a0309c1",
+  "annotation_hash": "975cc12353222d35c308dbe438df94e321135e5a7ff3a3605d176da78f210023",
+  "case_count": 60,
+  "retriever_version": "bm25-v1",
+  "semantic_status": "NOT_RUN",
+  "hybrid_status": "NOT_RUN",
+  "provider": {
+    "mode": "production_retrieval",
+    "retrieval": "bm25-v1",
+    "semantic": "NOT_RUN",
+    "hybrid": "NOT_RUN",
+    "embedding_provider": "none",
+    "embedding_model": null,
+    "reason": "No real embedding provider was configured; hash-v1 is intentionally excluded."
+  },
+  "split_counts": {
+    "dev": 48,
+    "final": 12
+  }
+}

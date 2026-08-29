@@ -34,6 +34,7 @@ class CrossPaperEvidenceRetriever:
         *,
         limit: int = 12,
         mode: str | None = None,
+        owner_id: str = "user_legacy_local",
     ) -> list[RetrievedEvidence]:
         allowed = list(dict.fromkeys(paper_ids))
         if not allowed or not query.strip():
@@ -45,14 +46,14 @@ class CrossPaperEvidenceRetriever:
         for paper_id in allowed:
             try:
                 if selected_mode == "SEMANTIC":
-                    items = await self.semantic.retrieve_async(paper_id, query, limit=per_paper)
+                    items = await self.semantic.retrieve_async(paper_id, query, limit=per_paper, owner_id=owner_id)
                 elif selected_mode == "HYBRID" or self.settings.hybrid_retrieval_enabled:
-                    items = await self.hybrid.retrieve_async(paper_id, query, limit=per_paper)
+                    items = await self.hybrid.retrieve_async(paper_id, query, limit=per_paper, owner_id=owner_id)
                 else:
-                    items = self.lexical.retrieve(paper_id, query, limit=per_paper)
+                    items = self.lexical.retrieve(paper_id, query, limit=per_paper, owner_id=owner_id)
             except Exception:
                 # One unavailable embedding provider must not hide lexical evidence from other papers.
-                items = self.lexical.retrieve(paper_id, query, limit=per_paper)
+                items = self.lexical.retrieve(paper_id, query, limit=per_paper, owner_id=owner_id)
             lists[paper_id] = [
                 item.model_copy(update={"paper_id": item.paper_id or paper_id})
                 for item in items

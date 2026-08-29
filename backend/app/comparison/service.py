@@ -17,13 +17,13 @@ class PaperComparisonService:
     def __init__(self, database: SQLDatabase) -> None:
         self.database = database
 
-    def compare(self, paper_ids: list[str]) -> PaperComparisonIR:
+    def compare(self, paper_ids: list[str], owner_id: str = "user_legacy_local") -> PaperComparisonIR:
         ids = list(dict.fromkeys(paper_ids))
         if len(ids) < 2 or len(ids) > 5:
             raise ComparisonError("Select between two and five papers.")
         analyses: dict[str, PaperIR] = {}
         for paper_id in ids:
-            analysis = self.database.get_analysis_record(paper_id)
+            analysis = self.database.get_analysis_record(paper_id, owner_id)
             if analysis is None:
                 raise ComparisonError(f"Paper {paper_id} has no persisted analysis.")
             analyses[paper_id] = analysis[0]

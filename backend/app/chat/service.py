@@ -84,9 +84,9 @@ class PaperChatService:
             self.retriever = BM25EvidenceRetriever(database)
         self.prompt_dir = prompt_dir or Path(__file__).parents[1] / "prompts"
 
-    def create_session(self, paper_id: str) -> ChatSession:
-        paper = self.database.get_by_id(paper_id)
-        document = self.database.get_document(paper_id)
+    def create_session(self, paper_id: str, owner_id: str = "user_legacy_local") -> ChatSession:
+        paper = self.database.get_by_id(paper_id, owner_id)
+        document = self.database.get_document(paper_id, owner_id)
         if paper is None or document is None:
             raise ChatSessionNotFound("Paper or structured document not found.")
         now = datetime.now(timezone.utc)
@@ -98,22 +98,22 @@ class PaperChatService:
             created_at=now,
             updated_at=now,
         )
-        return self.database.create_chat_session(session)
+        return self.database.create_chat_session(session, owner_id)
 
-    def get_session(self, paper_id: str, session_id: str) -> tuple[ChatSession, list[ChatMessage]]:
-        session = self.database.get_chat_session(session_id)
+    def get_session(self, paper_id: str, session_id: str, owner_id: str = "user_legacy_local") -> tuple[ChatSession, list[ChatMessage]]:
+        session = self.database.get_chat_session(session_id, owner_id)
         if session is None or session.paper_id != paper_id:
             raise ChatSessionNotFound("Chat session not found for this paper.")
-        return session, self.database.get_chat_messages(session_id)
+        return session, self.database.get_chat_messages(session_id, owner_id)
 
-    async def answer(self, paper_id: str, session_id: str, question: str) -> ChatMessage:
-        session, history = self.get_session(paper_id, session_id)
+    async def answer(self, paper_id: str, session_id: str, question: str, owner_id: str = "user_legacy_local") -> ChatMessage:
+        session, history = self.get_session(paper_id, session_id, owner_id)
         question = question.strip()
         if not question:
             raise PaperChatError("Question must not be empty.")
         if len(question) > self.settings.chat_max_question_chars:
             raise PaperChatError("Question is too long.")
-        document = self.database.get_document(paper_id)
+        document = self.database.get_document(paper_id, owner_id)
         if document is None:
             raise ChatSessionNotFound("Structured document not found.")
         if session.document_id != document.id or session.document_hash != document.document_hash:
@@ -128,6 +128,7 @@ class PaperChatService:
                     paper_id,
                     retrieval_query,
                     limit=self.settings.chat_retrieval_top_k,
+                    owner_id=owner_id,
                 )
             except AIProviderError:
                 # Semantic credentials are optional; lexical retrieval remains the safe baseline.
@@ -135,13 +136,18 @@ class PaperChatService:
                     paper_id,
                     retrieval_query,
                     limit=self.settings.chat_retrieval_top_k,
+                    owner_id=owner_id,
                 )
         else:
-            retrieved = self.retriever.retrieve(
-                paper_id,
-                retrieval_query,
-                limit=self.settings.chat_retrieval_top_k,
-            )
+            try:
+                retrieved = self.retriever.retrieve(
+                    paper_id,
+                    retrieval_query,
+                    limit=self.settings.chat_retrieval_top_k,
+                    owner_id=owner_id,
+                )
+            except TypeError:
+                retrieved = self.retriever.retrieve(paper_id, retrieval_query, limit=self.settings.chat_retrieval_top_k)
         user_message = self._message(
             session,
             ChatRole.USER,
@@ -152,7 +158,7 @@ class PaperChatService:
             retrieved_evidence_ids=[item.evidence_id for item in retrieved],
             retrieval_scores={item.evidence_id: item.score for item in retrieved},
         )
-        self.database.save_chat_message(user_message)
+        self.database.save_chat_message(user_message, owner_id)
 
         context = _assemble_context(retrieved, self.settings.chat_max_context_chars)
         if not retrieved or retrieved[0].score < max(self.settings.chat_min_relevance, self.INSUFFICIENT_THRESHOLD) or not context:
@@ -166,7 +172,7 @@ class PaperChatService:
                 retrieved_evidence_ids=[item.evidence_id for item in retrieved],
                 retrieval_scores={item.evidence_id: item.score for item in retrieved},
             )
-            self.database.save_chat_message(assistant)
+            self.database.save_chat_message(assistant, owner_id)
             return assistant
 
         try:
@@ -185,9 +191,9 @@ class PaperChatService:
                     retrieved_evidence_ids=[item.evidence_id for item in retrieved],
                     retrieval_scores={item.evidence_id: item.score for item in retrieved},
                 )
-                self.database.save_chat_message(assistant)
+                self.database.save_chat_message(assistant, owner_id)
                 return assistant
-            answer, citations = self._validate_output(output, retrieved, paper_id, document.id)
+            answer, citations = self._validate_output(output, retrieved, paper_id, document.id, owner_id)
         except (AIProviderError, ValidationError, ValueError, TypeError) as exc:
             failure = self._message(
                 session,
@@ -199,7 +205,7 @@ class PaperChatService:
                 retrieved_evidence_ids=[item.evidence_id for item in retrieved],
                 retrieval_scores={item.evidence_id: item.score for item in retrieved},
             )
-            self.database.save_chat_message(failure)
+            self.database.save_chat_message(failure, owner_id)
             raise ChatGenerationUnavailable(_safe_error(exc)) from exc
 
         assistant = self._message(
@@ -213,7 +219,7 @@ class PaperChatService:
             retrieved_evidence_ids=[item.evidence_id for item in retrieved],
             retrieval_scores={item.evidence_id: item.score for item in retrieved},
         )
-        self.database.save_chat_message(assistant)
+        self.database.save_chat_message(assistant, owner_id)
         return assistant
 
     def _resolve_query(self, question: str, history: list[ChatMessage]) -> str:
@@ -244,6 +250,7 @@ class PaperChatService:
         retrieved: list[RetrievedEvidence],
         paper_id: str,
         document_id: str,
+        owner_id: str,
     ) -> tuple[str, list[ChatCitation]]:
         claims = list(output.claims)
         if not claims and output.answer:
@@ -266,7 +273,7 @@ class PaperChatService:
                     raise ValueError("The provider cited evidence outside the supplied context.")
                 if evidence_id not in cited_ids:
                     cited_ids.append(evidence_id)
-        evidence = self.database.get_evidence_many(paper_id, cited_ids)
+        evidence = self.database.get_evidence_many(paper_id, cited_ids, owner_id)
         if set(evidence) != set(cited_ids) or any(item.document_id != document_id or item.paper_id != paper_id for item in evidence.values()):
             raise ValueError("The provider cited evidence from the wrong paper or document version.")
         supplied_by_id = {item.evidence_id: item for item in retrieved}

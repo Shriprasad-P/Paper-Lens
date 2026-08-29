@@ -1,0 +1,31 @@
+{
+  "evaluation_schema_version": "1",
+  "dataset_hash": "8acefdf6e69cf47cb75dcdf9dc63d0e432935dd018564b394e136855bdd4a1d5",
+  "annotation_hash": null,
+  "paperlens_commit": null,
+  "provider": {
+    "mode": "offline",
+    "provider": "none",
+    "model": null,
+    "temperature": null,
+    "prompt_version": "fixture-v1"
+  },
+  "predictions": {
+    "retrieval": {
+      "ret_001": {"BM25": ["ev_problem", "ev_method", "ev_result"], "Semantic": ["ev_method", "ev_problem", "ev_result"], "Hybrid": ["ev_problem", "ev_result", "ev_method"]},
+      "ret_002": {"BM25": ["ev_method", "ev_problem", "ev_result"], "Semantic": ["ev_method", "ev_result", "ev_problem"], "Hybrid": ["ev_method", "ev_problem", "ev_result"]},
+      "ret_003": {"BM25": ["ev_result", "ev_method", "ev_problem"], "Semantic": ["ev_result", "ev_problem", "ev_method"], "Hybrid": ["ev_result", "ev_method", "ev_problem"]}
+    },
+    "verification": {
+      "ver_001": "SUPPORTED",
+      "ver_002": "UNSUPPORTED",
+      "ver_003": "PARTIALLY_SUPPORTED",
+      "ver_004": "CONTRADICTORY"
+    },
+    "chat": {
+      "chat_001": {"answer": "F1 0.51", "citation_ids": ["ev_result"], "source_text": "The reported F1 is 0.51."},
+      "chat_002": {"answer": "UNANSWERABLE", "citation_ids": []}
+    }
+  },
+  "prediction_hash": "0e6887b9185b2b810c4c6bc999d6eb568137242dd1382a8d6baabc7f4685e42f"
+}

@@ -41,6 +41,7 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
   try {
     response = await fetch(apiUrl(path), {
       ...init,
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         ...(desktopToken ? { "X-PaperLens-Desktop-Token": desktopToken } : {}),

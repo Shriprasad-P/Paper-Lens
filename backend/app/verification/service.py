@@ -40,15 +40,16 @@ class PaperVerificationService:
         self.settings = settings or Settings.from_env()
         self.verifier = verifier or FaithfulnessVerifier(provider, settings=self.settings)
 
-    async def verify(self, paper_id: str) -> PaperVerificationResponse:
-        analysis, document = self._load_analysis_and_document(paper_id)
+    async def verify(self, paper_id: str, owner_id: str = "user_legacy_local") -> PaperVerificationResponse:
+        analysis, document = self._load_analysis_and_document(paper_id, owner_id)
         claims = collect_verifiable_claims(analysis)
         provider_name = self.settings.ai_provider
         model_name = getattr(self.provider, "model", self.settings.ai_model)
-        prepared = self._prepare_claims(claims, paper_id, document.document_hash, provider_name, model_name)
+        prepared = self._prepare_claims(claims, paper_id, document.document_hash, provider_name, model_name, owner_id)
         cached = self.database.get_verification_by_cache_keys(
             paper_id,
             [item["cache_key"] for item in prepared],
+            owner_id,
         )
 
         results: list[VerificationResult] = []
@@ -69,7 +70,7 @@ class PaperVerificationService:
             fresh.append(result)
 
         if fresh:
-            self.database.save_verification_results(paper_id, document.id, fresh)
+            self.database.save_verification_results(paper_id, document.id, fresh, owner_id)
         return _response(
             paper_id=paper_id,
             document_id=document.id,
@@ -79,10 +80,10 @@ class PaperVerificationService:
             available=True,
         )
 
-    def current(self, paper_id: str) -> PaperVerificationResponse:
+    def current(self, paper_id: str, owner_id: str = "user_legacy_local") -> PaperVerificationResponse:
         """Return only results matching the current analysis/document cache keys."""
 
-        document = self.database.get_document(paper_id)
+        document = self.database.get_document(paper_id, owner_id)
         if document is None:
             return PaperVerificationResponse(
                 paper_id=paper_id,
@@ -90,7 +91,7 @@ class PaperVerificationService:
                 error="Structured document not found.",
                 summary=_summary([], total_claims=0),
             )
-        analysis_record = self.database.get_analysis_record(paper_id)
+        analysis_record = self.database.get_analysis_record(paper_id, owner_id)
         if analysis_record is None:
             return PaperVerificationResponse(
                 paper_id=paper_id,
@@ -104,10 +105,11 @@ class PaperVerificationService:
         claims = collect_verifiable_claims(analysis)
         provider_name = self.settings.ai_provider
         model_name = getattr(self.provider, "model", self.settings.ai_model)
-        prepared = self._prepare_claims(claims, paper_id, document.document_hash, provider_name, model_name)
+        prepared = self._prepare_claims(claims, paper_id, document.document_hash, provider_name, model_name, owner_id)
         cached = self.database.get_verification_by_cache_keys(
             paper_id,
             [item["cache_key"] for item in prepared],
+            owner_id,
         )
         results = [cached[item["cache_key"]] for item in prepared if item["cache_key"] in cached]
         return _response(
@@ -119,11 +121,11 @@ class PaperVerificationService:
             available=bool(results),
         )
 
-    def _load_analysis_and_document(self, paper_id: str) -> tuple[PaperIR, StructuredDocument]:
-        analysis_record = self.database.get_analysis_record(paper_id)
+    def _load_analysis_and_document(self, paper_id: str, owner_id: str) -> tuple[PaperIR, StructuredDocument]:
+        analysis_record = self.database.get_analysis_record(paper_id, owner_id)
         if analysis_record is None:
             raise PaperVerificationError("Paper analysis not found.")
-        document = self.database.get_document(paper_id)
+        document = self.database.get_document(paper_id, owner_id)
         if document is None:
             raise PaperVerificationError("Structured document not found.")
         return analysis_record[0], document
@@ -135,14 +137,16 @@ class PaperVerificationService:
         document_hash: str | None,
         provider_name: str,
         model_name: str,
+        owner_id: str,
     ) -> list[dict[str, object]]:
         prepared: list[dict[str, object]] = []
         for claim in claims:
-            evidence_by_id = self.database.get_evidence_many(paper_id, claim.evidence_ids)
+            evidence_by_id = self.database.get_evidence_many(paper_id, claim.evidence_ids, owner_id)
             evidence = [evidence_by_id[evidence_id] for evidence_id in claim.evidence_ids if evidence_id in evidence_by_id]
             claim_hash = _hash_payload(claim.model_dump(mode="json"))
             evidence_hash = _evidence_hash(claim.evidence_ids, evidence_by_id)
             cache_key = _cache_key(
+                owner_id,
                 document_hash,
                 claim_hash,
                 evidence_hash,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import logging
 import secrets
 import time
@@ -44,6 +45,13 @@ class Metrics:
         # Keep memory bounded while retaining enough information for local p50/p95 checks.
         if len(self.durations_ms) > 2_000:
             del self.durations_ms[:1_000]
+
+    def observe_research_execution(self, event: str, *, duration_ms: float | None = None) -> None:
+        """Keep a minimal local execution counter set; no provider data is retained."""
+
+        self.requests[f"research_{event.lower()}_total"] += 1
+        if duration_ms is not None:
+            self.requests["research_execution_duration_ms_total"] += duration_ms
 
     def prometheus(self) -> str:
         lines = ["# TYPE paperlens_requests_total counter"]
@@ -146,6 +154,25 @@ class DesktopTokenMiddleware(BaseHTTPMiddleware):
                 status_code=401,
                 content=error_body("DESKTOP_AUTH_REQUIRED", "This local PaperLens session requires its desktop token.", request_id),
             )
+        request.state.desktop_authenticated = True
+        return await call_next(request)
+
+
+class CookieCSRFMiddleware(BaseHTTPMiddleware):
+    """Reject cross-origin state changes made with a browser session cookie."""
+
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+            cookie_name = getattr(getattr(request.app.state, "settings", None), "auth_cookie_name", "paperlens_session")
+            if request.cookies.get(cookie_name):
+                origin = request.headers.get("origin")
+                allowed = set(getattr(request.app.state.settings, "allowed_origins", []))
+                if origin and origin not in allowed:
+                    request_id = getattr(request.state, "request_id", "unknown")
+                    return JSONResponse(
+                        status_code=403,
+                        content=error_body("CSRF_REJECTED", "The request origin is not allowed.", request_id),
+                    )
         return await call_next(request)
 
 
@@ -228,5 +255,16 @@ def _rate_bucket(path: str, method: str) -> str | None:
 
 
 def _client_key(request: Request) -> str:
+    principal = getattr(request.state, "current_user", None)
+    if principal is not None and getattr(principal, "id", None):
+        return f"user:{principal.id}"
+    cookie_name = getattr(getattr(request.app.state, "settings", None), "auth_cookie_name", "paperlens_session")
+    token = request.cookies.get(cookie_name)
+    if token:
+        return f"session:{hashlib.sha256(token.encode('utf-8')).hexdigest()[:24]}"
+    authorization = request.headers.get("authorization", "")
+    scheme, _, bearer = authorization.partition(" ")
+    if scheme.casefold() == "bearer" and bearer.strip():
+        return f"session:{hashlib.sha256(bearer.strip().encode('utf-8')).hexdigest()[:24]}"
     client = request.client
     return client.host if client and client.host else "unknown"

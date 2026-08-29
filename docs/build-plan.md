@@ -92,7 +92,15 @@ and deployment documentation — all validated for `v0.1.0-beta`.
 
 ## Later
 
-- [ ] Begin Phase 13 — Accounts & Research Library.
+- [x] Phase 13A — Add durable first-party accounts, revocable sessions, password hashing, and a canonical principal dependency.
+- [x] Phase 13A — Add SQL-scoped ownership for papers, workspaces, chats, research runs, and inherited child resources.
+- [x] Phase 13A — Backfill existing local records through migration `0002_phase13a_auth_ownership` and preserve explicit desktop-local mode.
+- [x] Phase 13A — Add two-user isolation, IDOR, session lifecycle, CSRF/CORS, and migration coverage.
+- [x] Phase 13B — Replace process-local research execution with database claims, leases, fencing, durable cancellation, retries, and a bounded polling worker.
+- [x] Phase 13B — Durable research execution and queue/lease infrastructure.
+- [x] Phase 14 — Isolate untrusted PDF parsing in bounded child processes.
+- [x] Phase 14 — Enforce streamed byte, page, incremental text, and image budgets.
+- [x] Phase 14 — Add parent timeout/termination, bounded parser concurrency, safe errors, metrics, and regression fixtures.
 - [ ] Consider animation only after the reader is stable.
 
 ## Phase 12 release work
@@ -119,6 +127,56 @@ and deployment documentation — all validated for `v0.1.0-beta`.
 
 ## Explicitly Out of Scope for Current Phase
 
-- Accounts, collaboration, external queues, and unrelated feature expansion.
+- Organizations, sharing, invitations, RBAC, billing, email verification,
+  password reset, OAuth, and product redesign remain out of scope for Phase 13A.
 - Image understanding or arbitrary image/file serving; artifacts remain caption/table/equation/reference evidence.
 - Live external AI extraction without configured credentials.
+
+## Phase 14 — bounded PDF ingestion
+
+Phase 14 is complete. Manual and research-triggered ingestion share the same
+isolated parser service. The coordinator checks actual bytes and the PDF magic
+before starting a child; the child checks page count before traversal and
+extracts text and source artifacts in one pass under incremental budgets. The
+parent enforces timeout, cancellation cleanup, and a parser-process semaphore.
+Failed parses are staged as non-completed work and never publish a partial
+document/evidence set. Remaining limitations (best-effort Unix memory/CPU
+limits, platform-specific child behavior, and process-local metrics) are
+documented in `docs/security.md` and `docs/operations.md`.
+
+## Phase 15 — measured research quality
+
+Phase 15 evaluation plumbing is implemented but not closed. The evaluator
+separates retrieval, verification, chat grounding, and research-agent quality;
+stores immutable dataset/annotation/prediction provenance; validates evidence
+identity fail-closed; records retrieval error categories and numeric fidelity;
+and preserves representative failures. The current public-paper manifest is
+identifier-only and annotations are draft, so fixture numbers remain
+`PRELIMINARY`. Closing the phase requires acquired and hashed PDF versions,
+reviewed annotations, frozen real predictions, and one reproducible FINAL run.
+
+### Phase 15B — real corpus progress (not closed)
+
+The 35-paper candidate pool now has exact, versioned arXiv PDF snapshots and
+SHA-256 metadata under `backend/evaluation/datasets/corpus/`. Every snapshot
+was passed through the Phase 14 bounded downloader/parser/normalizer/document
+persistence/evidence-registry path in a clean SQLite evaluation database:
+35/35 completed, 34,117 evidence records, parser `1.28.2`, corpus hash
+`eb3925e01260897f383c9832e1c564aeff7197e192a62d19ce63cc0f1a0309c1`.
+
+Draft real-corpus ledgers contain 60 retrieval, 50 verification, 40 chat, and
+10 agent cases tied to those evidence IDs. A production BM25 run is frozen;
+semantic and hybrid are intentionally not run without a real embedding
+provider. Human review, provider-backed verification/chat/agent predictions,
+and a single frozen FINAL run remain open. Do not mark Phase 15B or Phase 16
+complete based on the draft ledgers.
+
+### Phase 15C — review/provider gates (in progress)
+
+The real ledgers now have a read-only 160-case schema/evidence audit and a
+minimal local reviewer at `backend/evaluation/review_cli.py`. Reviewer metadata
+is part of every case schema, and reviewed-only scoring fails closed. No human
+reviewer or provider credentials are present in this workspace, so no labels
+were promoted and no semantic, verification, chat, or agent predictions were
+fabricated. Phase 15C remains open pending genuine review and provider-backed
+DEV baseline runs.

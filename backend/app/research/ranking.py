@@ -50,10 +50,21 @@ class CandidateRanker:
     def __init__(self, database: SQLDatabase | None = None) -> None:
         self.database = database
 
-    def rank(self, question: str, candidates: list[PaperCandidate], *, limit: int = 30) -> list[PaperCandidate]:
+    def rank(
+        self,
+        question: str,
+        candidates: list[PaperCandidate],
+        *,
+        limit: int = 30,
+        owner_id: str = "user_legacy_local",
+    ) -> list[PaperCandidate]:
         question_tokens = _tokens(question)
         ranked: list[PaperCandidate] = []
-        existing_arxiv = {paper.metadata.arxiv_id.split("v", 1)[0] for paper in self.database.list_papers()} if self.database else set()
+        existing_arxiv = (
+            {paper.metadata.arxiv_id.split("v", 1)[0] for paper in self.database.list_papers(owner_id)}
+            if self.database
+            else set()
+        )
         for candidate in candidates:
             title_tokens = _tokens(candidate.title)
             abstract_tokens = _tokens(candidate.abstract or "")

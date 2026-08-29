@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from .ai.provider import AIProvider, create_ai_provider
 from .api.routes import router
 from .core.config import ConfigurationError, Settings
-from .core.hardening import DesktopTokenMiddleware, Metrics, RateLimitMiddleware, RequestBodyLimitMiddleware, RequestContextMiddleware, SecurityHeadersMiddleware, error_body
+from .core.hardening import CookieCSRFMiddleware, DesktopTokenMiddleware, Metrics, RateLimitMiddleware, RequestBodyLimitMiddleware, RequestContextMiddleware, SecurityHeadersMiddleware, error_body
 from .db.database import SQLDatabase
 from .extraction.service import ResearchExtractionService
 from .ingestion.service import IngestionService
@@ -19,6 +19,7 @@ from .chat.service import PaperChatService
 from .research.agent import ResearchAgent
 from .research.discovery import ArxivDiscoveryProvider
 from .research.planner import ResearchPlanner
+from .research.worker import ResearchWorker
 
 
 def create_app(
@@ -75,15 +76,38 @@ def create_app(
         app.state.extraction_service,
         settings=resolved_settings,
     )
+    app.state.research_worker = ResearchWorker(
+        app.state.database,
+        app.state.research_agent,
+        settings=resolved_settings,
+        metrics=app.state.metrics,
+    )
+
+    @app.on_event("startup")
+    async def _start_research_worker() -> None:
+        if resolved_settings.research_worker_enabled:
+            app.state.research_worker_task = __import__("asyncio").create_task(app.state.research_worker.run_forever())
+
+    @app.on_event("shutdown")
+    async def _stop_research_worker() -> None:
+        worker = getattr(app.state, "research_worker", None)
+        if worker is not None:
+            worker.stop()
+        task = getattr(app.state, "research_worker_task", None)
+        if task is not None:
+            task.cancel()
+            with __import__("contextlib").suppress(__import__("asyncio").CancelledError):
+                await task
     app.add_middleware(
         CORSMiddleware,
         allow_origins=resolved_settings.allowed_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Accept", "Content-Type", "Authorization", "Idempotency-Key", "X-Request-ID", "X-PaperLens-Desktop-Token"],
     )
     if resolved_settings.desktop_token:
         app.add_middleware(DesktopTokenMiddleware, token=resolved_settings.desktop_token)
+    app.add_middleware(CookieCSRFMiddleware)
     app.add_middleware(RequestBodyLimitMiddleware, max_bytes=resolved_settings.max_request_body_size)
     if resolved_settings.rate_limits_enabled:
         app.add_middleware(
@@ -111,8 +135,12 @@ def create_app(
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
         request_id = getattr(request.state, "request_id", "unknown")
-        message = str(exc.detail) if isinstance(exc.detail, str) else "The request could not be completed."
-        code = _error_code(exc.status_code)
+        if isinstance(exc.detail, dict):
+            message = str(exc.detail.get("message") or "The request could not be completed.")
+            code = str(exc.detail.get("code") or _error_code(exc.status_code))
+        else:
+            message = str(exc.detail) if isinstance(exc.detail, str) else "The request could not be completed."
+            code = _error_code(exc.status_code)
         return JSONResponse(status_code=exc.status_code, headers=exc.headers, content=error_body(code, message, request_id))
 
     @app.exception_handler(Exception)

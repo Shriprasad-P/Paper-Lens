@@ -28,6 +28,18 @@ class Settings:
     arxiv_request_timeout: float = 30.0
     paper_storage_path: str = "data/papers"
     max_pdf_size: int = 50 * 1024 * 1024
+    # Phase 14 names are explicit while the older aliases remain supported for
+    # local deployments and existing callers.
+    pdf_max_bytes: int | None = None
+    pdf_max_pages: int | None = None
+    pdf_max_text_chars: int | None = None
+    pdf_max_text_chars_per_page: int | None = None
+    pdf_max_images_per_page: int = 100
+    pdf_max_total_images: int = 1_000
+    pdf_parse_timeout_seconds: float = 120.0
+    pdf_parse_concurrency: int = 2
+    pdf_parser_memory_limit_bytes: int | None = None
+    pdf_parser_cpu_limit_seconds: float | None = None
     ai_provider: str = "openai_compatible"
     ai_model: str = "gpt-4o-mini"
     ai_api_key: str | None = None
@@ -52,6 +64,11 @@ class Settings:
     research_ingestion_concurrency: int = 2
     research_max_context_chars: int = 12_000
     research_max_provider_calls: int = 32
+    research_worker_enabled: bool = False
+    research_worker_concurrency: int = 1
+    research_worker_poll_seconds: float = 2.0
+    research_claim_lease_seconds: int = 60
+    research_max_attempts: int = 3
     max_request_body_size: int = 1_048_576
     max_paper_text_chars: int = 5_000_000
     max_page_count: int = 500
@@ -77,6 +94,9 @@ class Settings:
     semantic_retrieval_enabled: bool = False
     research_agent_enabled: bool = False
     desktop_token: str | None = None
+    auth_required: bool = False
+    auth_cookie_name: str = "paperlens_session"
+    auth_session_ttl_seconds: int = 60 * 60 * 24 * 7
 
     _allowed_environments: ClassVar[frozenset[str]] = frozenset({"development", "test", "staging", "production"})
 
@@ -91,9 +111,15 @@ class Settings:
         ai_enabled_raw = os.getenv("PAPERLENS_AI_ANALYSIS_ENABLED") or None
         semantic_enabled_raw = os.getenv("PAPERLENS_SEMANTIC_RETRIEVAL_ENABLED") or None
         research_enabled_raw = os.getenv("PAPERLENS_RESEARCH_AGENT_ENABLED") or None
+        research_worker_enabled_raw = os.getenv("PAPERLENS_RESEARCH_WORKER_ENABLED") or None
+        environment = _first_env("PAPERLENS_ENVIRONMENT", "APP_ENV", default=defaults.environment)
+        auth_required_raw = os.getenv("PAPERLENS_AUTH_REQUIRED")
+        legacy_pdf_bytes = int(os.getenv("PAPERLENS_MAX_PDF_SIZE", str(defaults.max_pdf_size)))
+        legacy_pdf_pages = int(os.getenv("PAPERLENS_MAX_PAGE_COUNT", str(defaults.max_page_count)))
+        legacy_pdf_text = int(os.getenv("PAPERLENS_MAX_PAPER_TEXT_CHARS", str(defaults.max_paper_text_chars)))
         result = cls(
             app_name=os.getenv("PAPERLENS_APP_NAME", defaults.app_name),
-            environment=_first_env("PAPERLENS_ENVIRONMENT", "APP_ENV", default=defaults.environment),
+            environment=environment,
             database_url=_first_env("PAPERLENS_DATABASE_URL", "DATABASE_URL", default=defaults.database_url),
             frontend_origin=_first_env("PAPERLENS_FRONTEND_ORIGIN", "FRONTEND_ORIGIN", default=defaults.frontend_origin),
             frontend_origins=os.getenv("PAPERLENS_FRONTEND_ORIGINS") or None,
@@ -102,7 +128,17 @@ class Settings:
                 os.getenv("PAPERLENS_ARXIV_REQUEST_TIMEOUT", str(defaults.arxiv_request_timeout))
             ),
             paper_storage_path=_first_env("PAPERLENS_STORAGE_PATH", "PAPER_STORAGE_PATH", default=defaults.paper_storage_path),
-            max_pdf_size=int(os.getenv("PAPERLENS_MAX_PDF_SIZE", str(defaults.max_pdf_size))),
+            max_pdf_size=legacy_pdf_bytes,
+            pdf_max_bytes=int(os.getenv("PDF_MAX_BYTES", os.getenv("PAPERLENS_PDF_MAX_BYTES", str(legacy_pdf_bytes)))),
+            pdf_max_pages=int(os.getenv("PDF_MAX_PAGES", os.getenv("PAPERLENS_PDF_MAX_PAGES", str(legacy_pdf_pages)))),
+            pdf_max_text_chars=int(os.getenv("PDF_MAX_TEXT_CHARS", os.getenv("PAPERLENS_PDF_MAX_TEXT_CHARS", str(legacy_pdf_text)))),
+            pdf_max_text_chars_per_page=_optional_int_env("PDF_MAX_TEXT_CHARS_PER_PAGE", "PAPERLENS_PDF_MAX_TEXT_CHARS_PER_PAGE"),
+            pdf_max_images_per_page=max(0, int(os.getenv("PDF_MAX_IMAGES_PER_PAGE", os.getenv("PAPERLENS_PDF_MAX_IMAGES_PER_PAGE", str(defaults.pdf_max_images_per_page))))),
+            pdf_max_total_images=max(0, int(os.getenv("PDF_MAX_TOTAL_IMAGES", os.getenv("PAPERLENS_PDF_MAX_TOTAL_IMAGES", str(defaults.pdf_max_total_images))))),
+            pdf_parse_timeout_seconds=max(0.1, float(os.getenv("PDF_PARSE_TIMEOUT_SECONDS", os.getenv("PAPERLENS_PDF_PARSE_TIMEOUT_SECONDS", str(defaults.pdf_parse_timeout_seconds))))),
+            pdf_parse_concurrency=max(1, min(int(os.getenv("PDF_PARSE_CONCURRENCY", os.getenv("PAPERLENS_PDF_PARSE_CONCURRENCY", str(defaults.pdf_parse_concurrency)))), 8)),
+            pdf_parser_memory_limit_bytes=_optional_int_env("PDF_PARSER_MEMORY_LIMIT_BYTES", "PAPERLENS_PDF_PARSER_MEMORY_LIMIT_BYTES"),
+            pdf_parser_cpu_limit_seconds=_optional_float_env("PDF_PARSER_CPU_LIMIT_SECONDS", "PAPERLENS_PDF_PARSER_CPU_LIMIT_SECONDS"),
             ai_provider=ai_provider,
             ai_model=os.getenv("AI_MODEL", defaults.ai_model),
             ai_api_key=ai_api_key,
@@ -127,6 +163,11 @@ class Settings:
             research_ingestion_concurrency=max(1, min(int(os.getenv("RESEARCH_INGESTION_CONCURRENCY", str(defaults.research_ingestion_concurrency))), 4)),
             research_max_context_chars=max(2_000, min(int(os.getenv("RESEARCH_MAX_CONTEXT_CHARS", str(defaults.research_max_context_chars))), 24_000)),
             research_max_provider_calls=max(1, min(int(os.getenv("RESEARCH_MAX_PROVIDER_CALLS", str(defaults.research_max_provider_calls))), 64)),
+            research_worker_enabled=_as_bool(research_worker_enabled_raw) if research_worker_enabled_raw is not None else defaults.research_worker_enabled,
+            research_worker_concurrency=max(1, min(int(os.getenv("RESEARCH_WORKER_CONCURRENCY", str(defaults.research_worker_concurrency))), 8)),
+            research_worker_poll_seconds=max(0.25, min(float(os.getenv("RESEARCH_WORKER_POLL_SECONDS", str(defaults.research_worker_poll_seconds))), 60.0)),
+            research_claim_lease_seconds=max(5, min(int(os.getenv("RESEARCH_CLAIM_LEASE_SECONDS", str(defaults.research_claim_lease_seconds))), 3600)),
+            research_max_attempts=max(1, min(int(os.getenv("RESEARCH_MAX_ATTEMPTS", str(defaults.research_max_attempts))), 5)),
             max_request_body_size=max(16_384, int(os.getenv("PAPERLENS_MAX_REQUEST_BODY_SIZE", str(defaults.max_request_body_size)))),
             max_paper_text_chars=max(100_000, int(os.getenv("PAPERLENS_MAX_PAPER_TEXT_CHARS", str(defaults.max_paper_text_chars)))),
             max_page_count=max(1, int(os.getenv("PAPERLENS_MAX_PAGE_COUNT", str(defaults.max_page_count)))),
@@ -152,6 +193,9 @@ class Settings:
             semantic_retrieval_enabled=_as_bool(semantic_enabled_raw) if semantic_enabled_raw is not None else embedding_provider.lower() not in {"none", "disabled"},
             research_agent_enabled=_as_bool(research_enabled_raw) if research_enabled_raw is not None else bool(ai_api_key and ai_provider.lower() not in {"none", "disabled"}),
             desktop_token=os.getenv("PAPERLENS_DESKTOP_TOKEN") or None,
+            auth_required=_as_bool(auth_required_raw) if auth_required_raw is not None else environment.strip().lower() in {"staging", "production"},
+            auth_cookie_name=os.getenv("PAPERLENS_AUTH_COOKIE_NAME", defaults.auth_cookie_name),
+            auth_session_ttl_seconds=max(300, int(os.getenv("PAPERLENS_AUTH_SESSION_TTL_SECONDS", str(defaults.auth_session_ttl_seconds)))),
         )
         return result
 
@@ -161,6 +205,24 @@ class Settings:
 
         values = self.frontend_origins or self.frontend_origin
         return list(dict.fromkeys(item.strip() for item in values.split(",") if item.strip()))
+
+    @property
+    def requires_authentication(self) -> bool:
+        """Whether shared-mode requests must present a durable user session."""
+
+        return bool(self.auth_required or self.environment.strip().lower() in {"staging", "production"})
+
+    @property
+    def effective_pdf_max_bytes(self) -> int:
+        return int(self.pdf_max_bytes if self.pdf_max_bytes is not None else self.max_pdf_size)
+
+    @property
+    def effective_pdf_max_pages(self) -> int:
+        return int(self.pdf_max_pages if self.pdf_max_pages is not None else self.max_page_count)
+
+    @property
+    def effective_pdf_max_text_chars(self) -> int:
+        return int(self.pdf_max_text_chars if self.pdf_max_text_chars is not None else self.max_paper_text_chars)
 
     def validate(self) -> None:
         """Validate values that can otherwise cause an unsafe or broken startup."""
@@ -187,6 +249,9 @@ class Settings:
             raise ConfigurationError("BACKEND_PUBLIC_URL must be an absolute HTTP(S) URL.")
         numeric = {
             "max_pdf_size": self.max_pdf_size,
+            "pdf_max_bytes": self.effective_pdf_max_bytes,
+            "pdf_max_pages": self.effective_pdf_max_pages,
+            "pdf_max_text_chars": self.effective_pdf_max_text_chars,
             "max_request_body_size": self.max_request_body_size,
             "max_paper_text_chars": self.max_paper_text_chars,
             "max_page_count": self.max_page_count,
@@ -194,6 +259,16 @@ class Settings:
         }
         if any(value <= 0 for value in numeric.values()):
             raise ConfigurationError("Resource limits must be positive.")
+        if self.pdf_max_text_chars_per_page is not None and self.pdf_max_text_chars_per_page <= 0:
+            raise ConfigurationError("PDF_MAX_TEXT_CHARS_PER_PAGE must be positive when configured.")
+        if self.pdf_max_images_per_page < 0 or self.pdf_max_total_images < 0:
+            raise ConfigurationError("PDF image budgets cannot be negative.")
+        if self.pdf_parse_timeout_seconds <= 0 or self.pdf_parse_concurrency < 1 or self.pdf_parse_concurrency > 8:
+            raise ConfigurationError("PDF parser timeout and concurrency must be positive and bounded.")
+        if self.pdf_parser_memory_limit_bytes is not None and self.pdf_parser_memory_limit_bytes <= 0:
+            raise ConfigurationError("PDF_PARSER_MEMORY_LIMIT_BYTES must be positive when configured.")
+        if self.pdf_parser_cpu_limit_seconds is not None and self.pdf_parser_cpu_limit_seconds <= 0:
+            raise ConfigurationError("PDF_PARSER_CPU_LIMIT_SECONDS must be positive when configured.")
         if self.ai_max_retries < 0 or self.ai_max_retries > 5:
             raise ConfigurationError("AI_MAX_RETRIES must be between 0 and 5.")
         if self.environment == "production" and self.auto_create_schema:
@@ -204,6 +279,12 @@ class Settings:
             raise ConfigurationError("PAPERLENS_STORAGE_PROVIDER must be 'local' until an object-storage adapter is configured.")
         if self.db_pool_size <= 0 or self.db_max_overflow < 0 or self.db_pool_timeout <= 0:
             raise ConfigurationError("Database pool settings must be positive and bounded.")
+        if self.research_worker_concurrency < 1 or self.research_worker_concurrency > 8:
+            raise ConfigurationError("RESEARCH_WORKER_CONCURRENCY must be between 1 and 8.")
+        if self.research_worker_poll_seconds <= 0 or self.research_claim_lease_seconds < 5:
+            raise ConfigurationError("Research worker polling and lease values must be positive and bounded.")
+        if self.research_max_attempts < 1 or self.research_max_attempts > 5:
+            raise ConfigurationError("RESEARCH_MAX_ATTEMPTS must be between 1 and 5.")
         limits = {
             "rate_limit_ingestion_per_minute": self.rate_limit_ingestion_per_minute,
             "rate_limit_ai_per_minute": self.rate_limit_ai_per_minute,
@@ -216,6 +297,10 @@ class Settings:
             raise ConfigurationError("PAPERLENS_RELEASE_VERSION must be a safe release identifier.")
         if self.desktop_token is not None and len(self.desktop_token) < 16:
             raise ConfigurationError("PAPERLENS_DESKTOP_TOKEN must contain at least 16 characters when configured.")
+        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{2,63}", self.auth_cookie_name):
+            raise ConfigurationError("PAPERLENS_AUTH_COOKIE_NAME must be a safe cookie name.")
+        if self.auth_session_ttl_seconds < 300 or self.auth_session_ttl_seconds > 60 * 60 * 24 * 30:
+            raise ConfigurationError("PAPERLENS_AUTH_SESSION_TTL_SECONDS must be between 300 and 2592000.")
         storage = Path(self.paper_storage_path).expanduser()
         if storage.exists() and not storage.is_dir():
             raise ConfigurationError("PAPERLENS_STORAGE_PATH must point to a directory.")
@@ -241,3 +326,19 @@ def _first_env(*names: str, default: str) -> str:
         if value is not None and value.strip():
             return value
     return default
+
+
+def _optional_int_env(*names: str) -> int | None:
+    for name in names:
+        value = os.getenv(name)
+        if value is not None and value.strip():
+            return int(value)
+    return None
+
+
+def _optional_float_env(*names: str) -> float | None:
+    for name in names:
+        value = os.getenv(name)
+        if value is not None and value.strip():
+            return float(value)
+    return None

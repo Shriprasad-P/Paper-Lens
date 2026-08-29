@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 
@@ -13,6 +14,7 @@ class Workspace(BaseModel):
 
     id: str
     name: str = Field(min_length=1, max_length=120)
+    owner_id: str = "user_legacy_local"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -132,6 +134,46 @@ class ResearchRunStatus(str, Enum):
     INTERRUPTED = "INTERRUPTED"
 
 
+class ResearchExecutionState(str, Enum):
+    """Durable execution lifecycle, independent from visible stage status."""
+
+    IDLE = "IDLE"
+    QUEUED = "QUEUED"
+    CLAIMED = "CLAIMED"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCEL_REQUESTED = "CANCEL_REQUESTED"
+    CANCELLED = "CANCELLED"
+
+
+class ResearchAttemptStatus(str, Enum):
+    CLAIMED = "CLAIMED"
+    RUNNING = "RUNNING"
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+    LOST = "LOST"
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionClaim:
+    """Opaque in-memory claim credential; its raw token is never persisted."""
+
+    run_id: str
+    attempt_id: str
+    worker_id: str
+    token: str
+    attempt_number: int
+    lease_expires_at: datetime
+
+    @property
+    def claim_token(self) -> str:
+        """Readable alias used by worker integrations without exposing it in responses."""
+
+        return self.token
+
+
 class ResearchDepth(str, Enum):
     QUICK = "QUICK"
     STANDARD = "STANDARD"
@@ -155,6 +197,11 @@ class ResearchRun(BaseModel):
     planner_model: str | None = None
     prompt_version: str = "v1"
     schema_version: str = "v1"
+    execution_state: ResearchExecutionState = ResearchExecutionState.IDLE
+    active_attempt_id: str | None = None
+    attempt_count: int = Field(default=0, ge=0)
+    cancel_requested_at: datetime | None = None
+    next_attempt_at: datetime | None = None
 
 
 class ResearchRunCreate(BaseModel):
@@ -209,6 +256,27 @@ class ResearchRunEvent(BaseModel):
     message: str
     metadata: dict[str, object] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    attempt_id: str | None = None
+    sequence: int | None = None
+
+
+class ResearchAttemptSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    attempt_id: str
+    research_run_id: str
+    worker_id: str
+    attempt_number: int
+    status: ResearchAttemptStatus
+    claimed_at: datetime
+    lease_expires_at: datetime
+    heartbeat_at: datetime | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    next_retry_at: datetime | None = None
+    retryable: bool | None = None
+    error_class: str | None = None
+    error_message: str | None = None
 
 
 class ResearchCoverage(BaseModel):
@@ -329,3 +397,4 @@ class ResearchRunResponse(BaseModel):
     events: list[ResearchRunEvent] = Field(default_factory=list)
     coverage: ResearchCoverage | None = None
     report: ResearchReportIR | None = None
+    attempt: ResearchAttemptSummary | None = None

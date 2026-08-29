@@ -1,0 +1,2398 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-08-29T12:32:26.239524+00:00",
+  "status": "NOT_REVIEWED",
+  "corpus_hash": "eb3925e01260897f383c9832e1c564aeff7197e192a62d19ce63cc0f1a0309c1",
+  "case_count": 160,
+  "schema_valid_count": 160,
+  "schema_error_count": 0,
+  "reviewer_count": 0,
+  "review_type": "unassigned",
+  "cases": [
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-001",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-002",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-003",
+      "split": "dev",
+      "paper_id": "arxiv_1502_03167",
+      "document_id": "doc_f9178cbdbb8aeb8d",
+      "evidence_ids": [
+        "doc_f9178cbdbb8aeb8d__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-004",
+      "split": "dev",
+      "paper_id": "arxiv_1502_03167",
+      "document_id": "doc_f9178cbdbb8aeb8d",
+      "evidence_ids": [
+        "doc_f9178cbdbb8aeb8d__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-005",
+      "split": "dev",
+      "paper_id": "arxiv_1505_00387",
+      "document_id": "doc_1edd5ee717b59aec",
+      "evidence_ids": [
+        "doc_1edd5ee717b59aec__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-006",
+      "split": "dev",
+      "paper_id": "arxiv_1505_00387",
+      "document_id": "doc_1edd5ee717b59aec",
+      "evidence_ids": [
+        "doc_1edd5ee717b59aec__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-007",
+      "split": "dev",
+      "paper_id": "arxiv_1512_03385",
+      "document_id": "doc_b87100da882de413",
+      "evidence_ids": [
+        "doc_b87100da882de413__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-008",
+      "split": "dev",
+      "paper_id": "arxiv_1512_03385",
+      "document_id": "doc_b87100da882de413",
+      "evidence_ids": [
+        "doc_b87100da882de413__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-009",
+      "split": "dev",
+      "paper_id": "arxiv_1602_07360",
+      "document_id": "doc_396765f56159e764",
+      "evidence_ids": [
+        "doc_396765f56159e764__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-010",
+      "split": "dev",
+      "paper_id": "arxiv_1602_07360",
+      "document_id": "doc_396765f56159e764",
+      "evidence_ids": [
+        "doc_396765f56159e764__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-011",
+      "split": "dev",
+      "paper_id": "arxiv_1603_00856",
+      "document_id": "doc_cd135acb31d725ca",
+      "evidence_ids": [
+        "doc_cd135acb31d725ca__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-012",
+      "split": "dev",
+      "paper_id": "arxiv_1603_00856",
+      "document_id": "doc_cd135acb31d725ca",
+      "evidence_ids": [
+        "doc_cd135acb31d725ca__ev_0004"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-013",
+      "split": "dev",
+      "paper_id": "arxiv_1611_03530",
+      "document_id": "doc_5f0ba0897a8bf946",
+      "evidence_ids": [
+        "doc_5f0ba0897a8bf946__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-014",
+      "split": "dev",
+      "paper_id": "arxiv_1611_03530",
+      "document_id": "doc_5f0ba0897a8bf946",
+      "evidence_ids": [
+        "doc_5f0ba0897a8bf946__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-015",
+      "split": "dev",
+      "paper_id": "arxiv_1703_06103",
+      "document_id": "doc_1033c5f9bd933ade",
+      "evidence_ids": [
+        "doc_1033c5f9bd933ade__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-016",
+      "split": "dev",
+      "paper_id": "arxiv_1703_06103",
+      "document_id": "doc_1033c5f9bd933ade",
+      "evidence_ids": [
+        "doc_1033c5f9bd933ade__ev_0005"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-017",
+      "split": "dev",
+      "paper_id": "arxiv_1704_04861",
+      "document_id": "doc_08d1b46560c7eaac",
+      "evidence_ids": [
+        "doc_08d1b46560c7eaac__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-018",
+      "split": "dev",
+      "paper_id": "arxiv_1704_04861",
+      "document_id": "doc_08d1b46560c7eaac",
+      "evidence_ids": [
+        "doc_08d1b46560c7eaac__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-019",
+      "split": "dev",
+      "paper_id": "arxiv_1706_02216",
+      "document_id": "doc_bbf3618a7efd3753",
+      "evidence_ids": [
+        "doc_bbf3618a7efd3753__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-020",
+      "split": "dev",
+      "paper_id": "arxiv_1706_02216",
+      "document_id": "doc_bbf3618a7efd3753",
+      "evidence_ids": [
+        "doc_bbf3618a7efd3753__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-021",
+      "split": "dev",
+      "paper_id": "arxiv_1706_03762",
+      "document_id": "doc_9793a052b7692d76",
+      "evidence_ids": [
+        "doc_9793a052b7692d76__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-022",
+      "split": "dev",
+      "paper_id": "arxiv_1706_03762",
+      "document_id": "doc_9793a052b7692d76",
+      "evidence_ids": [
+        "doc_9793a052b7692d76__ev_0006"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-023",
+      "split": "dev",
+      "paper_id": "arxiv_1709_07876",
+      "document_id": "doc_8ae772552e130ad8",
+      "evidence_ids": [
+        "doc_8ae772552e130ad8__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-024",
+      "split": "dev",
+      "paper_id": "arxiv_1709_07876",
+      "document_id": "doc_8ae772552e130ad8",
+      "evidence_ids": [
+        "doc_8ae772552e130ad8__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-025",
+      "split": "dev",
+      "paper_id": "arxiv_1711_05101",
+      "document_id": "doc_1f0214c145fbc9cb",
+      "evidence_ids": [
+        "doc_1f0214c145fbc9cb__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-026",
+      "split": "dev",
+      "paper_id": "arxiv_1711_05101",
+      "document_id": "doc_1f0214c145fbc9cb",
+      "evidence_ids": [
+        "doc_1f0214c145fbc9cb__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-027",
+      "split": "dev",
+      "paper_id": "arxiv_1802_05352",
+      "document_id": "doc_f9655223c9a32c16",
+      "evidence_ids": [
+        "doc_f9655223c9a32c16__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-028",
+      "split": "dev",
+      "paper_id": "arxiv_1802_05352",
+      "document_id": "doc_f9655223c9a32c16",
+      "evidence_ids": [
+        "doc_f9655223c9a32c16__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-029",
+      "split": "dev",
+      "paper_id": "arxiv_1804_06439",
+      "document_id": "doc_e995d4f02b074689",
+      "evidence_ids": [
+        "doc_e995d4f02b074689__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-030",
+      "split": "dev",
+      "paper_id": "arxiv_1804_06439",
+      "document_id": "doc_e995d4f02b074689",
+      "evidence_ids": [
+        "doc_e995d4f02b074689__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-031",
+      "split": "dev",
+      "paper_id": "arxiv_1805_02262",
+      "document_id": "doc_8e019d9545db6080",
+      "evidence_ids": [
+        "doc_8e019d9545db6080__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-032",
+      "split": "dev",
+      "paper_id": "arxiv_1805_02262",
+      "document_id": "doc_8e019d9545db6080",
+      "evidence_ids": [
+        "doc_8e019d9545db6080__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-033",
+      "split": "dev",
+      "paper_id": "arxiv_1807_01587",
+      "document_id": "doc_ef76e0ddb970d58c",
+      "evidence_ids": [
+        "doc_ef76e0ddb970d58c__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-034",
+      "split": "dev",
+      "paper_id": "arxiv_1807_01587",
+      "document_id": "doc_ef76e0ddb970d58c",
+      "evidence_ids": [
+        "doc_ef76e0ddb970d58c__ev_0004"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-035",
+      "split": "dev",
+      "paper_id": "arxiv_1810_04805",
+      "document_id": "doc_8ea108e044aea8bd",
+      "evidence_ids": [
+        "doc_8ea108e044aea8bd__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-036",
+      "split": "dev",
+      "paper_id": "arxiv_1810_04805",
+      "document_id": "doc_8ea108e044aea8bd",
+      "evidence_ids": [
+        "doc_8ea108e044aea8bd__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-037",
+      "split": "dev",
+      "paper_id": "arxiv_1902_06705",
+      "document_id": "doc_2ae3f7dce0f1e0c5",
+      "evidence_ids": [
+        "doc_2ae3f7dce0f1e0c5__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-038",
+      "split": "dev",
+      "paper_id": "arxiv_1902_06705",
+      "document_id": "doc_2ae3f7dce0f1e0c5",
+      "evidence_ids": [
+        "doc_2ae3f7dce0f1e0c5__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-039",
+      "split": "dev",
+      "paper_id": "arxiv_1904_08375",
+      "document_id": "doc_964e8ac6be7a870a",
+      "evidence_ids": [
+        "doc_964e8ac6be7a870a__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-040",
+      "split": "dev",
+      "paper_id": "arxiv_1904_08375",
+      "document_id": "doc_964e8ac6be7a870a",
+      "evidence_ids": [
+        "doc_964e8ac6be7a870a__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-041",
+      "split": "dev",
+      "paper_id": "arxiv_1905_11946",
+      "document_id": "doc_3f7c33e4d492bc04",
+      "evidence_ids": [
+        "doc_3f7c33e4d492bc04__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-042",
+      "split": "dev",
+      "paper_id": "arxiv_1905_11946",
+      "document_id": "doc_3f7c33e4d492bc04",
+      "evidence_ids": [
+        "doc_3f7c33e4d492bc04__ev_0028"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-043",
+      "split": "dev",
+      "paper_id": "arxiv_1909_02130",
+      "document_id": "doc_76a63ddbfc5d9c97",
+      "evidence_ids": [
+        "doc_76a63ddbfc5d9c97__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-044",
+      "split": "dev",
+      "paper_id": "arxiv_1909_02130",
+      "document_id": "doc_76a63ddbfc5d9c97",
+      "evidence_ids": [
+        "doc_76a63ddbfc5d9c97__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-045",
+      "split": "dev",
+      "paper_id": "arxiv_2001_08361",
+      "document_id": "doc_5ed89b4846a4ca0a",
+      "evidence_ids": [
+        "doc_5ed89b4846a4ca0a__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-046",
+      "split": "dev",
+      "paper_id": "arxiv_2001_08361",
+      "document_id": "doc_5ed89b4846a4ca0a",
+      "evidence_ids": [
+        "doc_5ed89b4846a4ca0a__ev_0004"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-047",
+      "split": "dev",
+      "paper_id": "arxiv_2003_08934",
+      "document_id": "doc_7add698830bd13fa",
+      "evidence_ids": [
+        "doc_7add698830bd13fa__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-048",
+      "split": "dev",
+      "paper_id": "arxiv_2003_08934",
+      "document_id": "doc_7add698830bd13fa",
+      "evidence_ids": [
+        "doc_7add698830bd13fa__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-049",
+      "split": "final",
+      "paper_id": "arxiv_2005_11401",
+      "document_id": "doc_873ada84ada60cf7",
+      "evidence_ids": [
+        "doc_873ada84ada60cf7__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-050",
+      "split": "final",
+      "paper_id": "arxiv_2005_11401",
+      "document_id": "doc_873ada84ada60cf7",
+      "evidence_ids": [
+        "doc_873ada84ada60cf7__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-051",
+      "split": "final",
+      "paper_id": "arxiv_2006_03031",
+      "document_id": "doc_1635d5141185f37a",
+      "evidence_ids": [
+        "doc_1635d5141185f37a__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-052",
+      "split": "final",
+      "paper_id": "arxiv_2006_03031",
+      "document_id": "doc_1635d5141185f37a",
+      "evidence_ids": [
+        "doc_1635d5141185f37a__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-053",
+      "split": "final",
+      "paper_id": "arxiv_2101_03961",
+      "document_id": "doc_0bcc72dc1f53e520",
+      "evidence_ids": [
+        "doc_0bcc72dc1f53e520__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-054",
+      "split": "final",
+      "paper_id": "arxiv_2101_03961",
+      "document_id": "doc_0bcc72dc1f53e520",
+      "evidence_ids": [
+        "doc_0bcc72dc1f53e520__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-055",
+      "split": "final",
+      "paper_id": "arxiv_2104_07653",
+      "document_id": "doc_f90931907f4b8800",
+      "evidence_ids": [
+        "doc_f90931907f4b8800__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-056",
+      "split": "final",
+      "paper_id": "arxiv_2104_07653",
+      "document_id": "doc_f90931907f4b8800",
+      "evidence_ids": [
+        "doc_f90931907f4b8800__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-057",
+      "split": "final",
+      "paper_id": "arxiv_2106_09685",
+      "document_id": "doc_7d95858ff1479191",
+      "evidence_ids": [
+        "doc_7d95858ff1479191__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-058",
+      "split": "final",
+      "paper_id": "arxiv_2106_09685",
+      "document_id": "doc_7d95858ff1479191",
+      "evidence_ids": [
+        "doc_7d95858ff1479191__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-059",
+      "split": "final",
+      "paper_id": "arxiv_2108_07258",
+      "document_id": "doc_978bf2d6e3b18c32",
+      "evidence_ids": [
+        "doc_978bf2d6e3b18c32__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "retrieval",
+      "case_id": "real-retrieval-060",
+      "split": "final",
+      "paper_id": "arxiv_2108_07258",
+      "document_id": "doc_978bf2d6e3b18c32",
+      "evidence_ids": [
+        "doc_978bf2d6e3b18c32__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-001",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-002",
+      "split": "dev",
+      "paper_id": "arxiv_1502_03167",
+      "document_id": "doc_f9178cbdbb8aeb8d",
+      "evidence_ids": [
+        "doc_f9178cbdbb8aeb8d__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-003",
+      "split": "dev",
+      "paper_id": "arxiv_1505_00387",
+      "document_id": "doc_1edd5ee717b59aec",
+      "evidence_ids": [
+        "doc_1edd5ee717b59aec__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-004",
+      "split": "dev",
+      "paper_id": "arxiv_1512_03385",
+      "document_id": "doc_b87100da882de413",
+      "evidence_ids": [
+        "doc_b87100da882de413__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-005",
+      "split": "dev",
+      "paper_id": "arxiv_1602_07360",
+      "document_id": "doc_396765f56159e764",
+      "evidence_ids": [
+        "doc_396765f56159e764__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-006",
+      "split": "dev",
+      "paper_id": "arxiv_1603_00856",
+      "document_id": "doc_cd135acb31d725ca",
+      "evidence_ids": [
+        "doc_cd135acb31d725ca__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-007",
+      "split": "dev",
+      "paper_id": "arxiv_1611_03530",
+      "document_id": "doc_5f0ba0897a8bf946",
+      "evidence_ids": [
+        "doc_5f0ba0897a8bf946__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-008",
+      "split": "dev",
+      "paper_id": "arxiv_1703_06103",
+      "document_id": "doc_1033c5f9bd933ade",
+      "evidence_ids": [
+        "doc_1033c5f9bd933ade__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-009",
+      "split": "dev",
+      "paper_id": "arxiv_1704_04861",
+      "document_id": "doc_08d1b46560c7eaac",
+      "evidence_ids": [
+        "doc_08d1b46560c7eaac__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-010",
+      "split": "dev",
+      "paper_id": "arxiv_1706_02216",
+      "document_id": "doc_bbf3618a7efd3753",
+      "evidence_ids": [
+        "doc_bbf3618a7efd3753__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-011",
+      "split": "dev",
+      "paper_id": "arxiv_1706_03762",
+      "document_id": "doc_9793a052b7692d76",
+      "evidence_ids": [
+        "doc_9793a052b7692d76__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-012",
+      "split": "dev",
+      "paper_id": "arxiv_1709_07876",
+      "document_id": "doc_8ae772552e130ad8",
+      "evidence_ids": [
+        "doc_8ae772552e130ad8__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-013",
+      "split": "dev",
+      "paper_id": "arxiv_1711_05101",
+      "document_id": "doc_1f0214c145fbc9cb",
+      "evidence_ids": [
+        "doc_1f0214c145fbc9cb__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-014",
+      "split": "dev",
+      "paper_id": "arxiv_1802_05352",
+      "document_id": "doc_f9655223c9a32c16",
+      "evidence_ids": [
+        "doc_f9655223c9a32c16__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-015",
+      "split": "dev",
+      "paper_id": "arxiv_1804_06439",
+      "document_id": "doc_e995d4f02b074689",
+      "evidence_ids": [
+        "doc_e995d4f02b074689__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-016",
+      "split": "dev",
+      "paper_id": "arxiv_1805_02262",
+      "document_id": "doc_8e019d9545db6080",
+      "evidence_ids": [
+        "doc_8e019d9545db6080__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-017",
+      "split": "dev",
+      "paper_id": "arxiv_1807_01587",
+      "document_id": "doc_ef76e0ddb970d58c",
+      "evidence_ids": [
+        "doc_ef76e0ddb970d58c__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-018",
+      "split": "dev",
+      "paper_id": "arxiv_1810_04805",
+      "document_id": "doc_8ea108e044aea8bd",
+      "evidence_ids": [
+        "doc_8ea108e044aea8bd__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-019",
+      "split": "dev",
+      "paper_id": "arxiv_1902_06705",
+      "document_id": "doc_2ae3f7dce0f1e0c5",
+      "evidence_ids": [
+        "doc_2ae3f7dce0f1e0c5__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-020",
+      "split": "dev",
+      "paper_id": "arxiv_1904_08375",
+      "document_id": "doc_964e8ac6be7a870a",
+      "evidence_ids": [
+        "doc_964e8ac6be7a870a__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-021",
+      "split": "dev",
+      "paper_id": "arxiv_1905_11946",
+      "document_id": "doc_3f7c33e4d492bc04",
+      "evidence_ids": [
+        "doc_3f7c33e4d492bc04__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-022",
+      "split": "dev",
+      "paper_id": "arxiv_1909_02130",
+      "document_id": "doc_76a63ddbfc5d9c97",
+      "evidence_ids": [
+        "doc_76a63ddbfc5d9c97__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-023",
+      "split": "dev",
+      "paper_id": "arxiv_2001_08361",
+      "document_id": "doc_5ed89b4846a4ca0a",
+      "evidence_ids": [
+        "doc_5ed89b4846a4ca0a__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-024",
+      "split": "dev",
+      "paper_id": "arxiv_2003_08934",
+      "document_id": "doc_7add698830bd13fa",
+      "evidence_ids": [
+        "doc_7add698830bd13fa__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-025",
+      "split": "final",
+      "paper_id": "arxiv_2005_11401",
+      "document_id": "doc_873ada84ada60cf7",
+      "evidence_ids": [
+        "doc_873ada84ada60cf7__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-026",
+      "split": "final",
+      "paper_id": "arxiv_2006_03031",
+      "document_id": "doc_1635d5141185f37a",
+      "evidence_ids": [
+        "doc_1635d5141185f37a__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-027",
+      "split": "final",
+      "paper_id": "arxiv_2101_03961",
+      "document_id": "doc_0bcc72dc1f53e520",
+      "evidence_ids": [
+        "doc_0bcc72dc1f53e520__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-028",
+      "split": "final",
+      "paper_id": "arxiv_2104_07653",
+      "document_id": "doc_f90931907f4b8800",
+      "evidence_ids": [
+        "doc_f90931907f4b8800__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-029",
+      "split": "final",
+      "paper_id": "arxiv_2106_09685",
+      "document_id": "doc_7d95858ff1479191",
+      "evidence_ids": [
+        "doc_7d95858ff1479191__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-030",
+      "split": "final",
+      "paper_id": "arxiv_2108_07258",
+      "document_id": "doc_978bf2d6e3b18c32",
+      "evidence_ids": [
+        "doc_978bf2d6e3b18c32__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-031",
+      "split": "final",
+      "paper_id": "arxiv_2201_07243",
+      "document_id": "doc_3b626fa1b96e4b22",
+      "evidence_ids": [
+        "doc_3b626fa1b96e4b22__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-032",
+      "split": "final",
+      "paper_id": "arxiv_2203_11171",
+      "document_id": "doc_870fb18cbcd17cb7",
+      "evidence_ids": [
+        "doc_870fb18cbcd17cb7__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-033",
+      "split": "final",
+      "paper_id": "arxiv_2301_08727",
+      "document_id": "doc_4114f6c9734f94cb",
+      "evidence_ids": [
+        "doc_4114f6c9734f94cb__ev_0001"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-034",
+      "split": "final",
+      "paper_id": "arxiv_2302_01318",
+      "document_id": "doc_676af3c1b769ba5a",
+      "evidence_ids": [
+        "doc_676af3c1b769ba5a__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-035",
+      "split": "final",
+      "paper_id": "arxiv_2303_08774",
+      "document_id": "doc_c12fcefde3142b84",
+      "evidence_ids": [
+        "doc_c12fcefde3142b84__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-036",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-037",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-038",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0004"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-039",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0005"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-040",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0006"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-041",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0008"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-042",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0009"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-043",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0010"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-044",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0011"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-045",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0013"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-046",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0015"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-047",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0016"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-048",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0017"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-049",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0018"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "verification",
+      "case_id": "real-verification-050",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0020"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-001",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-002",
+      "split": "dev",
+      "paper_id": "arxiv_1502_03167",
+      "document_id": "doc_f9178cbdbb8aeb8d",
+      "evidence_ids": [
+        "doc_f9178cbdbb8aeb8d__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-003",
+      "split": "dev",
+      "paper_id": "arxiv_1505_00387",
+      "document_id": "doc_1edd5ee717b59aec",
+      "evidence_ids": [
+        "doc_1edd5ee717b59aec__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-004",
+      "split": "dev",
+      "paper_id": "arxiv_1512_03385",
+      "document_id": "doc_b87100da882de413",
+      "evidence_ids": [
+        "doc_b87100da882de413__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-005",
+      "split": "dev",
+      "paper_id": "arxiv_1602_07360",
+      "document_id": "doc_396765f56159e764",
+      "evidence_ids": [
+        "doc_396765f56159e764__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-006",
+      "split": "dev",
+      "paper_id": "arxiv_1603_00856",
+      "document_id": "doc_cd135acb31d725ca",
+      "evidence_ids": [
+        "doc_cd135acb31d725ca__ev_0004"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-007",
+      "split": "dev",
+      "paper_id": "arxiv_1611_03530",
+      "document_id": "doc_5f0ba0897a8bf946",
+      "evidence_ids": [
+        "doc_5f0ba0897a8bf946__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-008",
+      "split": "dev",
+      "paper_id": "arxiv_1703_06103",
+      "document_id": "doc_1033c5f9bd933ade",
+      "evidence_ids": [
+        "doc_1033c5f9bd933ade__ev_0005"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-009",
+      "split": "dev",
+      "paper_id": "arxiv_1704_04861",
+      "document_id": "doc_08d1b46560c7eaac",
+      "evidence_ids": [
+        "doc_08d1b46560c7eaac__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-010",
+      "split": "dev",
+      "paper_id": "arxiv_1706_02216",
+      "document_id": "doc_bbf3618a7efd3753",
+      "evidence_ids": [
+        "doc_bbf3618a7efd3753__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-011",
+      "split": "dev",
+      "paper_id": "arxiv_1706_03762",
+      "document_id": "doc_9793a052b7692d76",
+      "evidence_ids": [
+        "doc_9793a052b7692d76__ev_0006"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-012",
+      "split": "dev",
+      "paper_id": "arxiv_1709_07876",
+      "document_id": "doc_8ae772552e130ad8",
+      "evidence_ids": [
+        "doc_8ae772552e130ad8__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-013",
+      "split": "dev",
+      "paper_id": "arxiv_1711_05101",
+      "document_id": "doc_1f0214c145fbc9cb",
+      "evidence_ids": [
+        "doc_1f0214c145fbc9cb__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-014",
+      "split": "dev",
+      "paper_id": "arxiv_1802_05352",
+      "document_id": "doc_f9655223c9a32c16",
+      "evidence_ids": [
+        "doc_f9655223c9a32c16__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-015",
+      "split": "dev",
+      "paper_id": "arxiv_1804_06439",
+      "document_id": "doc_e995d4f02b074689",
+      "evidence_ids": [
+        "doc_e995d4f02b074689__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-016",
+      "split": "dev",
+      "paper_id": "arxiv_1805_02262",
+      "document_id": "doc_8e019d9545db6080",
+      "evidence_ids": [
+        "doc_8e019d9545db6080__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-017",
+      "split": "dev",
+      "paper_id": "arxiv_1807_01587",
+      "document_id": "doc_ef76e0ddb970d58c",
+      "evidence_ids": [
+        "doc_ef76e0ddb970d58c__ev_0004"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-018",
+      "split": "dev",
+      "paper_id": "arxiv_1810_04805",
+      "document_id": "doc_8ea108e044aea8bd",
+      "evidence_ids": [
+        "doc_8ea108e044aea8bd__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-019",
+      "split": "dev",
+      "paper_id": "arxiv_1902_06705",
+      "document_id": "doc_2ae3f7dce0f1e0c5",
+      "evidence_ids": [
+        "doc_2ae3f7dce0f1e0c5__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-020",
+      "split": "dev",
+      "paper_id": "arxiv_1904_08375",
+      "document_id": "doc_964e8ac6be7a870a",
+      "evidence_ids": [
+        "doc_964e8ac6be7a870a__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-021",
+      "split": "dev",
+      "paper_id": "arxiv_1905_11946",
+      "document_id": "doc_3f7c33e4d492bc04",
+      "evidence_ids": [
+        "doc_3f7c33e4d492bc04__ev_0028"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-022",
+      "split": "dev",
+      "paper_id": "arxiv_1909_02130",
+      "document_id": "doc_76a63ddbfc5d9c97",
+      "evidence_ids": [
+        "doc_76a63ddbfc5d9c97__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-023",
+      "split": "dev",
+      "paper_id": "arxiv_2001_08361",
+      "document_id": "doc_5ed89b4846a4ca0a",
+      "evidence_ids": [
+        "doc_5ed89b4846a4ca0a__ev_0004"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-024",
+      "split": "dev",
+      "paper_id": "arxiv_2003_08934",
+      "document_id": "doc_7add698830bd13fa",
+      "evidence_ids": [
+        "doc_7add698830bd13fa__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-025",
+      "split": "final",
+      "paper_id": "arxiv_2005_11401",
+      "document_id": "doc_873ada84ada60cf7",
+      "evidence_ids": [
+        "doc_873ada84ada60cf7__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-026",
+      "split": "final",
+      "paper_id": "arxiv_2006_03031",
+      "document_id": "doc_1635d5141185f37a",
+      "evidence_ids": [
+        "doc_1635d5141185f37a__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-027",
+      "split": "final",
+      "paper_id": "arxiv_2101_03961",
+      "document_id": "doc_0bcc72dc1f53e520",
+      "evidence_ids": [
+        "doc_0bcc72dc1f53e520__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-028",
+      "split": "final",
+      "paper_id": "arxiv_2104_07653",
+      "document_id": "doc_f90931907f4b8800",
+      "evidence_ids": [
+        "doc_f90931907f4b8800__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-029",
+      "split": "final",
+      "paper_id": "arxiv_2106_09685",
+      "document_id": "doc_7d95858ff1479191",
+      "evidence_ids": [
+        "doc_7d95858ff1479191__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-030",
+      "split": "final",
+      "paper_id": "arxiv_2108_07258",
+      "document_id": "doc_978bf2d6e3b18c32",
+      "evidence_ids": [
+        "doc_978bf2d6e3b18c32__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-031",
+      "split": "final",
+      "paper_id": "arxiv_2201_07243",
+      "document_id": "doc_3b626fa1b96e4b22",
+      "evidence_ids": [
+        "doc_3b626fa1b96e4b22__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-032",
+      "split": "final",
+      "paper_id": "arxiv_2203_11171",
+      "document_id": "doc_870fb18cbcd17cb7",
+      "evidence_ids": [
+        "doc_870fb18cbcd17cb7__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-033",
+      "split": "final",
+      "paper_id": "arxiv_2301_08727",
+      "document_id": "doc_4114f6c9734f94cb",
+      "evidence_ids": [
+        "doc_4114f6c9734f94cb__ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-034",
+      "split": "final",
+      "paper_id": "arxiv_2302_01318",
+      "document_id": "doc_676af3c1b769ba5a",
+      "evidence_ids": [
+        "doc_676af3c1b769ba5a__ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-035",
+      "split": "final",
+      "paper_id": "arxiv_2303_08774",
+      "document_id": "doc_c12fcefde3142b84",
+      "evidence_ids": [
+        "doc_c12fcefde3142b84__ev_0005"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-036",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0002"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-037",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0003"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-038",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0004"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-039",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0005"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "chat",
+      "case_id": "real-chat-040",
+      "split": "dev",
+      "paper_id": "arxiv_1406_2661",
+      "document_id": "doc_19a360553ef2de5b",
+      "evidence_ids": [
+        "ev_0006"
+      ],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "agent",
+      "case_id": "real-agent-01",
+      "split": "dev",
+      "paper_id": null,
+      "document_id": null,
+      "evidence_ids": [],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "agent",
+      "case_id": "real-agent-02",
+      "split": "dev",
+      "paper_id": null,
+      "document_id": null,
+      "evidence_ids": [],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "agent",
+      "case_id": "real-agent-03",
+      "split": "dev",
+      "paper_id": null,
+      "document_id": null,
+      "evidence_ids": [],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "agent",
+      "case_id": "real-agent-04",
+      "split": "dev",
+      "paper_id": null,
+      "document_id": null,
+      "evidence_ids": [],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "agent",
+      "case_id": "real-agent-05",
+      "split": "dev",
+      "paper_id": null,
+      "document_id": null,
+      "evidence_ids": [],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "agent",
+      "case_id": "real-agent-06",
+      "split": "final",
+      "paper_id": null,
+      "document_id": null,
+      "evidence_ids": [],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "agent",
+      "case_id": "real-agent-07",
+      "split": "final",
+      "paper_id": null,
+      "document_id": null,
+      "evidence_ids": [],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "agent",
+      "case_id": "real-agent-08",
+      "split": "final",
+      "paper_id": null,
+      "document_id": null,
+      "evidence_ids": [],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "agent",
+      "case_id": "real-agent-09",
+      "split": "final",
+      "paper_id": null,
+      "document_id": null,
+      "evidence_ids": [],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    },
+    {
+      "kind": "agent",
+      "case_id": "real-agent-10",
+      "split": "final",
+      "paper_id": null,
+      "document_id": null,
+      "evidence_ids": [],
+      "annotation_status": "DRAFT",
+      "reviewer_id": null,
+      "reviewed_at": null,
+      "schema_valid": true,
+      "error": null
+    }
+  ],
+  "errors": [],
+  "notes": [
+    "Audit is read-only; it does not infer human review.",
+    "All current cases remain DRAFT until a human uses review_cli.py."
+  ]
+}

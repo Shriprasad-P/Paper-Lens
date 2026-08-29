@@ -13,6 +13,9 @@ def write_report(report: EvaluationReport, output_dir: Path) -> tuple[Path, Path
     markdown_path = output_dir / "report.md"
     json_path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
     (output_dir / "metadata.json").write_text(report.metadata.model_dump_json(indent=2), encoding="utf-8")
+    (output_dir / "provenance.json").write_text(
+        report.metadata.model_dump_json(indent=2), encoding="utf-8"
+    )
     for result in report.results:
         (output_dir / f"{result.component}.json").write_text(result.model_dump_json(indent=2), encoding="utf-8")
     markdown_path.write_text(to_markdown(report), encoding="utf-8")
@@ -46,5 +49,7 @@ def to_markdown(report: EvaluationReport) -> str:
             lines.append(f"| `{metric.name}` | {value} | {metric.count} | {metric.status.value} |")
         if result.notes:
             lines.extend(["", *[f"> {note}" for note in result.notes], ""])
-    lines.extend(["## Recommendations", "", *[f"- {item}" for item in report.recommendations]])
+        if result.failure_counts:
+            lines.extend(["", "Failure categories:", *[f"- `{key}`: {value}" for key, value in sorted(result.failure_counts.items())], ""])
+    lines.extend(["## Representative failures", "", *[f"- `{item.get('component')}` `{item.get('category')}`: {item.get('description')}" for item in report.failure_examples], "", "## Quality-claim guard", "", "Numbers are publishable only when the report status is VALIDATED and its dataset, annotation, and prediction hashes resolve to immutable inputs.", "", "## Recommendations", "", *[f"- {item}" for item in report.recommendations]])
     return "\n".join(lines).rstrip() + "\n"

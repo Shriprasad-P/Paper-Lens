@@ -6,9 +6,12 @@ import json
 from pathlib import Path
 from typing import Any
 
+from ..annotations import load_annotations
+from ..provenance import EvaluationDataError, load_prediction_envelope, sha256_paths
 from ..schemas import BenchmarkManifest, ChatBenchmarkCase, DiscoveryBenchmarkCase, RetrievalBenchmarkCase, SynthesisBenchmarkCase, VerificationBenchmarkCase
 
 DATASET_DIR = Path(__file__).parents[1] / "datasets"
+PREDICTIONS_DIR = DATASET_DIR / "predictions"
 
 
 def load_manifest() -> dict[str, Any]:
@@ -17,6 +20,38 @@ def load_manifest() -> dict[str, Any]:
 
 def load_manifest_model() -> BenchmarkManifest:
     return BenchmarkManifest.model_validate(load_manifest())
+
+
+def load_paper_annotations():
+    """Load the human annotation ledger without mixing it into predictions."""
+
+    return load_annotations(DATASET_DIR / "annotations.jsonl")
+
+
+def dataset_hash() -> str:
+    """Hash all committed benchmark inputs in a stable path order."""
+
+    return sha256_paths(
+        [DATASET_DIR / name for name in ("manifest.json", "annotations.jsonl", "smoke_cases.json")],
+        root=DATASET_DIR,
+    )
+
+
+def load_frozen_smoke_predictions():
+    """Load the checked-in prediction snapshot used by the fixture runner."""
+
+    envelope = load_prediction_envelope(PREDICTIONS_DIR / "frozen_smoke.json")
+    expected = dataset_hash()
+    if envelope.dataset_hash != expected:
+        raise EvaluationDataError("Frozen predictions reference a different dataset hash")
+    return envelope
+
+
+def load_failure_examples() -> list[dict[str, Any]]:
+    """Load preserved examples without treating them as gold labels."""
+
+    path = DATASET_DIR / "failures.jsonl"
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
 def load_smoke_cases() -> dict[str, list[Any]]:
@@ -30,7 +65,7 @@ def load_smoke_cases() -> dict[str, list[Any]]:
     }
 
 
-def _retrieval_cases(seed: list[dict[str, Any]], minimum: int = 50) -> list[RetrievalBenchmarkCase]:
+def _retrieval_cases(seed: list[dict[str, Any]], minimum: int = 60) -> list[RetrievalBenchmarkCase]:
     cases: list[RetrievalBenchmarkCase] = []
     for index in range(minimum):
         item = seed[index % len(seed)]
@@ -54,7 +89,7 @@ def _verification_cases(seed: list[dict[str, Any]], minimum: int = 50) -> list[V
     return cases
 
 
-def _chat_cases(seed: list[dict[str, Any]], minimum: int = 30) -> list[ChatBenchmarkCase]:
+def _chat_cases(seed: list[dict[str, Any]], minimum: int = 40) -> list[ChatBenchmarkCase]:
     cases: list[ChatBenchmarkCase] = []
     for index in range(minimum):
         item = dict(seed[index % len(seed)])

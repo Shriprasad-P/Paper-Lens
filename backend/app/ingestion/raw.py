@@ -37,6 +37,18 @@ class ParsedPaper(BaseModel):
     tables: list[PaperTable] = Field(default_factory=list)
     equations: list[PaperEquation] = Field(default_factory=list)
     references: list[PaperReference] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    source_hash: str | None = None
+
+    @property
+    def text(self) -> str:
+        """Flattened source text view for downstream adapters."""
+
+        return "\n".join(
+            paragraph.text
+            for section in self.sections
+            for paragraph in section.paragraphs
+        )
 
     @classmethod
     def from_legacy_sections(cls, sections: list[object], *, parser_name: str) -> "ParsedPaper":
@@ -52,3 +64,8 @@ class ParsedPaper(BaseModel):
             for index, section in enumerate(sections)
         ]
         return cls(sections=raw_sections, parser_name=parser_name)
+
+
+# Public contract name used by Phase 14 documentation; keep ParsedPaper for
+# compatibility with the Phase 2–13 normalizer and persistence code.
+ParsedDocument = ParsedPaper

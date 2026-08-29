@@ -40,6 +40,7 @@ class EvidenceRetriever(Protocol):
         query: str,
         limit: int = 8,
         section_hint: str | None = None,
+        owner_id: str = "user_legacy_local",
     ) -> list[RetrievedEvidence]:
         """Return bounded, ranked evidence without leaking persistence objects."""
 
@@ -60,7 +61,7 @@ class BM25EvidenceRetriever:
     def __init__(self, database: SQLDatabase, *, version: str = RETRIEVER_VERSION) -> None:
         self.database = database
         self.version = version
-        self._cache: dict[tuple[str, str, str, str, int, str | None], list[RetrievedEvidence]] = {}
+        self._cache: dict[tuple[str, str, str, str, int, str | None, str], list[RetrievedEvidence]] = {}
 
     def retrieve(
         self,
@@ -68,13 +69,14 @@ class BM25EvidenceRetriever:
         query: str,
         limit: int = 8,
         section_hint: str | None = None,
+        owner_id: str = "user_legacy_local",
     ) -> list[RetrievedEvidence]:
         normalized = normalize_query(query)
         bounded_limit = max(1, min(limit, 20))
         if not normalized:
             return []
 
-        document = self.database.get_document(paper_id)
+        document = self.database.get_document(paper_id, owner_id)
         if document is None:
             return []
         cache_key = (
@@ -84,10 +86,11 @@ class BM25EvidenceRetriever:
             normalized,
             bounded_limit,
             section_hint.lower() if section_hint else None,
+            owner_id,
         )
         if cache_key in self._cache:
             return [item.model_copy() for item in self._cache[cache_key]]
-        evidence = self.database.get_evidence_for_document(paper_id, document.id)
+        evidence = self.database.get_evidence_for_document(paper_id, document.id, owner_id)
         # Keep the Evidence Registry authoritative, but avoid indexing parser noise such as
         # one-character figure labels and page-number paragraphs as primary chat context.
         paragraphs = [

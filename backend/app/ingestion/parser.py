@@ -9,7 +9,13 @@ from pathlib import Path
 from ..models.document import SourceRegion
 from ..models.document import PaperEquation, PaperFigure, PaperReference, PaperTable
 from ..models.paper import ParsedSection
-from .errors import PaperParseError
+from .errors import (
+    PaperParseError,
+    PdfImageLimitError,
+    PdfMalformedError,
+    PdfTextLimitError,
+    PdfTooManyPagesError,
+)
 from .raw import ParsedPaper, RawParagraph, RawSection
 
 
@@ -26,40 +32,175 @@ class PaperParser(ABC):
 
 
 class PyMuPDFPaperParser(PaperParser):
-    """Extract page text and practical heading-based sections."""
+    """Extract a paper in one bounded, page-by-page traversal.
+
+    The parser is deliberately synchronous internally.  ``IsolatedPaperParser``
+    runs it in a fresh child process, so native traversal never executes in the
+    FastAPI event loop or shares its address space.
+    """
+
+    def __init__(
+        self,
+        *,
+        max_page_count: int = 500,
+        max_text_chars: int = 5_000_000,
+        max_text_chars_per_page: int | None = None,
+        max_images_per_page: int = 100,
+        max_total_images: int = 1_000,
+    ) -> None:
+        self.max_page_count = max(1, int(max_page_count))
+        self.max_text_chars = max(1, int(max_text_chars))
+        self.max_text_chars_per_page = max_text_chars_per_page
+        self.max_images_per_page = max(0, int(max_images_per_page))
+        self.max_total_images = max(0, int(max_total_images))
 
     async def parse(self, file_path: str | Path) -> list[ParsedSection]:
-        try:
-            import pymupdf
+        """Legacy section API backed by the same single parse pass."""
 
-            document = pymupdf.open(str(file_path))
-            try:
-                text = "\n".join(page.get_text("text") for page in document)
-            finally:
-                document.close()
-        except Exception as exc:  # PyMuPDF exposes several parser-specific errors.
-            raise PaperParseError("The paper was retrieved, but its structure could not be extracted reliably.") from exc
-        if not text.strip():
-            raise PaperParseError("The paper was retrieved, but its structure could not be extracted reliably.")
-        return _sections_from_text(text)
+        parsed = await self.parse_document(file_path)
+        return [
+            ParsedSection(
+                title=section.title,
+                order=section.order,
+                text="\n".join(paragraph.text for paragraph in section.paragraphs),
+            )
+            for section in parsed.sections
+            if section.paragraphs
+        ]
 
     async def parse_document(self, file_path: str | Path) -> ParsedPaper:
+        """Parse metadata, text, and source artifacts in one traversal."""
+
         try:
             import pymupdf
 
             document = pymupdf.open(str(file_path))
             try:
-                sections = _sections_from_pages(document)
-                figures, tables, equations = _artifacts_from_pages(document)
-                references = _references_from_sections(sections)
                 page_count = len(document)
+                if page_count > self.max_page_count:
+                    raise PdfTooManyPagesError("The paper exceeds the configured page-count limit.")
+
+                sections: list[RawSection] = [RawSection(title="Document", level=1, order=0)]
+                current = sections[0]
+                figures: list[PaperFigure] = []
+                tables: list[PaperTable] = []
+                equations: list[PaperEquation] = []
+                total_chars = 0
+                total_images = 0
+
+                for page_number, page in enumerate(document, start=1):
+                    page_chars = 0
+                    # We do not decode embedded images.  Counting xrefs is cheap
+                    # and bounds future image work without creating raster bytes.
+                    image_count = len(page.get_images(full=True))
+                    if self.max_images_per_page and image_count > self.max_images_per_page:
+                        raise PdfImageLimitError("The paper exceeds the configured per-page image limit.")
+                    total_images += image_count
+                    if self.max_total_images and total_images > self.max_total_images:
+                        raise PdfImageLimitError("The paper exceeds the configured image limit.")
+
+                    blocks = page.get_text("blocks", sort=True)
+                    for block in blocks:
+                        if len(block) < 7 or block[6] != 0:
+                            continue
+                        raw_text = str(block[4] or "")
+                        text = _clean_block(raw_text)
+                        if not text:
+                            continue
+                        page_chars += len(text)
+                        total_chars += len(text)
+                        if self.max_text_chars_per_page and page_chars > self.max_text_chars_per_page:
+                            raise PdfTextLimitError("The paper exceeds the configured per-page text limit.")
+                        if total_chars > self.max_text_chars:
+                            raise PdfTextLimitError("The paper exceeds the configured extracted-text limit.")
+                        region = _region(page_number, block)
+                        pending: list[str] = []
+
+                        def flush_paragraph() -> None:
+                            paragraph_text = _clean_block(" ".join(pending))
+                            if paragraph_text:
+                                current.paragraphs.append(
+                                    RawParagraph(text=paragraph_text, page=page_number, source_region=region)
+                                )
+                                current.page_start = current.page_start or page_number
+                                current.page_end = page_number
+                            pending.clear()
+
+                        for raw_line in raw_text.splitlines():
+                            line = " ".join(raw_line.split()).strip()
+                            if not line:
+                                flush_paragraph()
+                                continue
+                            if _is_heading(line):
+                                flush_paragraph()
+                                current = RawSection(
+                                    title=line,
+                                    level=_heading_level(line),
+                                    order=len(sections),
+                                    page_start=page_number,
+                                    page_end=page_number,
+                                )
+                                sections.append(current)
+                            else:
+                                pending.append(line)
+                        flush_paragraph()
+
+                        figure_match = _FIGURE_CAPTION.match(text)
+                        if figure_match:
+                            number = figure_match.group("number")
+                            figures.append(
+                                PaperFigure(
+                                    id=f"figure_{len(figures) + 1:03d}",
+                                    label=f"Figure {number}",
+                                    number=number,
+                                    caption=figure_match.group("caption") or None,
+                                    page=page_number,
+                                    source_region=region,
+                                )
+                            )
+                        else:
+                            table_match = _TABLE_CAPTION.match(text)
+                            if table_match:
+                                number = table_match.group("number")
+                                headers, rows = _parse_table_rows(raw_text)
+                                tables.append(
+                                    PaperTable(
+                                        id=f"table_{len(tables) + 1:03d}",
+                                        label=f"Table {number}",
+                                        number=number,
+                                        caption=table_match.group("caption") or None,
+                                        page=page_number,
+                                        raw_text=text,
+                                        headers=headers,
+                                        rows=rows,
+                                        source_region=region,
+                                    )
+                                )
+                            elif _looks_like_equation(text):
+                                label_match = _EQUATION_LABEL.search(text)
+                                label = (label_match.group("paren") or label_match.group("bracket")) if label_match else None
+                                expression = _EQUATION_LABEL.sub("", text).strip()
+                                equations.append(
+                                    PaperEquation(
+                                        id=f"equation_{len(equations) + 1:03d}",
+                                        raw_text=expression,
+                                        label=label,
+                                        page=page_number,
+                                        source_region=region,
+                                    )
+                                )
+
+                sections = [section for section in sections if section.paragraphs or section.title != "Document"]
+                references = _references_from_sections(sections)
             finally:
                 document.close()
+        except PaperParseError:
+            raise
         except Exception as exc:  # PyMuPDF exposes several parser-specific errors.
-            raise PaperParseError("The paper was retrieved, but its structure could not be extracted reliably.") from exc
+            raise PdfMalformedError("The paper could not be parsed safely.") from exc
 
         if not any(section.paragraphs for section in sections):
-            raise PaperParseError("The paper was retrieved, but its structure could not be extracted reliably.")
+            raise PdfMalformedError("The paper could not be parsed safely.")
         return ParsedPaper(
             sections=sections,
             page_count=page_count,
@@ -90,52 +231,6 @@ _KNOWN_HEADING = {
     "conclusions",
     "references",
 }
-
-
-def _sections_from_pages(document: object) -> list[RawSection]:
-    sections: list[RawSection] = []
-    current = RawSection(title="Document", level=1, order=0)
-    sections.append(current)
-
-    for page_index, page in enumerate(document, start=1):
-        blocks = page.get_text("blocks", sort=True)
-        for block in blocks:
-            if len(block) < 7 or block[6] != 0:
-                continue
-            raw_text = str(block[4] or "")
-            region = _region(page_index, block)
-            pending: list[str] = []
-
-            def flush_paragraph() -> None:
-                text = _clean_block(" ".join(pending))
-                if text:
-                    current.paragraphs.append(
-                        RawParagraph(text=text, page=page_index, source_region=region)
-                    )
-                    current.page_start = current.page_start or page_index
-                    current.page_end = page_index
-                pending.clear()
-
-            for raw_line in raw_text.splitlines():
-                line = " ".join(raw_line.split()).strip()
-                if not line:
-                    flush_paragraph()
-                    continue
-                if _is_heading(line):
-                    flush_paragraph()
-                    current = RawSection(
-                        title=line,
-                        level=_heading_level(line),
-                        order=len(sections),
-                        page_start=page_index,
-                        page_end=page_index,
-                    )
-                    sections.append(current)
-                else:
-                    pending.append(line)
-            flush_paragraph()
-
-    return [section for section in sections if section.paragraphs or section.title != "Document"]
 
 
 def _sections_from_text(text: str) -> list[ParsedSection]:
@@ -191,38 +286,6 @@ _ARXIV_RE = re.compile(r"(?<!\d)(\d{4}\.\d{4,5})(?:v\d+)?\b", re.IGNORECASE)
 _DOI_RE = re.compile(r"\b10\.\d{4,9}/[-._;()/:A-Z0-9]+", re.IGNORECASE)
 _URL_RE = re.compile(r"https?://[^\s)]+", re.IGNORECASE)
 _YEAR_RE = re.compile(r"\b(19|20)\d{2}\b")
-
-
-def _artifacts_from_pages(document: object) -> tuple[list[PaperFigure], list[PaperTable], list[PaperEquation]]:
-    figures: list[PaperFigure] = []
-    tables: list[PaperTable] = []
-    equations: list[PaperEquation] = []
-    for page_number, page in enumerate(document, start=1):
-        for block in page.get_text("blocks", sort=True):
-            if len(block) < 7 or block[6] != 0:
-                continue
-            raw_block = str(block[4] or "")
-            text = _clean_block(raw_block)
-            if not text:
-                continue
-            region = _region(page_number, block)
-            figure_match = _FIGURE_CAPTION.match(text)
-            if figure_match:
-                number = figure_match.group("number")
-                figures.append(PaperFigure(id=f"figure_{len(figures) + 1:03d}", label=f"Figure {number}", number=number, caption=figure_match.group("caption") or None, page=page_number, source_region=region))
-                continue
-            table_match = _TABLE_CAPTION.match(text)
-            if table_match:
-                number = table_match.group("number")
-                headers, rows = _parse_table_rows(raw_block)
-                tables.append(PaperTable(id=f"table_{len(tables) + 1:03d}", label=f"Table {number}", number=number, caption=table_match.group("caption") or None, page=page_number, raw_text=text, headers=headers, rows=rows, source_region=region))
-                continue
-            if _looks_like_equation(text):
-                label_match = _EQUATION_LABEL.search(text)
-                label = (label_match.group("paren") or label_match.group("bracket")) if label_match else None
-                expression = _EQUATION_LABEL.sub("", text).strip()
-                equations.append(PaperEquation(id=f"equation_{len(equations) + 1:03d}", raw_text=expression, label=label, page=page_number, source_region=region))
-    return figures, tables, equations
 
 
 def _looks_like_equation(text: str) -> bool:

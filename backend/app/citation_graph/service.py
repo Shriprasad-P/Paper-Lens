@@ -8,12 +8,12 @@ from ..db.database import SQLDatabase
 from ..models.research import CitationEdge, CitationGraph, CitationNode
 
 
-def build_citation_graph(database: SQLDatabase, paper_id: str) -> CitationGraph:
-    paper = database.get_by_id(paper_id)
-    document = database.get_document(paper_id)
+def build_citation_graph(database: SQLDatabase, paper_id: str, owner_id: str = "user_legacy_local") -> CitationGraph:
+    paper = database.get_by_id(paper_id, owner_id)
+    document = database.get_document(paper_id, owner_id)
     if paper is None or document is None:
         raise ValueError("Paper or structured document not found.")
-    papers = database.list_papers()
+    papers = database.list_papers(owner_id)
     by_arxiv = {item.metadata.arxiv_id.lower(): item for item in papers}
     by_title = {_normalize_title(item.metadata.title): item for item in papers if item.metadata.title}
     nodes = [CitationNode(id=f"paper:{paper.id}", type="PAPER", title=paper.metadata.title, paper_id=paper.id, authors=paper.metadata.authors)]

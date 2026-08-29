@@ -88,14 +88,15 @@ class ResearchExtractionService:
             "future_work": FutureWorkExtractor(provider),
         }
 
-    async def extract(self, paper_id: str) -> PaperIR:
-        document = self.database.get_document(paper_id)
+    async def extract(self, paper_id: str, owner_id: str = "user_legacy_local") -> PaperIR:
+        document = self.database.get_document(paper_id, owner_id)
         if document is None:
             raise ResearchExtractionError("Structured document not found.")
 
         provider_name = self.settings.ai_provider
         model_name = getattr(self.provider, "model", self.settings.ai_model)
         cache_key = _cache_key(
+            owner_id,
             paper_id,
             document.document_hash,
             provider_name,
@@ -103,7 +104,7 @@ class ResearchExtractionService:
             self.PROMPT_VERSION,
             self.SCHEMA_VERSION,
         )
-        cached = self.database.get_analysis_record(paper_id)
+        cached = self.database.get_analysis_record(paper_id, owner_id)
         if cached is not None and cached[1] == cache_key:
             return cached[0]
 
@@ -160,6 +161,7 @@ class ResearchExtractionService:
             model=model_name,
             prompt_version=self.PROMPT_VERSION,
             schema_version=self.SCHEMA_VERSION,
+            owner_id=owner_id,
         )
         return paper_ir
 

@@ -306,7 +306,8 @@ export type WorkspaceResponse = {
   papers: WorkspacePaper[];
 };
 
-export type ResearchRunStatus = "CREATED" | "PLANNING" | "DISCOVERING" | "SELECTING" | "INGESTING" | "ANALYZING" | "SYNTHESIZING" | "VERIFYING" | "COMPLETED" | "PARTIAL" | "FAILED" | "CANCELLED";
+export type ResearchRunStatus = "CREATED" | "PLANNING" | "DISCOVERING" | "SELECTING" | "INGESTING" | "ANALYZING" | "SYNTHESIZING" | "VERIFYING" | "COMPLETED" | "PARTIAL" | "FAILED" | "CANCELLED" | "INTERRUPTED";
+export type ResearchExecutionState = "IDLE" | "QUEUED" | "CLAIMED" | "RUNNING" | "COMPLETED" | "FAILED" | "CANCEL_REQUESTED" | "CANCELLED";
 export type ResearchEvidenceRef = { paper_id: string; document_id: string; evidence_id: string };
 export type ResearchReportClaim = { claim_id: string; statement: string; source_papers: string[]; evidence_refs: ResearchEvidenceRef[]; origin: string; verification_status: string };
 export type ResearchCandidate = { candidate_id: string; title: string; authors: string[]; abstract: string | null; year: number | null; arxiv_id: string | null; doi: string | null; canonical_url: string | null; pdf_url: string | null; discovery_provider: string; discovery_query: string; discovery_rank: number; ranking_score: number | null; selected: boolean; ingestion_status: string; paper_id: string | null; error: string | null };
@@ -326,10 +327,11 @@ export type ResearchReport = {
   candidate_count: number;
   selected_count: number;
 };
-export type ResearchRun = { id: string; workspace_id: string | null; research_question: string; status: ResearchRunStatus; created_at: string; updated_at: string; completed_at: string | null; max_iterations: number; max_candidates: number; max_ingested_papers: number; planner_provider: string | null; planner_model: string | null; prompt_version: string; schema_version: string };
-export type ResearchEvent = { id: string; research_run_id: string; event_type: string; message: string; metadata: Record<string, unknown>; created_at: string };
+export type ResearchRun = { id: string; workspace_id: string | null; research_question: string; status: ResearchRunStatus; execution_state: ResearchExecutionState; active_attempt_id: string | null; attempt_count: number; cancel_requested_at: string | null; next_attempt_at: string | null; created_at: string; updated_at: string; completed_at: string | null; max_iterations: number; max_candidates: number; max_ingested_papers: number; planner_provider: string | null; planner_model: string | null; prompt_version: string; schema_version: string };
+export type ResearchEvent = { id: string; research_run_id: string; event_type: string; message: string; metadata: Record<string, unknown>; created_at: string; attempt_id: string | null; sequence: number | null };
 export type ResearchPlan = { research_question: string; search_queries: string[]; concepts: string[]; inclusion_criteria: string[]; exclusion_criteria: string[]; desired_paper_count: number; rationale_summary: string | null };
-export type ResearchRunResponse = { run: ResearchRun; plan: ResearchPlan | null; queries: string[]; candidates: ResearchCandidate[]; events: ResearchEvent[]; coverage: ResearchReport["coverage"] | null; report: ResearchReport | null };
+export type ResearchAttempt = { attempt_id: string; research_run_id: string; worker_id: string; attempt_number: number; status: string; claimed_at: string; lease_expires_at: string; heartbeat_at: string | null; started_at: string | null; completed_at: string | null; next_retry_at: string | null; retryable: boolean | null; error_class: string | null; error_message: string | null };
+export type ResearchRunResponse = { run: ResearchRun; plan: ResearchPlan | null; queries: string[]; candidates: ResearchCandidate[]; events: ResearchEvent[]; coverage: ResearchReport["coverage"] | null; report: ResearchReport | null; attempt: ResearchAttempt | null };
 
 export type ComparisonEntry = {
   paper_id: string;

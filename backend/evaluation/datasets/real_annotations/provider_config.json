@@ -1,0 +1,35 @@
+{
+  "status": "NOT_CONFIGURED",
+  "evaluation_mode": "retrieval_only",
+  "generation": {
+    "provider": "none",
+    "model": null,
+    "revision": null,
+    "temperature": null,
+    "top_p": null,
+    "max_output_tokens": null,
+    "prompt_versions": {},
+    "retry_policy": {},
+    "validation_config": {}
+  },
+  "embedding": {
+    "provider": "none",
+    "model": null,
+    "revision": null,
+    "dimension": null,
+    "normalization": null,
+    "distance_metric": null,
+    "chunk_strategy": null
+  },
+  "retrieval": {
+    "bm25_version": "bm25-v1",
+    "semantic": "NOT_RUN",
+    "hybrid": "NOT_RUN"
+  },
+  "secrets_stored": false,
+  "notes": [
+    "No provider credentials are present.",
+    "hash-v1 is excluded from semantic benchmark claims."
+  ],
+  "config_hash": "0d49e610b54cf33e26dd7a98f20784ed73ac4eac7c759397b3b4b798e96554d3"
+}

@@ -30,6 +30,9 @@ def _run_migrations(root: Path) -> None:
 def main() -> None:
     root = _bundle_root()
     os.chdir(root)
+    # Desktop and server paths use the same database-backed execution engine;
+    # the local sidecar runs its bounded worker in-process with uvicorn.
+    os.environ.setdefault("PAPERLENS_RESEARCH_WORKER_ENABLED", "true")
     _run_migrations(root)
 
     # Keep this import after migrations: app construction performs recovery

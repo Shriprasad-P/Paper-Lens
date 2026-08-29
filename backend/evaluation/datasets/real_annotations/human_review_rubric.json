@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "status": "NOT_REVIEWED",
+  "reviewer_count": 0,
+  "instructions": "Two independent domain reviewers must label every case before VALIDATED status. Resolve disagreements by adjudication.",
+  "scales": {
+    "correctness": "0 incorrect, 1 partial, 2 correct",
+    "faithfulness": "0 unsupported, 1 mixed, 2 fully evidence-grounded",
+    "usefulness": "0 not useful, 1 limited, 2 useful",
+    "clarity": "0 unclear, 1 understandable, 2 clear",
+    "citation_quality": "0 missing/wrong, 1 partial, 2 precise",
+    "task_completion": "0 incomplete, 1 partial, 2 complete",
+    "source_relevance": "0 irrelevant, 1 mixed, 2 directly relevant",
+    "evidence_support": "0 unsupported, 1 mixed, 2 fully supported",
+    "synthesis_correctness": "0 incorrect, 1 partial, 2 correct"
+  },
+  "required_fields": [
+    "reviewer_id",
+    "item_id",
+    "rationale",
+    "created_at"
+  ],
+  "review_type": "single-reviewer when assigned; no reviewer has been assigned yet"
+}

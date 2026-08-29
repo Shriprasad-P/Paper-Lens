@@ -40,15 +40,16 @@ class ResearchSynthesizer:
         queries: list[str] | None = None,
         coverage: ResearchCoverage | None = None,
         selected_candidates: list[object] | None = None,
+        owner_id: str = "user_legacy_local",
     ) -> ResearchReportIR:
         allowed = list(dict.fromkeys(paper_ids))
         analyses: list[PaperIR] = []
         for paper_id in allowed:
-            stored = self.database.get_analysis_record(paper_id)
+            stored = self.database.get_analysis_record(paper_id, owner_id)
             if stored is not None:
                 analyses.append(stored[0])
 
-        retrieved = await self.retriever.retrieve_async(question, allowed, limit=12) if allowed else []
+        retrieved = await self.retriever.retrieve_async(question, allowed, limit=12, owner_id=owner_id) if allowed else []
         refs_by_paper: dict[str, list[ResearchEvidenceRef]] = {}
         for item in retrieved:
             if item.paper_id and item.document_id:
@@ -65,33 +66,33 @@ class ResearchSynthesizer:
         for paper in analyses:
             paper_refs = refs_by_paper.get(paper.paper_id, [])
             if paper.problem:
-                claim = self._claim_from_local(paper, paper.problem, "problem")
+                claim = self._claim_from_local(paper, paper.problem, "problem", owner_id)
                 if claim:
                     executive.append(claim)
             for contribution in paper.contributions[:2]:
-                claim = self._claim_from_local(paper, contribution, "contribution")
+                claim = self._claim_from_local(paper, contribution, "contribution", owner_id)
                 if claim:
                     executive.append(claim)
             if paper.method:
-                refs = self._refs(paper.paper_id, paper.document_id, paper.method.evidence_ids)
+                refs = self._refs(paper.paper_id, paper.document_id, paper.method.evidence_ids, owner_id)
                 if refs:
                     methods.append(ResearchMethodSummary(paper_id=paper.paper_id, method=paper.method.summary, evidence_refs=refs))
             for result in paper.results:
                 all_results.append((paper, result))
             for item in paper.limitations[:3]:
-                claim = self._claim_from_local(paper, item, "limitation")
+                claim = self._claim_from_local(paper, item, "limitation", owner_id)
                 if claim:
                     limitations.append(claim)
             for item in paper.future_work[:3]:
-                claim = self._claim_from_local(paper, item, "future")
+                claim = self._claim_from_local(paper, item, "future", owner_id)
                 if claim:
                     future.append(claim)
             if paper_refs:
                 themes.append(ResearchTheme(name=_theme_name(paper), summary=f"Evidence from {paper.metadata.title}.", claims=[*executive[-1:]]))
 
-        agreements = self._agreements(all_results)
-        contradictions = self._contradictions(all_results)
-        gaps = self._gaps(analyses, limitations)
+        agreements = self._agreements(all_results, owner_id)
+        contradictions = self._contradictions(all_results, owner_id)
+        gaps = self._gaps(analyses, limitations, owner_id)
         report_coverage = coverage or ResearchCoverage(
             sufficient=bool(analyses and retrieved),
             relevant_paper_ids=[paper.paper_id for paper in analyses],
@@ -103,7 +104,7 @@ class ResearchSynthesizer:
         for paper_id in allowed:
             if paper_id in analyzed_ids:
                 continue
-            ingested = self.database.get_by_id(paper_id)
+            ingested = self.database.get_by_id(paper_id, owner_id)
             if ingested is not None:
                 summaries.append(ResearchPaperSummary(
                     paper_id=ingested.id,
@@ -132,8 +133,10 @@ class ResearchSynthesizer:
             selected_count=len(allowed),
         )
 
-    def _claim_from_local(self, paper: PaperIR, item: ResearchClaim, label: str) -> ResearchReportClaim | None:
-        refs = self._refs(paper.paper_id, paper.document_id, item.evidence_ids)
+    def _claim_from_local(
+        self, paper: PaperIR, item: ResearchClaim, label: str, owner_id: str = "user_legacy_local"
+    ) -> ResearchReportClaim | None:
+        refs = self._refs(paper.paper_id, paper.document_id, item.evidence_ids, owner_id)
         if not refs:
             return None
         return ResearchReportClaim(
@@ -144,12 +147,14 @@ class ResearchSynthesizer:
             origin=ResearchClaimOrigin.AUTHOR_EXPLICIT,
         )
 
-    def _refs(self, paper_id: str, document_id: str, evidence_ids: Iterable[str]) -> list[ResearchEvidenceRef]:
+    def _refs(
+        self, paper_id: str, document_id: str, evidence_ids: Iterable[str], owner_id: str = "user_legacy_local"
+    ) -> list[ResearchEvidenceRef]:
         ids = list(dict.fromkeys(evidence_ids))
-        existing = self.database.get_evidence_many(paper_id, ids)
+        existing = self.database.get_evidence_many(paper_id, ids, owner_id)
         return [ResearchEvidenceRef(paper_id=paper_id, document_id=document_id, evidence_id=evidence_id) for evidence_id in ids if evidence_id in existing]
 
-    def _agreements(self, results: list[tuple[PaperIR, object]]) -> list[ResearchReportClaim]:
+    def _agreements(self, results: list[tuple[PaperIR, object]], owner_id: str = "user_legacy_local") -> list[ResearchReportClaim]:
         groups: dict[str, list[tuple[PaperIR, object]]] = {}
         for paper, result in results:
             metric = str(getattr(result, "metric", "") or "").strip().lower()
@@ -159,7 +164,11 @@ class ResearchSynthesizer:
         for metric, items in groups.items():
             values = {str(getattr(item, "value", "")) for _, item in items}
             if len(items) >= 2 and len(values) == 1:
-                refs = [ref for paper, item in items for ref in self._refs(paper.paper_id, paper.document_id, getattr(item, "evidence_ids", []))]
+                refs = [
+                    ref
+                    for paper, item in items
+                    for ref in self._refs(paper.paper_id, paper.document_id, getattr(item, "evidence_ids", []), owner_id)
+                ]
                 if refs:
                     output.append(ResearchReportClaim(
                         claim_id=f"agreement:{metric}",
@@ -170,7 +179,9 @@ class ResearchSynthesizer:
                     ))
         return output
 
-    def _contradictions(self, results: list[tuple[PaperIR, object]]) -> list[ResearchContradiction]:
+    def _contradictions(
+        self, results: list[tuple[PaperIR, object]], owner_id: str = "user_legacy_local"
+    ) -> list[ResearchContradiction]:
         output: list[ResearchContradiction] = []
         for (paper_a, result_a), (paper_b, result_b) in combinations(results, 2):
             metric_a = str(getattr(result_a, "metric", "") or "").strip().lower()
@@ -183,8 +194,8 @@ class ResearchSynthesizer:
             direction_b = _direction(getattr(result_b, "statement", ""))
             if not direction_a or not direction_b or direction_a == direction_b:
                 continue
-            refs_a = self._refs(paper_a.paper_id, paper_a.document_id, getattr(result_a, "evidence_ids", []))
-            refs_b = self._refs(paper_b.paper_id, paper_b.document_id, getattr(result_b, "evidence_ids", []))
+            refs_a = self._refs(paper_a.paper_id, paper_a.document_id, getattr(result_a, "evidence_ids", []), owner_id)
+            refs_b = self._refs(paper_b.paper_id, paper_b.document_id, getattr(result_b, "evidence_ids", []), owner_id)
             if refs_a and refs_b:
                 output.append(ResearchContradiction(
                     id=f"contradiction:{paper_a.paper_id}:{paper_b.paper_id}:{metric_a}",
@@ -198,7 +209,12 @@ class ResearchSynthesizer:
                 ))
         return output
 
-    def _gaps(self, analyses: list[PaperIR], limitations: list[ResearchReportClaim]) -> list[ResearchGap]:
+    def _gaps(
+        self,
+        analyses: list[PaperIR],
+        limitations: list[ResearchReportClaim],
+        owner_id: str = "user_legacy_local",
+    ) -> list[ResearchGap]:
         if len(analyses) < 2 or not limitations:
             return []
         refs = [ref for claim in limitations[:4] for ref in claim.evidence_refs]
@@ -224,7 +240,12 @@ class ResearchSynthesizer:
         )
 
 
-def validate_research_report(report: ResearchReportIR, database: SQLDatabase, allowed_paper_ids: set[str]) -> None:
+def validate_research_report(
+    report: ResearchReportIR,
+    database: SQLDatabase,
+    allowed_paper_ids: set[str],
+    owner_id: str = "user_legacy_local",
+) -> None:
     """Reject citations that do not resolve to the exact persisted evidence tuple."""
 
     claims = [*report.executive_summary, *report.agreements, *report.limitations, *report.future_directions]
@@ -244,10 +265,10 @@ def validate_research_report(report: ResearchReportIR, database: SQLDatabase, al
         for ref in claim.evidence_refs:
             if ref.paper_id not in allowed_paper_ids:
                 raise ResearchSynthesisError("Research report cites a paper outside the selected set.")
-            document = database.get_document(ref.paper_id)
+            document = database.get_document(ref.paper_id, owner_id)
             if document is None or document.id != ref.document_id:
                 raise ResearchSynthesisError("Research report cites a mismatched document.")
-            evidence = database.get_evidence(ref.paper_id, ref.evidence_id)
+            evidence = database.get_evidence(ref.paper_id, ref.evidence_id, owner_id)
             if evidence is None or evidence.document_id != ref.document_id or evidence.paper_id != ref.paper_id:
                 raise ResearchSynthesisError("Research report cites missing or mismatched evidence.")
             if _numeric_tokens(claim.statement) and not any(token in _numeric_tokens(evidence.source_text) for token in _numeric_tokens(claim.statement)):

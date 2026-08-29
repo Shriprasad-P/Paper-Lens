@@ -22,15 +22,15 @@ class SemanticEvidenceRetriever:
         self.provider = provider
         self.top_k = max(1, min(top_k, 20))
 
-    async def retrieve_async(self, paper_id: str, query: str, limit: int = 8) -> list[RetrievedEvidence]:
-        document = self.database.get_document(paper_id)
+    async def retrieve_async(self, paper_id: str, query: str, limit: int = 8, owner_id: str = "user_legacy_local") -> list[RetrievedEvidence]:
+        document = self.database.get_document(paper_id, owner_id)
         if document is None:
             return []
-        evidence = [item for item in self.database.get_evidence_for_document(paper_id, document.id) if item.source_text.strip()]
+        evidence = [item for item in self.database.get_evidence_for_document(paper_id, document.id, owner_id) if item.source_text.strip()]
         if not evidence:
             return []
         query_vector = await self.provider.embed_query(query)
-        cached = self.database.get_embeddings(paper_id, document.id, self.provider.model, self.provider.version)
+        cached = self.database.get_embeddings(paper_id, document.id, self.provider.model, self.provider.version, owner_id)
         missing = [item for item in evidence if item.id not in cached or cached[item.id][1] != _evidence_hash(item)]
         if missing:
             vectors = await self.provider.embed_texts([item.source_text for item in missing])
@@ -39,8 +39,9 @@ class SemanticEvidenceRetriever:
                 document.id,
                 self.provider,
                 [(item, vector) for item, vector in zip(missing, vectors)],
+                owner_id,
             )
-            cached = self.database.get_embeddings(paper_id, document.id, self.provider.model, self.provider.version)
+            cached = self.database.get_embeddings(paper_id, document.id, self.provider.model, self.provider.version, owner_id)
         scored = [(cosine_similarity(query_vector, vector), item) for item in evidence if (vector := cached.get(item.id, ([], ""))[0])]
         scored.sort(key=lambda pair: (-pair[0], pair[1].id))
         return [
@@ -68,9 +69,9 @@ class HybridEvidenceRetriever:
         self.lexical = lexical or lexical_retrieve(database)
         self.version = HYBRID_RETRIEVER_VERSION
 
-    async def retrieve_async(self, paper_id: str, query: str, limit: int = 8, section_hint: str | None = None) -> list[RetrievedEvidence]:
-        lexical_items = self.lexical.retrieve(paper_id, query, limit=limit, section_hint=section_hint)
-        semantic_items = await self.semantic.retrieve_async(paper_id, query, limit=limit)
+    async def retrieve_async(self, paper_id: str, query: str, limit: int = 8, section_hint: str | None = None, owner_id: str = "user_legacy_local") -> list[RetrievedEvidence]:
+        lexical_items = self.lexical.retrieve(paper_id, query, limit=limit, section_hint=section_hint, owner_id=owner_id)
+        semantic_items = await self.semantic.retrieve_async(paper_id, query, limit=limit, owner_id=owner_id)
         by_id = {item.evidence_id: item for item in [*lexical_items, *semantic_items]}
         ranks: dict[str, float] = {}
         for items in (lexical_items, semantic_items):

@@ -1,0 +1,49 @@
+{
+  "annotation_status": "DRAFT",
+  "case_count": 60,
+  "component": "retrieval",
+  "human_reviewed": false,
+  "lanes": {
+    "BM25": {
+      "metrics": {
+        "hit_at_5": 0.9833333333333333,
+        "mrr": 0.9297222222222222,
+        "ndcg_at_1": 0.9,
+        "ndcg_at_3": 0.9293643251190485,
+        "ndcg_at_5": 0.9429898145408475,
+        "recall_at_1": 0.9,
+        "recall_at_3": 0.95,
+        "recall_at_5": 0.9833333333333333
+      },
+      "retriever_version": "bm25-v1",
+      "status": "MEASURED"
+    },
+    "Hybrid": {
+      "reason": "Semantic lane unavailable; no hybrid score is reported.",
+      "status": "NOT_RUN"
+    },
+    "Semantic": {
+      "reason": "No real embedding provider configured; hash-v1 is excluded.",
+      "status": "NOT_RUN"
+    }
+  },
+  "metrics": {
+    "hit_at_5": 0.9833333333333333,
+    "mrr": 0.9297222222222222,
+    "ndcg_at_1": 0.9,
+    "ndcg_at_3": 0.9293643251190485,
+    "ndcg_at_5": 0.9429898145408475,
+    "recall_at_1": 0.9,
+    "recall_at_3": 0.95,
+    "recall_at_5": 0.9833333333333333
+  },
+  "provenance": {
+    "annotation_hash": "975cc12353222d35c308dbe438df94e321135e5a7ff3a3605d176da78f210023",
+    "corpus_hash": "eb3925e01260897f383c9832e1c564aeff7197e192a62d19ce63cc0f1a0309c1",
+    "database_url": "sqlite:////tmp/paperlens-phase15-real.db",
+    "owner_id": "user_legacy_local",
+    "paperlens_commit": "78a14a16e221eaf818b0626d0ce2a4b000abf166",
+    "prediction_hash": "ab51abfee8e981ad3d1798b6f279ae18b22156fa0d119102d317f128fd3fb52b"
+  },
+  "status": "PRELIMINARY"
+}

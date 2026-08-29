@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "corpus_hash": "eb3925e01260897f383c9832e1c564aeff7197e192a62d19ce63cc0f1a0309c1",
+  "generated_at": "2026-08-29T12:15:26.477370+00:00",
+  "status": "DRAFT",
+  "human_reviewed": false,
+  "counts": {
+    "retrieval": 60,
+    "verification": 50,
+    "chat": 40,
+    "agent": 10
+  },
+  "annotation_hash": "975cc12353222d35c308dbe438df94e321135e5a7ff3a3605d176da78f210023",
+  "notes": [
+    "All cases are anchored to real production evidence IDs.",
+    "Questions and claims are programmatic drafts, not human-reviewed gold labels.",
+    "Do not use these files for a publishable FINAL score."
+  ],
+  "numeric_case_counts": {
+    "retrieval": 10,
+    "verification": 12,
+    "chat": 8
+  },
+  "annotation_hashes": {
+    "retrieval.jsonl": "5a19b320755b47dc6d9a3d89dc439ad62100365004208556b59b14603cdd4fbf",
+    "verification.jsonl": "a4ae45bed74e4db4bf74d0bed9c6e002f28441e2527440a833fa20b079ced5be",
+    "chat.jsonl": "81645d25a5697308f54e541c4c6c1b425070623d11c018604f90d4244d743bd9",
+    "agent.jsonl": "c0e16130be483227c9dd82c78f16c1bed904493e7afc675b13c95bf112829892"
+  },
+  "benchmark_hash": "7c3428d3e3f673b4cd67b89a50c3cdf046854ccd8bfd37017aa891079cd4c244",
+  "reviewer_count": 0,
+  "review_type": "unassigned",
+  "reviewer_ids": [],
+  "review_status": "NOT_REVIEWED"
+}

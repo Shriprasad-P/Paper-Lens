@@ -70,12 +70,12 @@ Phase 10 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/Evi
 
 ## Current Phase
 
-Phase 12 — Deployment & Public Beta (complete); macOS local validation complete
+Phase 14 — Untrusted PDF isolation and bounded ingestion (complete)
 
 ## Current Task
 
-Prepared and validated a reproducible, migration-safe, observable public-beta
-deployment without changing Phase 1–11 semantic behavior.
+Prepared and validated a one-pass, bounded, isolated PDF ingestion path without
+regressing tenant ownership or durable research execution.
 
 ## Validation
 
@@ -135,6 +135,9 @@ deployment without changing Phase 1–11 semantic behavior.
 - Phase 11 compile/evaluation smoke — passed after middleware, migration, recovery, provider, and resource-limit changes.
 - Phase 11 local performance sample (fixture, 40–50 iterations, TestClient): `/health/live` p50 1.297 ms / p95 1.783 ms; document reader endpoint p50 2.734 ms / p95 3.325 ms; BM25 retrieval p50 1.220 ms / p95 1.438 ms. These are local reference measurements, not production SLAs.
 - Phase 12 backend regression suite — 67 tests passed; compileall and evaluation smoke passed.
+- Phase 13A backend regression suite — 70 tests passed, including two-user account/session lifecycle, workspace/paper/document/evidence/PDF/chat/research IDOR isolation, anonymous shared-mode 401 behavior, and hash-only session persistence.
+- Phase 13A migration smoke — Alembic upgrade on the existing local database passed; fresh schema inspection found users, auth_sessions, audit_log, and owner_id columns with deterministic legacy backfill.
+- Phase 13A frontend gates — credentials-enabled API client typecheck, lint, and production build passed.
 - Phase 12 frontend typecheck, lint, production build, and Playwright — passed; 3 browser tests passed.
 - Real PostgreSQL 15.17 migration upgrade/current and base→head migration drill — passed; container PostgreSQL 16 Compose migration/readiness — passed.
 - PostgreSQL persistence smoke covered paper/document/evidence, PaperIR, verification, chat, workspace, research run, embeddings, and idempotency — passed.
@@ -157,8 +160,22 @@ deployment without changing Phase 1–11 semantic behavior.
 - Phase 9 discovery currently ships with official arXiv Atom only; DOI/index providers and live AI synthesis remain optional future adapters.
 - Report claims are intentionally `UNVERIFIED` on the deterministic path; broad scientific quality metrics require the Phase 10 benchmark fixtures.
 - Phase 10 results are intentionally `PRELIMINARY`: corpus metadata is identifier-only, annotation coverage is a starter JSONL, and offline fixture scores are not live system quality claims.
+- Phase 15B now records 35 exact versioned arXiv PDF snapshots, SHA-256 source hashes, 35 production-ingested PaperLens documents, 34,117 Evidence Registry rows, paper-separated DEV/FINAL splits, and a frozen real BM25 envelope. Phase 15C adds a 160-case schema/evidence audit, explicit reviewer metadata fields, and a minimal local review CLI. Real ledgers remain DRAFT with zero human reviewers; semantic/hybrid and provider-backed verification/chat/agent runs are still intentionally not measured.
 - HTTPS edge termination remains provider-specific; the local Compose harness is HTTP and must sit behind managed TLS/reverse-proxy ingress for public beta.
 - Metrics and beta rate limits remain process-local; add shared collection/edge limiting before horizontal scaling.
+- Local development without authentication intentionally uses the deterministic legacy principal; staging/production require registered sessions. The desktop token is a local-only development principal and is rejected as an authentication bypass when shared auth is required.
+
+## Phase 14 Additions
+
+- Manual and research-triggered PDF ingestion share `IsolatedPaperParser`, a
+  fresh child-process boundary around native PyMuPDF traversal.
+- Byte/signature checks happen before child startup; page limits precede text
+  traversal; total/per-page text and image-xref budgets stop work incrementally.
+- Parent-enforced wall-clock timeout, cancellation cleanup, bounded parser
+  concurrency, safe error taxonomy, parse metrics, and structured events are
+  active. Normalization/evidence persistence is staged until parsing succeeds.
+- Unix CPU/address-space limits are best effort and platform dependent; docs
+  state the remaining native-parser and process-local metric limitations.
 
 ## Important Decisions
 
@@ -178,7 +195,9 @@ deployment without changing Phase 1–11 semantic behavior.
 - Keep verification separate from extraction so claim text remains immutable and verifier/prompt/model changes are auditable.
 - Require deterministic evidence/document/numeric checks before provider calls; failures become `UNVERIFIED`, not `UNSUPPORTED`.
 - Cache verification by claim/evidence/document/provider/model/prompt/schema versions and hide stale results from the current reader.
+- Research execution is database-authoritative: `research_execution_attempts` stores hashed claim tokens, bounded leases, heartbeats, retry classification, and attempt history; stale workers are fenced before run, report, event, workspace, or child-record writes.
+- Execute requests enqueue and return `202`; `ResearchWorker` polls the database for both server and desktop modes. Cancellation is durable and dominant, and terminal runs are never reclaimed.
 
 ## Next Recommended Task
 
-Phase 13 — Accounts & Research Library.
+Phase 15 measurement is not closed yet. The next task is to complete human review of the real ledgers, configure an intended embedding/provider path, freeze verification/chat/agent predictions, and run one FINAL offline report without tuning on FINAL.

@@ -9,7 +9,7 @@ identifier normalization
         ↓
 arXiv metadata client + PDF downloader
         ↓
-PyMuPDF section parser
+bounded download + isolated PDF parser subprocess (one pass)
         ↓
 DocumentNormalizer
         ↓
@@ -47,7 +47,16 @@ PDFs are stored as `data/papers/<paper-id>/source.pdf` (configurable through `PA
 
 ## Structured document and evidence
 
-`PyMuPDFPaperParser.parse_document` emits the parser-neutral `ParsedPaper`/`RawSection`/`RawParagraph` representation. `DocumentNormalizer` then creates `StructuredDocument`, `PaperSection`, and `PaperParagraph` models without interpretation or rewriting. The legacy `parse` method remains intact for the Phase 2 API response, which currently returns 17 sections for the integration paper; the normalized document can expose finer paragraph-level structure.
+`IsolatedPaperParser` performs the cheap byte/signature check in the coordinator,
+then supervises a fresh child process. `PyMuPDFPaperParser.parse_document` emits
+the parser-neutral `ParsedPaper`/`RawSection`/`RawParagraph` representation in
+one bounded page traversal: page count is checked before traversal, text limits
+are incremental, and caption/artifact detection happens as each block is read.
+The parent owns timeout, cancellation, child termination, and parser
+concurrency. `DocumentNormalizer` then creates `StructuredDocument`,
+`PaperSection`, and `PaperParagraph` models without interpretation or rewriting.
+The legacy `parse` method is a view over that same result; the PDF is never
+parsed twice.
 
 Paragraph IDs are deterministic within a document (`sec_001`, `para_0001`) and evidence IDs are deterministic (`ev_0001`). The document ID is `doc_` plus the first 16 hex characters of SHA-256(`paper_id:source_hash`). Paragraph content hashes use SHA-256 of the normalized source text. Page numbers and bounding boxes are copied only when PyMuPDF supplies them; missing provenance remains `null`.
 
@@ -242,8 +251,9 @@ bounded exponential jittered retries only for transient failures; missing
 credentials preserve safe degraded behavior.
 
 Startup recovery is explicit: unfinished paper ingestion becomes diagnosable
-`FAILED`, while active research runs become recoverable `INTERRUPTED` records
-with an append-only event. No expensive work is automatically rerun. SQLite
+`FAILED`; legacy stage-only research runs become recoverable `INTERRUPTED`
+records, while durable attempts are lease-recovered and safely re-queued. No
+ambiguous historical work is silently resumed. SQLite
 enables foreign keys, busy timeouts, WAL, and pre-ping; PostgreSQL remains the
 production target. Production disables automatic schema creation and uses
 `alembic upgrade head` from the migration scaffold. Critical document/evidence,
@@ -288,3 +298,59 @@ SHA image builds, Trivy scans, and an explicit staging hook. Database backup,
 restore, retention, maintenance, rollback, support, and release checklists are
 documented in `docs/operations.md`, `docs/release-checklist.md`, and
 `docs/beta-support.md`. The Phase 10 benchmark remains `PRELIMINARY`.
+
+## Accounts and tenant ownership (Phase 13A)
+
+Shared mode resolves one principal through `get_current_user`/
+`require_current_user`. Registration and login create a durable account and an
+opaque random session; only its SHA-256 token hash is stored in
+`auth_sessions`. Sessions expire and can be revoked at logout. Cookie sessions
+are HttpOnly/SameSite and Secure in production, while bearer transport is
+accepted for non-browser clients. Cookie mutations are origin-checked against
+the configured CORS origins.
+
+The ownership boundary is deliberately small and explicit:
+
+```text
+User
+ ├── Paper → StructuredDocument → Evidence / artifacts / analysis / verification / embeddings
+ ├── Workspace → WorkspacePaper
+ ├── ChatSession → ChatMessage
+ └── ResearchRun → plan / queries / candidates / events / report
+```
+
+Paper, workspace, chat-session, and research-run SQL queries all include the
+current owner predicate. Child resources inherit ownership through their
+parent query, so a valid foreign ID yields the same 404 as an absent record.
+The local/desktop mode is explicit: development without a session uses the
+legacy local principal, and a validated desktop token uses a separate trusted
+desktop-local principal. Neither is accepted as a shared production identity.
+Migration `0002_phase13a_auth_ownership` backfills existing records to
+`user_legacy_local` without changing migration history.
+
+## Durable research execution (Phase 13B)
+
+Research execution is database-authoritative. The HTTP execute endpoint only
+transitions a run to `QUEUED` and returns; a small `ResearchWorker` polls the
+same database from the API or desktop sidecar process. A worker atomically
+creates one `research_execution_attempts` row, receives an opaque in-memory
+claim token, and renews its bounded lease while the agent runs. PostgreSQL
+uses row locks/skip-locked polling; SQLite takes its single-writer lock before
+claiming, so two workers still have one winner.
+
+`execution_state` is separate from the visible research stage. Terminal states
+(`COMPLETED`, `FAILED`, `CANCELLED`) are never reclaimed. Every authoritative
+run/plan/query/candidate/event/report/workspace write made by a worker checks
+the attempt hash, active attempt ID, and unexpired lease. An expired or
+replaced claim receives `ExecutionClaimLost`-equivalent persistence rejection;
+it cannot publish a report or final status. Events carry an attempt ID and a
+per-run sequence (legacy events remain explicitly unassociated).
+
+Cancellation records a durable request. Queued runs become cancelled
+immediately; active workers observe the request at bounded provider and stage
+boundaries, and finalization is cancellation-dominant. Retryable failures are
+classified and requeued with bounded backoff until `RESEARCH_MAX_ATTEMPTS`;
+non-retryable failures remain terminal. Configure the worker with
+`PAPERLENS_RESEARCH_WORKER_ENABLED`, `RESEARCH_WORKER_CONCURRENCY`,
+`RESEARCH_CLAIM_LEASE_SECONDS`, and `RESEARCH_MAX_ATTEMPTS`, then run
+`python -m backend.app.research.worker` as a separate process when enabled.

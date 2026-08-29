@@ -14,6 +14,7 @@ from ..errors import (
     ArxivMetadataError,
     ArxivNotFoundError,
     PdfDownloadError,
+    PdfTooLargeError,
     PdfValidationError,
 )
 from ...models.paper import PaperMetadata
@@ -105,7 +106,7 @@ class ArxivClient:
                     if content_length:
                         try:
                             if int(content_length) > max_bytes:
-                                raise PdfValidationError("The paper PDF exceeds the configured size limit.")
+                                raise PdfTooLargeError("The paper PDF exceeds the configured size limit.")
                         except ValueError:
                             pass
                     chunks: list[bytes] = []
@@ -113,7 +114,7 @@ class ArxivClient:
                     async for chunk in response.aiter_bytes():
                         total += len(chunk)
                         if total > max_bytes:
-                            raise PdfValidationError("The paper PDF exceeds the configured size limit.")
+                            raise PdfTooLargeError("The paper PDF exceeds the configured size limit.")
                         chunks.append(chunk)
                     body = b"".join(chunks)
         except httpx.HTTPError as exc:
