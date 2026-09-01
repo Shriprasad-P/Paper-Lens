@@ -1,8 +1,9 @@
 """Minimal local reviewer for the real PaperLens evaluation ledgers.
 
 The reviewer edits one JSONL item at a time and records reviewer identity,
-timestamp, notes, and an explicit ``REVIEWED`` state.  It intentionally has no
-network, model, or web-application dependency.
+timestamp, notes, and an explicit ``REVIEWED`` or ``EXCLUDED`` state.  Each
+substantive mutation is appended to ``change_log.jsonl``.  It intentionally has
+no network, model, or web-application dependency.
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ from typing import Any
 
 from .provenance import EvaluationDataError, annotation_file_hashes, combined_annotation_hash, sha256_json
 from .schemas import AnnotationStatus, VerificationStatus
-from .validation import require_reviewed_cases
+from .validation import require_resolved_cases
 
 
 KIND_FILES = {
@@ -27,6 +28,8 @@ KIND_FILES = {
 }
 
 REVIEWED_STATUSES = {AnnotationStatus.REVIEWED.value, AnnotationStatus.ADJUDICATED.value}
+EXCLUDED_STATUS = AnnotationStatus.EXCLUDED.value
+RESOLVED_STATUSES = REVIEWED_STATUSES | {EXCLUDED_STATUS}
 VERIFICATION_LABELS = {status.value for status in VerificationStatus}
 
 
@@ -49,11 +52,13 @@ def apply_review(
     answerable: bool | None = None,
     numeric_facts: list[str] | None = None,
     reviewed_at: str | None = None,
+    exclusion_reason: str | None = None,
 ) -> dict[str, Any]:
-    """Apply one explicit human review and atomically rewrite the JSONL ledger."""
+    """Apply one explicit human review/exclusion and atomically rewrite the JSONL ledger."""
 
     _ensure_annotation_ledger_editable(path)
     rows, index, row = load_case(path, case_id)
+    before = json.loads(json.dumps(row, ensure_ascii=False))
     if not reviewer_id.strip():
         raise ValueError("reviewer_id is required")
     if not notes.strip():
@@ -65,9 +70,14 @@ def apply_review(
         raise ValueError("reviewed_at must be an ISO-8601 timestamp") from exc
     if timestamp.tzinfo is None:
         raise ValueError("reviewed_at must include a timezone")
-    row["annotation_status"] = "REVIEWED"
+    if exclusion_reason is not None and not exclusion_reason.strip():
+        raise ValueError("exclusion_reason must not be blank")
+    if exclusion_reason is not None and any(value is not None for value in (evidence_ids, label, answerable, numeric_facts)):
+        raise ValueError("An excluded item cannot also change review labels or evidence")
+    row["annotation_status"] = EXCLUDED_STATUS if exclusion_reason is not None else "REVIEWED"
     row["reviewer_id"] = reviewer_id.strip()
     row["reviewed_at"] = now
+    row["exclusion_reason"] = exclusion_reason.strip() if exclusion_reason is not None else None
     existing_notes = row.get("reviewer_notes", [])
     if isinstance(existing_notes, str):
         existing_notes = [existing_notes]
@@ -103,7 +113,52 @@ def apply_review(
     temporary = path.with_name(path.name + ".reviewing")
     temporary.write_text("".join(json.dumps(item, separators=(",", ":"), ensure_ascii=False) + "\n" for item in rows), encoding="utf-8")
     os.replace(temporary, path)
+    _append_change_log(path, before, row, reviewer_id=reviewer_id.strip(), reviewed_at=now, reason=notes.strip())
     return row
+
+
+def _append_change_log(
+    ledger_path: Path,
+    before: dict[str, Any],
+    after: dict[str, Any],
+    *,
+    reviewer_id: str,
+    reviewed_at: str,
+    reason: str,
+) -> None:
+    """Append a human-auditable old/new record for a review mutation."""
+
+    tracked_fields = (
+        "annotation_status",
+        "relevant_evidence_ids",
+        "secondary_evidence_ids",
+        "required_evidence_ids",
+        "allowed_evidence_ids",
+        "gold_status",
+        "category",
+        "answerable",
+        "expected_answer_points",
+        "numeric_facts",
+        "exclusion_reason",
+    )
+    changes = [
+        {"field": field, "old": before.get(field), "new": after.get(field)}
+        for field in tracked_fields
+        if before.get(field) != after.get(field)
+    ]
+    if not changes:
+        return
+    record = {
+        "item_id": after.get("case_id"),
+        "ledger": ledger_path.name,
+        "changes": changes,
+        "reason": reason,
+        "reviewer_id": reviewer_id,
+        "reviewed_at": reviewed_at,
+    }
+    log_path = ledger_path.parent / "change_log.jsonl"
+    with log_path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, separators=(",", ":"), ensure_ascii=False) + "\n")
 
 
 def _ensure_annotation_ledger_editable(path: Path) -> None:
@@ -155,9 +210,13 @@ def interactive_review(annotation_dir: Path, kind: str, case_id: str, reviewer_i
     if evidence_path.is_file():
         for item in _evidence_context(evidence_path, case):
             print(f"\n[{item.get('id')}] page={item.get('page')} type={item.get('evidence_type')}\n{item.get('source_text', '')[:3000]}")
-    action = input("Action [r=review, s=skip, q=quit]: ").strip().lower()
+    action = input("Action [r=review, x=exclude, s=skip, q=quit]: ").strip().lower()
     if action == "q":
         return None
+    if action == "x":
+        reason = input("Exclusion reason (required): ").strip()
+        notes = input("Reviewer note (required): ").strip()
+        return apply_review(path, case_id, reviewer_id=reviewer_id, notes=notes, exclusion_reason=reason)
     if action != "r":
         return case
     raw_ids = input("Gold evidence IDs (comma-separated; blank keeps current): ").strip()
@@ -200,7 +259,6 @@ def refresh_annotation_manifest(
     reviewed_counts: dict[str, int] = {}
     statuses: list[str] = []
     reviewer_ids: set[str] = set()
-    reviewed_timestamps: list[str] = []
     all_rows: list[dict[str, Any]] = []
     for kind, filename in KIND_FILES.items():
         path = annotation_dir / filename
@@ -216,16 +274,19 @@ def refresh_annotation_manifest(
                 reviewer = str(row.get("reviewer_id", "")).strip()
                 if reviewer:
                     reviewer_ids.add(reviewer)
-                if row.get("reviewed_at"):
-                    reviewed_timestamps.append(str(row["reviewed_at"]))
         reviewed_counts[kind] = reviewed
+    excluded_counts = {
+        kind: sum(1 for row in [json.loads(line) for line in (annotation_dir / filename).read_text(encoding="utf-8").splitlines() if line.strip()] if str(row.get("annotation_status", "DRAFT")) == EXCLUDED_STATUS)
+        for kind, filename in KIND_FILES.items()
+    }
+    all_resolved = bool(statuses) and all(status in RESOLVED_STATUSES for status in statuses)
     all_reviewed = bool(statuses) and all(status in REVIEWED_STATUSES for status in statuses)
-    if freeze and not all_reviewed:
-        pending = sum(1 for status in statuses if status not in REVIEWED_STATUSES)
+    if freeze and not all_resolved:
+        pending = sum(1 for status in statuses if status not in RESOLVED_STATUSES)
         raise EvaluationDataError(f"Cannot freeze annotations; {pending} case(s) remain unreviewed")
     if freeze:
         try:
-            require_reviewed_cases(all_rows)
+            require_resolved_cases(all_rows)
         except ValueError as exc:
             raise EvaluationDataError("Cannot freeze annotations; reviewer metadata/notes are incomplete") from exc
     manifest["annotation_hashes"] = hashes
@@ -241,11 +302,13 @@ def refresh_annotation_manifest(
     )
     manifest["counts"] = case_counts
     manifest["reviewed_counts"] = reviewed_counts
+    manifest["excluded_counts"] = excluded_counts
     manifest["human_reviewed"] = all_reviewed
+    manifest["review_complete"] = all_resolved
     manifest["reviewer_count"] = len(reviewer_ids)
     manifest["reviewer_ids"] = sorted(reviewer_ids)
     manifest["review_type"] = "single-reviewer" if len(reviewer_ids) == 1 else "multi-reviewer" if reviewer_ids else "unassigned"
-    manifest["review_status"] = "REVIEWED" if all_reviewed else "IN_PROGRESS" if any(status in REVIEWED_STATUSES for status in statuses) else "NOT_REVIEWED"
+    manifest["review_status"] = "REVIEWED" if all_reviewed else "COMPLETE" if all_resolved else "IN_PROGRESS" if any(status in RESOLVED_STATUSES for status in statuses) else "NOT_REVIEWED"
     if corpus_hash:
         manifest["corpus_hash"] = corpus_hash
     if freeze:

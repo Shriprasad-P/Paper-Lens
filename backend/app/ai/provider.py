@@ -70,6 +70,14 @@ class OpenAICompatibleProvider(AIProvider):
             "temperature": 0,
             "response_format": {"type": "json_object"},
         }
+        # Qwen3 exposes an optional reasoning channel.  Disable it for the
+        # structured PaperLens contract so local evaluation is deterministic
+        # and bounded; the returned content remains ordinary JSON.
+        if self.base_url.startswith(("http://127.0.0.1", "http://localhost")):
+            payload["think"] = False
+            payload["top_p"] = 1
+            payload["max_tokens"] = 512
+            payload["options"] = {"num_predict": 512}
         headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
         try:
             async with httpx.AsyncClient(
@@ -128,6 +136,62 @@ class OpenAICompatibleProvider(AIProvider):
         raise AIProviderError("The AI provider returned invalid structured output.", retryable=False, code="INVALID_RESPONSE") from last_error
 
 
+class OllamaAIProvider(OpenAICompatibleProvider):
+    """Native loopback Ollama adapter with Qwen reasoning disabled.
+
+    Ollama's OpenAI-compatibility layer does not consistently forward the
+    Qwen3 thinking switch.  The native endpoint does, while preserving the
+    provider-neutral ``AIProvider`` boundary used by PaperLens.
+    """
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.base_url = self.base_url.removesuffix("/v1")
+
+    async def generate(self, prompt: str, system_prompt: str | None = None) -> str:
+        if not self.api_key:
+            raise AIProviderError("AI provider credentials are unavailable.", retryable=False, code="AUTHENTICATION")
+        messages: list[dict[str, str]] = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "stream": False,
+            "think": False,
+            "format": "json",
+            "options": {"temperature": 0, "top_p": 1, "num_predict": 512},
+        }
+        headers = {"Content-Type": "application/json"}
+        try:
+            async with httpx.AsyncClient(
+                base_url=self.base_url,
+                headers=headers,
+                timeout=self.timeout,
+                follow_redirects=True,
+                transport=self.transport,
+            ) as client:
+                response = await client.post("/api/chat", json=payload)
+                response.raise_for_status()
+                body = response.json()
+                content = body["message"]["content"]
+                if not isinstance(content, str) or not content.strip():
+                    raise ValueError("empty provider content")
+                return content
+        except httpx.HTTPStatusError as exc:
+            status_code = exc.response.status_code
+            retryable = status_code == 429 or status_code >= 500 or status_code == 408
+            code = "RATE_LIMIT" if status_code == 429 else "TIMEOUT" if status_code == 408 else "UNAVAILABLE" if retryable else "AUTHENTICATION" if status_code in {401, 403} else "INVALID_RESPONSE"
+            raise AIProviderError("The local Ollama AI request failed.", retryable=retryable, code=code) from exc
+        except httpx.TimeoutException as exc:
+            raise AIProviderError("The local Ollama AI request timed out.", code="TIMEOUT") from exc
+        except httpx.RequestError as exc:
+            raise AIProviderError("The local Ollama AI service is unavailable.", code="UNAVAILABLE") from exc
+        except (KeyError, IndexError, TypeError, ValueError) as exc:
+            raise AIProviderError("The local Ollama AI response was invalid.", retryable=False, code="INVALID_RESPONSE") from exc
+
+
 class UnavailableAIProvider(AIProvider):
     """Explicit provider used when extraction is requested without configuration."""
 
@@ -139,12 +203,29 @@ class UnavailableAIProvider(AIProvider):
 
 
 def create_ai_provider(settings: Settings) -> AIProvider:
-    if settings.ai_provider.lower() in {"none", "disabled"}:
+    provider = settings.ai_provider.lower().strip()
+    if provider in {"none", "disabled"}:
         return UnavailableAIProvider()
+    # Ollama's OpenAI-compatible endpoint is local and does not require a
+    # hosted credential.  Keep the shared adapter while supplying a harmless
+    # loopback sentinel only for the adapter's auth-header contract.
+    api_key = settings.ai_api_key
+    base_url = settings.ai_base_url
+    if provider in {"ollama", "ollama_local", "local_ollama"}:
+        api_key = api_key or "local-paperlens"
+        if not base_url or base_url.rstrip("/") == "https://api.openai.com/v1":
+            base_url = "http://127.0.0.1:11434/v1"
+        return OllamaAIProvider(
+            api_key=api_key,
+            model=settings.ai_model,
+            base_url=base_url,
+            timeout=settings.ai_request_timeout,
+            max_retries=settings.ai_max_retries,
+        )
     return OpenAICompatibleProvider(
-        api_key=settings.ai_api_key,
+        api_key=api_key,
         model=settings.ai_model,
-        base_url=settings.ai_base_url,
+        base_url=base_url,
         timeout=settings.ai_request_timeout,
         max_retries=settings.ai_max_retries,
     )

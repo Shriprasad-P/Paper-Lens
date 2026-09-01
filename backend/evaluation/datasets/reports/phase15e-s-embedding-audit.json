@@ -1,0 +1,183 @@
+{
+  "annotation_status": "DRAFT",
+  "batching": "embed_texts(list[str])",
+  "cache_reuse": "model/version/document/evidence hash must match; stale evidence is re-embedded",
+  "dimension": 768,
+  "distance_metric": "cosine",
+  "document_evidence_binding": "retrieval filters one paper/document and stores both IDs",
+  "embedding_config_hash": "c1af21462bed70684f96985afd3b3a1f377f7f5936cf24c08ff478283036ccf0",
+  "embedding_provenance_hash": null,
+  "evaluation_status": "PROVISIONAL",
+  "fallback": "HashEmbeddingProvider(hash-v1) exists for deterministic tests only; excluded from benchmark claims",
+  "final_dataset_used": false,
+  "human_reviewers": 0,
+  "implementation": [
+    "backend/app/retrieval/embeddings.py: EmbeddingProvider, cosine_similarity, create_embedding_provider",
+    "backend/app/retrieval/hybrid.py: SemanticEvidenceRetriever and HybridEvidenceRetriever (RRF_K=60)",
+    "backend/app/db/database.py: evidence_embeddings persistence and evidence_hash cache key"
+  ],
+  "local_runtime": {
+    "blockers": [],
+    "embedding_model_candidates": [],
+    "embedding_model_selected": "nomic-embed-text",
+    "external_runtime": {
+      "metal_probe": "SKIPPED_OLLAMA_SELECTED",
+      "metal_reason": "Ollama is selected; the optional MLX probe was skipped to avoid competing for Metal memory.",
+      "mlx_core_probe": "NOT_RUN",
+      "mlx_lm_executable": "/Users/shriprasad/miniconda3/bin/mlx_lm",
+      "mlx_lm_import_probe": "NOT_RUN",
+      "mlx_lm_version": "0.31.3",
+      "mlx_python_detected": true,
+      "ollama": {
+        "base_url": "http://127.0.0.1:11434/v1",
+        "embedding_base_url": "http://127.0.0.1:11434",
+        "embedding_model": "nomic-embed-text",
+        "executable": "/usr/local/bin/ollama",
+        "generation_model": "qwen3:4b",
+        "models": [
+          "nomic-embed-text:latest",
+          "llama3.2:3b",
+          "qwen2.5vl:7b",
+          "qwen3:4b",
+          "gemma4:e4b"
+        ],
+        "reason": "The local Ollama daemon answered its loopback model endpoint.",
+        "status": "AVAILABLE"
+      },
+      "project_mlx_installed": false
+    },
+    "local_model_candidates": [
+      {
+        "architectures": [
+          "Qwen2ForCausalLM"
+        ],
+        "max_position_embeddings": 32768,
+        "metadata_hash": "fe2a41f876f2a3427efd57c1eb23e7bd450d8b7e3c57a5ef0dc8b09f4498077c",
+        "model_type": "qwen2",
+        "path": "/Users/shriprasad/Documents/Research-Paper/models/Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28",
+        "quantization": null,
+        "revision": "unknown-local-export",
+        "weight_bytes": 15231271888,
+        "weight_file_count": 4,
+        "weights_format": "safetensors"
+      },
+      {
+        "architectures": [
+          "Qwen2ForCausalLM"
+        ],
+        "max_position_embeddings": 32768,
+        "metadata_hash": "d01402afd6c9061e114ebfe6f8a72873e28b7b23719264231385a839e932a44f",
+        "model_type": "qwen2",
+        "path": "/Users/shriprasad/Documents/Research-Paper/models/mlx-Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28-bf16-v2",
+        "quantization": null,
+        "revision": "unknown-local-export",
+        "weight_bytes": 15231271782,
+        "weight_file_count": 3,
+        "weights_format": "safetensors"
+      },
+      {
+        "architectures": [
+          "Qwen2ForCausalLM"
+        ],
+        "max_position_embeddings": 32768,
+        "metadata_hash": "d01402afd6c9061e114ebfe6f8a72873e28b7b23719264231385a839e932a44f",
+        "model_type": "qwen2",
+        "path": "/Users/shriprasad/Documents/Research-Paper/models/mlx-Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28-bf16-v3",
+        "quantization": null,
+        "revision": "unknown-local-export",
+        "weight_bytes": 15231271782,
+        "weight_file_count": 3,
+        "weights_format": "safetensors"
+      }
+    ],
+    "local_server": {
+      "base_url": "http://127.0.0.1:11434/v1",
+      "bind_host": "127.0.0.1",
+      "reason": "The local Ollama daemon answered its loopback model endpoint.",
+      "smoke_test": "NOT_RUN",
+      "status": "AVAILABLE"
+    },
+    "memory": {
+      "embedding_peak_bytes": null,
+      "generation_peak_bytes": null,
+      "sequential_runtime_required": true,
+      "swap_observed": null
+    },
+    "model_inference": {
+      "embedding": "NOT_RUN",
+      "generation": "NOT_RUN"
+    },
+    "project_environment": {
+      "embedding_runtime": "NOT_INSTALLED",
+      "generation_runtime": "NOT_INSTALLED"
+    },
+    "python": "3.14.2",
+    "selected_generation_model": {
+      "architectures": [
+        "Qwen2ForCausalLM"
+      ],
+      "max_position_embeddings": 32768,
+      "metadata_hash": "d01402afd6c9061e114ebfe6f8a72873e28b7b23719264231385a839e932a44f",
+      "model_type": "qwen2",
+      "path": "/Users/shriprasad/Documents/Research-Paper/models/mlx-Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28-bf16-v3",
+      "quantization": null,
+      "revision": "unknown-local-export",
+      "weight_bytes": 15231271782,
+      "weight_file_count": 3,
+      "weights_format": "safetensors"
+    },
+    "selected_ollama_generation_model": "qwen3:4b"
+  },
+  "model": "nomic-embed-text",
+  "normalization": "l2",
+  "provenance": "evidence_id, document_id, evidence_hash, model, version, dimension",
+  "provider": "ollama",
+  "publishable": false,
+  "publishable_quality_claims": false,
+  "reason": "Provider is configured but must be exercised in a separately approved run.",
+  "revision": "ollama-nomic-embed-text-v1",
+  "run_eligibility": "READY_FOR_SEPARATE_DEV_RUN",
+  "runtime": {
+    "cache_hits": null,
+    "cache_misses": null,
+    "duration_seconds": null,
+    "failed_embeddings": 0,
+    "installed_runtimes": {
+      "mlx": false,
+      "mlx_lm": false,
+      "numpy": false,
+      "onnxruntime": false,
+      "sentence_transformers": false,
+      "torch": false,
+      "transformers": false
+    },
+    "machine": "arm64",
+    "model_loaded": false,
+    "ollama": {
+      "base_url": "http://127.0.0.1:11434/v1",
+      "embedding_base_url": "http://127.0.0.1:11434",
+      "embedding_model": "nomic-embed-text",
+      "executable": "/usr/local/bin/ollama",
+      "generation_model": "qwen3:4b",
+      "models": [
+        "nomic-embed-text:latest",
+        "llama3.2:3b",
+        "qwen2.5vl:7b",
+        "qwen3:4b",
+        "gemma4:e4b"
+      ],
+      "reason": "The local Ollama daemon answered its loopback model endpoint.",
+      "status": "AVAILABLE"
+    },
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "records_embedded": 0,
+    "selected_device": "NOT_RUN",
+    "supported_device_paths": [
+      "CPU"
+    ]
+  },
+  "split": "DEV",
+  "status": "CONFIGURED_NOT_RUN",
+  "storage": "evidence_embeddings JSON vectors keyed by paper/document/evidence/model/version",
+  "tuning": "NONE"
+}

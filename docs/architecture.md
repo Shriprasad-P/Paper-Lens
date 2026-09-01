@@ -86,7 +86,7 @@ PaperIR + extraction states
 SQLAlchemy analysis cache
 ```
 
-`AIProvider` is vendor-neutral; `OpenAICompatibleProvider` owns HTTP, authentication, model, timeout, and bounded schema-retry behavior. Runtime configuration comes from `AI_PROVIDER`, `AI_MODEL`, `AI_API_KEY`, `AI_BASE_URL`, `AI_REQUEST_TIMEOUT`, and `AI_MAX_RETRIES`. No credentials are returned to the frontend or written to logs.
+`AIProvider` is vendor-neutral; `OpenAICompatibleProvider` owns HTTP, authentication, model, timeout, and bounded schema-retry behavior. Runtime configuration comes from `AI_PROVIDER`, `AI_MODEL`, `AI_API_KEY`, `AI_BASE_URL`, `AI_REQUEST_TIMEOUT`, and `AI_MAX_RETRIES`. `AI_PROVIDER=ollama` selects the same adapter against the local Ollama OpenAI-compatible endpoint and supplies a loopback sentinel instead of requiring a hosted key. No credentials are returned to the frontend or written to logs.
 
 The section classifier uses heading rules for obvious labels and only invokes AI for ambiguous headings. Evidence selection limits each extractor to relevant paragraph evidence rather than sending the complete document. Prompt files under `backend/app/prompts/` explicitly treat paper text as untrusted source material and forbid following instructions embedded in it.
 

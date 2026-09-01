@@ -180,3 +180,71 @@ reviewer or provider credentials are present in this workspace, so no labels
 were promoted and no semantic, verification, chat, or agent predictions were
 fabricated. Phase 15C remains open pending genuine review and provider-backed
 DEV baseline runs.
+
+### Phase 15D — human annotation review (not started)
+
+Phase 15D is intentionally human-only. The local reviewer supports explicit
+`REVIEWED` and reasoned `EXCLUDED` decisions, append-only change logging, and
+manifest refresh/freeze without changing retrieval or provider behavior. The
+read-only `evaluation.review_progress` report records 25%, 50%, 75%, and 100%
+checkpoints. The current checkpoint is 0/160 resolved, with corpus drift
+validation passing; no provider run or FINAL evaluation is allowed until a
+human reviewer completes the ledgers.
+
+### Phase 15E-P — provisional DEV evaluation (not closed)
+
+Because the ledgers remain untouched `DRAFT` with zero reviewers, the
+provisional lane in `backend/evaluation/provisional.py` exercises only the
+existing DEV split. It emits explicit `PROVISIONAL`, `DRAFT`,
+`human_reviewers: 0`, and `publishable: false` metadata, excludes FINAL rows,
+and preserves the historical BM25 DEV baseline. The existing embedding and
+RRF architecture is audited in `phase15e-embedding-audit.*`; no hash-v1
+semantic benchmark, provider call, prompt tuning, or FINAL run is performed.
+Verification, chat, and durable agent metrics stay `NOT_RUN` until a real
+provider/model is configured. The generated Phase 15E-P JSON/Markdown report
+and DEV-only prediction envelope are reproducibility artifacts, not quality
+claims. Phase 15E-P and Phase 15 overall remain open pending real embeddings,
+provider-backed DEV predictions, offline reproduction, and human review.
+
+### Phase 15E-R — real model/provider configuration (not closed)
+
+The Phase 15E-R audit keeps the existing embedding and generation abstractions
+and records runtime capability, device selection, provider availability,
+prompt hashes, and a single provisional evaluation configuration hash. The
+key-free local Ollama path is now configured for `qwen3:4b` generation and
+`nomic-embed-text` embeddings; ambient Anthropic variables remain outside the
+adapter. Semantic, Hybrid, verification, chat, and durable-agent lanes remain
+`NOT_RUN` until an explicit DEV run, with no fake predictions or provider
+calls. Phase 15E-R is **NOT CLOSED** until real DEV predictions can be frozen
+and reproduced offline. The generated provisional report records this status
+in `datasets/reports/phase15e-provisional-dev.json` and `.md`; the
+embedding/runtime audit is in `phase15e-embedding-audit.*`.
+
+### Phase 15E-S — local runtime enablement (not closed)
+
+Phase 15E-S audits the minimum local runtime path without changing the
+production abstractions or downloading a broad ML stack. Ollama is installed
+with `qwen3:4b` and `nomic-embed-text` (768 dimensions), and real local
+generation/embedding smoke tests pass through the existing adapters. Ollama
+uses Metal when available and falls back to CPU; the optional MLX/Qwen path is
+not required. Semantic, Hybrid, verification, chat, and agent lanes remain
+`NOT_RUN` until an explicit DEV run. The exact runtime/model audit is in
+`datasets/reports/phase15e-s-dev.json` and `.md` plus
+`phase15e-s-embedding-audit.*`, with a DEV-only BM25 envelope in
+`datasets/predictions/phase15e-s-bm25-dev.json`. Phase 15E-S is not closed and
+all artifacts remain provisional, DRAFT-gold, and non-publishable.
+
+## Phase 16A — staging closure validation (not closed)
+
+The Phase 16A closure-only validation ran real Playwright Chromium coverage
+against PostgreSQL/Ollama staging and built/launched the supported Tauri arm64
+bundle. The browser reader/evidence/chat/failure/reload path and packaged
+backend/frontend readiness passed. The original agent `PARTIAL` run was
+classified as a legitimate degraded outcome after a safe source-save failure;
+fresh runs also preserved valid reports but ended `PARTIAL` when the fixed
+180-second per-paper local-model analysis step timed out. No model, prompt,
+quality, or research budget was changed. Phase 16A and Phase 16 remain open
+until a fresh bounded run reaches `COMPLETED`; Phase 15 remains open.
+
+The complete evidence is recorded in
+`backend/evaluation/datasets/reports/phase16-staging-proof.md` and `.json`.

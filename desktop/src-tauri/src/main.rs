@@ -19,12 +19,13 @@ const VERSION: &str = "0.1.0";
 struct RuntimeState {
     backend: Mutex<Option<Child>>,
     frontend: Mutex<Option<Child>>,
+    ollama: Mutex<Option<Child>>,
     shutting_down: Mutex<bool>,
 }
 
 impl RuntimeState {
     fn new() -> Self {
-        Self { backend: Mutex::new(None), frontend: Mutex::new(None), shutting_down: Mutex::new(false) }
+        Self { backend: Mutex::new(None), frontend: Mutex::new(None), ollama: Mutex::new(None), shutting_down: Mutex::new(false) }
     }
 
     fn shutdown(&self) {
@@ -34,7 +35,7 @@ impl RuntimeState {
             }
             *shutting_down = true;
         }
-        for process in [&self.frontend, &self.backend] {
+        for process in [&self.frontend, &self.backend, &self.ollama] {
             if let Ok(mut child) = process.lock() {
                 if let Some(mut process) = child.take() {
                     #[cfg(unix)]
@@ -109,6 +110,13 @@ fn boot_runtime_inner(app: &AppHandle, window: &WebviewWindow, state: &Arc<Runti
     }
     write_runtime_log(app, &format!("desktop_started version={VERSION} data_dir={}", data_dir.display()));
 
+    // The packaged app uses Ollama for all local AI. Reuse an existing daemon
+    // when present; otherwise start the installed binary if one is discoverable.
+    // Ollama itself selects Metal or CPU, so this also covers machines without
+    // a usable Metal device. Failure is non-fatal: lexical reader features can
+    // still start and the backend will return a safe local-provider error.
+    ensure_ollama(&logs_dir, state);
+
     let backend_port = free_port()?;
     let frontend_port = free_port()?;
     let token = std::env::var("PAPERLENS_DESKTOP_TOKEN")
@@ -147,8 +155,18 @@ fn boot_runtime_inner(app: &AppHandle, window: &WebviewWindow, state: &Arc<Runti
         ("PAPERLENS_FRONTEND_ORIGINS", frontend_url.clone()),
         ("PAPERLENS_FRONTEND_ORIGIN", frontend_url.clone()),
         ("PAPERLENS_BACKEND_PUBLIC_URL", backend_url.clone()),
-        ("PAPERLENS_AI_PROVIDER", "none".to_string()),
-        ("EMBEDDING_PROVIDER", "none".to_string()),
+        // Use the user's local Ollama daemon; no hosted API credential is
+        // required.  Ollama falls back to CPU execution when Metal is absent.
+        ("AI_PROVIDER", "ollama".to_string()),
+        ("AI_MODEL", "qwen3:4b".to_string()),
+        ("AI_BASE_URL", "http://127.0.0.1:11434/v1".to_string()),
+        ("EMBEDDING_PROVIDER", "ollama".to_string()),
+        ("EMBEDDING_MODEL", "nomic-embed-text".to_string()),
+        ("EMBEDDING_DIMENSION", "768".to_string()),
+        ("EMBEDDING_VERSION", "ollama-nomic-embed-text-v1".to_string()),
+        ("EMBEDDING_BASE_URL", "http://127.0.0.1:11434".to_string()),
+        ("HYBRID_RETRIEVAL_ENABLED", "true".to_string()),
+        ("RETRIEVAL_MODE", "HYBRID".to_string()),
         ("PAPERLENS_RATE_LIMITS_ENABLED", "true".to_string()),
         ("PAPERLENS_DESKTOP_TOKEN", token.clone()),
         ("PAPERLENS_RELEASE_VERSION", VERSION.to_string()),
@@ -200,6 +218,45 @@ fn spawn_logged(mut command: Command, path: &Path) -> Result<Child, String> {
         });
     }
     command.stdout(Stdio::from(file)).stderr(Stdio::from(stderr)).spawn().map_err(|error| format!("cannot launch sidecar: {error}"))
+}
+
+fn ensure_ollama(logs_dir: &Path, state: &Arc<RuntimeState>) {
+    let endpoint = "http://127.0.0.1:11434/api/tags";
+    if http_ok(endpoint) {
+        return;
+    }
+    let Some(binary) = find_ollama_binary() else {
+        return;
+    };
+    let log_path = logs_dir.join("ollama.log");
+    let mut command = Command::new(binary);
+    command.arg("serve");
+    let child = match spawn_logged(command, &log_path) {
+        Ok(child) => child,
+        Err(_) => return,
+    };
+    if let Ok(mut slot) = state.ollama.lock() {
+        *slot = Some(child);
+    }
+    let _ = wait_for_http_with_process(endpoint, Duration::from_secs(20), &state.ollama);
+}
+
+fn find_ollama_binary() -> Option<std::path::PathBuf> {
+    if let Some(path) = std::env::var_os("PATH") {
+        for directory in std::env::split_paths(&path) {
+            let candidate = directory.join("ollama");
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        }
+    }
+    for candidate in ["/usr/local/bin/ollama", "/opt/homebrew/bin/ollama"] {
+        let path = std::path::PathBuf::from(candidate);
+        if path.is_file() {
+            return Some(path);
+        }
+    }
+    None
 }
 
 fn monitor_children(app: AppHandle, window: WebviewWindow, state: Arc<RuntimeState>) {

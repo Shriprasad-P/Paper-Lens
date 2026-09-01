@@ -1,0 +1,90 @@
+{
+  "annotation_changes": {
+    "change_records": 0,
+    "evidence_bindings_changed": 0,
+    "field_changes": 0,
+    "label_changes": 0
+  },
+  "baseline_commit": "a9dacee5ceb0b28183efd35580c5856f07559aff",
+  "checkpoints": {
+    "100": {
+      "required_resolved": 160,
+      "resolved_at_generation": false,
+      "status": "PENDING"
+    },
+    "25": {
+      "required_resolved": 40,
+      "resolved_at_generation": false,
+      "status": "PENDING"
+    },
+    "50": {
+      "required_resolved": 80,
+      "resolved_at_generation": false,
+      "status": "PENDING"
+    },
+    "75": {
+      "required_resolved": 120,
+      "resolved_at_generation": false,
+      "status": "PENDING"
+    }
+  },
+  "corpus_drift": {
+    "checked": 35,
+    "corpus_hash": "eb3925e01260897f383c9832e1c564aeff7197e192a62d19ce63cc0f1a0309c1",
+    "errors": [],
+    "status": "PASS"
+  },
+  "generated_at": "2026-08-29T12:54:49.204133+00:00",
+  "notes": [
+    "Progress is an annotation-workflow report, not a benchmark output.",
+    "Provider-backed runs and FINAL evaluation are intentionally not started in Phase 15D."
+  ],
+  "phase": "15D",
+  "progress_percent": 0.0,
+  "remaining_draft": 160,
+  "resolved_cases": 0,
+  "review_type": "unassigned",
+  "reviewer_count": 0,
+  "reviewer_ids": [],
+  "schema_version": "1.0",
+  "status": "NOT_STARTED",
+  "suites": {
+    "agent": {
+      "excluded": 0,
+      "remaining_draft": 10,
+      "reviewed": 0,
+      "status_counts": {
+        "DRAFT": 10
+      },
+      "total": 10
+    },
+    "chat": {
+      "excluded": 0,
+      "remaining_draft": 40,
+      "reviewed": 0,
+      "status_counts": {
+        "DRAFT": 40
+      },
+      "total": 40
+    },
+    "retrieval": {
+      "excluded": 0,
+      "remaining_draft": 60,
+      "reviewed": 0,
+      "status_counts": {
+        "DRAFT": 60
+      },
+      "total": 60
+    },
+    "verification": {
+      "excluded": 0,
+      "remaining_draft": 50,
+      "reviewed": 0,
+      "status_counts": {
+        "DRAFT": 50
+      },
+      "total": 50
+    }
+  },
+  "total_cases": 160
+}

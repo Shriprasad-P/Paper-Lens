@@ -14,13 +14,25 @@ PYTHONPATH=backend python -m evaluation.review_cli retrieval real-retrieval-001 
 
 The utility displays the case, cited evidence, and nearby same-section
 context; accepts revised evidence IDs/labels/answerability, records a note and
-UTC timestamp, and atomically marks the item `REVIEWED`. Use `--show-only` to
-inspect without editing and `--refresh-manifest` to refresh exact ledger
-hashes/counts after a review batch. `--freeze` requires every row to carry
-reviewer metadata and notes, then prevents further edits until a new benchmark
-version is created. Run the read-only `review_audit.json` generator (or rebuild
-it from the ledgers) after edits. Metrics intended for publication must invoke
-the reviewed-only guard; draft items are never silently promoted.
+UTC timestamp, and atomically marks the item `REVIEWED`. Use `x` for an
+explicit, reasoned `EXCLUDED` decision; it is resolved for completion checks
+but never enters reviewed-only metrics. Every substantive mutation is appended
+to `change_log.jsonl` with old/new values, reason, reviewer, and timestamp.
+Use `--show-only` to inspect without editing and `--refresh-manifest` to refresh
+exact ledger hashes/counts after a review batch. `--freeze` requires every row
+to be reviewed or explicitly excluded with reviewer metadata, notes, and (for
+exclusions) a reason, then prevents further edits until a new benchmark version
+is created. Run the read-only `review_audit.json` generator (or rebuild it from
+the ledgers) after edits. Metrics intended for publication must invoke the
+reviewed-only guard; draft items are never silently promoted.
+
+Read-only progress checkpoints can be generated with:
+
+```bash
+PYTHONPATH=backend python -m evaluation.review_progress \
+  --output backend/evaluation/datasets/reports/phase15d-review-progress.json \
+  --markdown-output backend/evaluation/datasets/reports/phase15d-review-progress.md
+```
 
 `human_review_rubric.json` defines the 0–2 human dimensions. If one reviewer
 is used, record `reviewer_count: 1` and `review_type: single-reviewer`; never

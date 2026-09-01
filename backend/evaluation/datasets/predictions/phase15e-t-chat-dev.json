@@ -1,0 +1,728 @@
+{
+  "annotation_hash": "975cc12353222d35c308dbe438df94e321135e5a7ff3a3605d176da78f210023",
+  "dataset_hash": "eb3925e01260897f383c9832e1c564aeff7197e192a62d19ce63cc0f1a0309c1",
+  "evaluation_schema_version": "1",
+  "paperlens_commit": "a9dacee5ceb0b28183efd35580c5856f07559aff",
+  "prediction_hash": "80fe609d060a071ec8fbf6ac07736f1261e839e6a8790761ded16257bac270c8",
+  "predictions": {
+    "real-chat-001": {
+      "answer": "The reported numbers on MNIST are the mean log-likelihood of samples on test set, with the standard error of the mean computed across examples.\n\nOn TFD, the standard error is computed across folds of the dataset, with a different \u03c3 chosen using the validation set of each fold.\n\nOn TFD, \u03c3 was cross validated on each fold and mean log-likelihood on each fold were computed.",
+      "citations": [
+        "ev_0147"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 4557.46,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What numeric values are reported in the cited passage?",
+      "retrieved_evidence_ids": [
+        "ev_0148",
+        "ev_0181",
+        "ev_0257",
+        "ev_0147"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-002": {
+      "answer": "The paper does not contain enough retrieved evidence to answer this reliably.",
+      "citations": [],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 2441.16,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What numeric values are reported in the cited passage?",
+      "retrieved_evidence_ids": [
+        "doc_f9178cbdbb8aeb8d__ev_0244",
+        "doc_f9178cbdbb8aeb8d__ev_0351",
+        "doc_f9178cbdbb8aeb8d__ev_0066",
+        "doc_f9178cbdbb8aeb8d__ev_0340",
+        "doc_f9178cbdbb8aeb8d__ev_0062",
+        "doc_f9178cbdbb8aeb8d__ev_0059",
+        "doc_f9178cbdbb8aeb8d__ev_0182",
+        "doc_f9178cbdbb8aeb8d__ev_0211"
+      ],
+      "split": "dev",
+      "status": "INSUFFICIENT_EVIDENCE"
+    },
+    "real-chat-003": {
+      "answer": "Romero et al. (2014) reported that training using plain backpropagation was only possible for maxout networks with depth up to 5 layers when number of parameters was limited to \u223c250K and number of multiplications to \u223c30M.\n\nRomero et al. (2014) reported that training 19-layer networks with a budget of 2.5M parameters using hint-based training was possible.",
+      "citations": [
+        "doc_1edd5ee717b59aec__ev_0044"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 4935.16,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What numeric values are reported in the cited passage?",
+      "retrieved_evidence_ids": [
+        "doc_1edd5ee717b59aec__ev_0073",
+        "doc_1edd5ee717b59aec__ev_0044",
+        "doc_1edd5ee717b59aec__ev_0228",
+        "doc_1edd5ee717b59aec__ev_0076"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-004": {
+      "answer": "The paper reports numeric values including 1000 classes for ImageNet 2012, 1.28 million training images, 50k validation images, 100k test images, mAP@.5 of 55.7%, and mAP@[.5, .95] of 34.9%.\n\nThe ImageNet 2012 classification dataset has 1000 classes.\n\nThe training set consists of 1.28 million images.\n\nThe validation set consists of 50k images.\n\nThe test set consists of 100k images.\n\nThe mAP@.5 is 55.7%.\n\nThe mAP@[.5, .95] is 34.9%.",
+      "citations": [
+        "doc_b87100da882de413__ev_0176",
+        "doc_b87100da882de413__ev_0635",
+        "doc_b87100da882de413__ev_0500"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 13294.37,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What numeric values are reported in the cited passage?",
+      "retrieved_evidence_ids": [
+        "doc_b87100da882de413__ev_0176",
+        "doc_b87100da882de413__ev_0635",
+        "doc_b87100da882de413__ev_0500",
+        "doc_b87100da882de413__ev_0023",
+        "doc_b87100da882de413__ev_0542",
+        "doc_b87100da882de413__ev_0338",
+        "doc_b87100da882de413__ev_0544",
+        "doc_b87100da882de413__ev_0341"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-005": {
+      "answer": "SqueezeNet has a 1.4\u00d7 smaller model size than the best efforts from the model compression community\n\nSqueezeNet uses 32-bit values to represent the model\n\nSqueezeNet maintains or exceeds baseline accuracy",
+      "citations": [
+        "doc_396765f56159e764__ev_0179"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 6094.52,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What numeric values are reported in the cited passage?",
+      "retrieved_evidence_ids": [
+        "doc_396765f56159e764__ev_0179",
+        "doc_396765f56159e764__ev_0131",
+        "doc_396765f56159e764__ev_0023",
+        "doc_396765f56159e764__ev_0016"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-006": {
+      "answer": "The paper does not contain enough retrieved evidence to answer this reliably.",
+      "citations": [],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 2526.95,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What numeric values are reported in the cited passage?",
+      "retrieved_evidence_ids": [
+        "doc_cd135acb31d725ca__ev_0357",
+        "doc_cd135acb31d725ca__ev_1121",
+        "doc_cd135acb31d725ca__ev_1151",
+        "doc_cd135acb31d725ca__ev_1180",
+        "doc_cd135acb31d725ca__ev_1210",
+        "doc_cd135acb31d725ca__ev_0617",
+        "doc_cd135acb31d725ca__ev_0647",
+        "doc_cd135acb31d725ca__ev_0676"
+      ],
+      "split": "dev",
+      "status": "INSUFFICIENT_EVIDENCE"
+    },
+    "real-chat-007": {
+      "answer": "The grounded answer could not be generated. Please try again.",
+      "citations": [],
+      "error": "The AI provider returned invalid structured output.",
+      "gold_fields_used": false,
+      "latency_ms": 14105.31,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What numeric values are reported in the cited passage?",
+      "retrieved_evidence_ids": [
+        "doc_5f0ba0897a8bf946__ev_0471",
+        "doc_5f0ba0897a8bf946__ev_0518",
+        "doc_5f0ba0897a8bf946__ev_0293",
+        "doc_5f0ba0897a8bf946__ev_0142",
+        "doc_5f0ba0897a8bf946__ev_0340",
+        "doc_5f0ba0897a8bf946__ev_0490",
+        "doc_5f0ba0897a8bf946__ev_0312",
+        "doc_5f0ba0897a8bf946__ev_0026"
+      ],
+      "split": "dev",
+      "status": "GENERATION_FAILED"
+    },
+    "real-chat-008": {
+      "answer": "The cited passage reports numeric values for entity classification accuracy in Table 2 and Table 7, averaged over 10 runs with standard error.\n\nThe cited passage reports numeric values for entity classification accuracy in Table 2 and Table 7, averaged over 10 runs with standard error.",
+      "citations": [
+        "doc_1033c5f9bd933ade__ev_0254",
+        "doc_1033c5f9bd933ade__ev_0164",
+        "doc_1033c5f9bd933ade__ev_0259",
+        "doc_1033c5f9bd933ade__ev_0297"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 5045.94,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What numeric values are reported in the cited passage?",
+      "retrieved_evidence_ids": [
+        "doc_1033c5f9bd933ade__ev_0210",
+        "doc_1033c5f9bd933ade__ev_0281",
+        "doc_1033c5f9bd933ade__ev_0159",
+        "doc_1033c5f9bd933ade__ev_0231",
+        "doc_1033c5f9bd933ade__ev_0254",
+        "doc_1033c5f9bd933ade__ev_0164",
+        "doc_1033c5f9bd933ade__ev_0259",
+        "doc_1033c5f9bd933ade__ev_0297"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-009": {
+      "answer": "The paper lists the authors Andrew G. Howard, Menglong Zhu, Bo Chen, Dmitry Kalenichenko, Weijun Wang, Tobias Weyand, Marco Andreetto, and Hartwig Adam.\n\nAndrew G. Howard, Menglong Zhu, Bo Chen, Dmitry Kalenichenko, Weijun Wang, Tobias Weyand, Marco Andreetto, and Hartwig Adam are authors of the paper.",
+      "citations": [
+        "doc_08d1b46560c7eaac__ev_0003"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 3803.19,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Andrew G. Howard Menglong Zhu Bo Chen Dmitry Kalenichenko Weijun Wang Tobias Weyand Marco Andreetto Hartwig Adam?",
+      "retrieved_evidence_ids": [
+        "doc_08d1b46560c7eaac__ev_0003",
+        "doc_08d1b46560c7eaac__ev_0005",
+        "doc_08d1b46560c7eaac__ev_0266",
+        "doc_08d1b46560c7eaac__ev_0208",
+        "doc_08d1b46560c7eaac__ev_0191",
+        "doc_08d1b46560c7eaac__ev_0075",
+        "doc_08d1b46560c7eaac__ev_0287",
+        "doc_08d1b46560c7eaac__ev_0264"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-010": {
+      "answer": "The paper lists William L. Hamilton as a co-author with email wleif@stanford.edu in the author section.\n\nWilliam L. Hamilton is a co-author of the paper with email wleif@stanford.edu",
+      "citations": [
+        "doc_bbf3618a7efd3753__ev_0002"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 2760.88,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: William L. Hamilton\u2217 wleif@stanford.edu?",
+      "retrieved_evidence_ids": [
+        "doc_bbf3618a7efd3753__ev_0002",
+        "doc_bbf3618a7efd3753__ev_0446",
+        "doc_bbf3618a7efd3753__ev_0173",
+        "doc_bbf3618a7efd3753__ev_0003",
+        "doc_bbf3618a7efd3753__ev_0437",
+        "doc_bbf3618a7efd3753__ev_0472",
+        "doc_bbf3618a7efd3753__ev_0164",
+        "doc_bbf3618a7efd3753__ev_0199"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-011": {
+      "answer": "Google Brain has an email address avaswani@google.com",
+      "citations": [
+        "doc_9793a052b7692d76__ev_0006"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 1918.77,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Google Brain avaswani@google.com?",
+      "retrieved_evidence_ids": [
+        "doc_9793a052b7692d76__ev_0006",
+        "doc_9793a052b7692d76__ev_0007",
+        "doc_9793a052b7692d76__ev_0011",
+        "doc_9793a052b7692d76__ev_0018",
+        "doc_9793a052b7692d76__ev_0008",
+        "doc_9793a052b7692d76__ev_0009",
+        "doc_9793a052b7692d76__ev_0012",
+        "doc_9793a052b7692d76__ev_0001"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-012": {
+      "answer": "The paper explicitly lists the authors Shuangqi Luo, Hongmin Wu, Hongbin Lin, Shuangda Duan, Yisheng Guan, and Juan Rojas in the first paragraph of the document.\n\nThe paper lists Shuangqi Luo, Hongmin Wu, Hongbin Lin, Shuangda Duan, Yisheng Guan, and Juan Rojas as authors.",
+      "citations": [
+        "doc_8ae772552e130ad8__ev_0003"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 3738.84,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Shuangqi Luo, Hongmin Wu, Hongbin Lin, Shuangda Duan, Yisheng Guan, and Juan Rojas?",
+      "retrieved_evidence_ids": [
+        "doc_8ae772552e130ad8__ev_0003",
+        "doc_8ae772552e130ad8__ev_0351",
+        "doc_8ae772552e130ad8__ev_0427",
+        "doc_8ae772552e130ad8__ev_0379",
+        "doc_8ae772552e130ad8__ev_0362",
+        "doc_8ae772552e130ad8__ev_0122",
+        "doc_8ae772552e130ad8__ev_0008",
+        "doc_8ae772552e130ad8__ev_0135"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-013": {
+      "answer": "The grounded answer could not be generated. Please try again.",
+      "citations": [],
+      "error": "The AI provider returned invalid structured output.",
+      "gold_fields_used": false,
+      "latency_ms": 12591.83,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: DECOUPLED WEIGHT DECAY REGULARIZATION?",
+      "retrieved_evidence_ids": [
+        "doc_1f0214c145fbc9cb__ev_0002",
+        "doc_1f0214c145fbc9cb__ev_0040",
+        "doc_1f0214c145fbc9cb__ev_0037",
+        "doc_1f0214c145fbc9cb__ev_0051",
+        "doc_1f0214c145fbc9cb__ev_0021",
+        "doc_1f0214c145fbc9cb__ev_0084",
+        "doc_1f0214c145fbc9cb__ev_0069",
+        "doc_1f0214c145fbc9cb__ev_0083"
+      ],
+      "split": "dev",
+      "status": "GENERATION_FAILED"
+    },
+    "real-chat-014": {
+      "answer": "The paper discusses fractional operators, Mittag-Leffler functions, and fragmentations derived in the context of mass partitions and diversity measures.\n\nThe paper states that \u03b1\u03b4,\u03b8(\u03bb) leads to a mass partition (P\u2113,1(\u03bb)), whose corresponding \u03b1-diversity \u02c6Z1(\u03bb) has density expressed in terms of a ratio of two Mittag-Leffler functions.\n\nThe paper mentions that functions (Mittag-Leffler type functions) that appear in the broad literature [34] connect with a mass partition (P\u2113(\u03bb)) \u223cL(0).\n\nThe paper refers to \u03b1 \u22121/\u03b1 as having a Mittag-Leffler distribution, where the generalized Mittag-Leffler variable, S\u2212\u03b1, is involved.\n\nThe paper considers left-sided Riemann-Liouville fractional integral operators.\n\nThe paper shows that generalized Mittag-Leffler functions can be expressed in terms of special cases of previous results.",
+      "citations": [
+        "doc_f9655223c9a32c16__ev_0002",
+        "doc_f9655223c9a32c16__ev_3132",
+        "doc_f9655223c9a32c16__ev_1801",
+        "doc_f9655223c9a32c16__ev_0062",
+        "doc_f9655223c9a32c16__ev_0196",
+        "doc_f9655223c9a32c16__ev_1569"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 13278.83,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Fractional Operators, Mittag-Le\ufb04er Functions, and Fragmentations Derived?",
+      "retrieved_evidence_ids": [
+        "doc_f9655223c9a32c16__ev_0002",
+        "doc_f9655223c9a32c16__ev_3132",
+        "doc_f9655223c9a32c16__ev_1801",
+        "doc_f9655223c9a32c16__ev_0062",
+        "doc_f9655223c9a32c16__ev_0196",
+        "doc_f9655223c9a32c16__ev_1569",
+        "doc_f9655223c9a32c16__ev_4494",
+        "doc_f9655223c9a32c16__ev_4531"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-015": {
+      "answer": "Nicolas Fiorini is associated with the National Center for Biotechnology Information\n\nNicolas Fiorini is listed as a co-author in a reference with Sunil Mohan, Sun Kim, and Zhiyong\n\nNicolas Fiorini is listed as a co-author in a reference with David J Lipman and Zhiyong Lu\n\nNicolas Fiorini is listed as a co-author in a reference with Sunil Mohan, Sun Kim, and Zhiyong",
+      "citations": [
+        "doc_e995d4f02b074689__ev_0003",
+        "doc_e995d4f02b074689__ev_0179",
+        "doc_e995d4f02b074689__ev_0110",
+        "doc_e995d4f02b074689__ev_0141"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 8875.39,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Nicolas Fiorini National Center for Biotechnology Information?",
+      "retrieved_evidence_ids": [
+        "doc_e995d4f02b074689__ev_0003",
+        "doc_e995d4f02b074689__ev_0004",
+        "doc_e995d4f02b074689__ev_0179",
+        "doc_e995d4f02b074689__ev_0110",
+        "doc_e995d4f02b074689__ev_0141",
+        "doc_e995d4f02b074689__ev_0190",
+        "doc_e995d4f02b074689__ev_0152",
+        "doc_e995d4f02b074689__ev_0005"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-016": {
+      "answer": "The paper lists Waleed Ammar, Dirk Groeneveld, Chandra Bhagavatula, Iz Beltagy, and Miles Crawford as authors in the first paragraph of the paper.\n\nWaleed Ammar, Dirk Groeneveld, Chandra Bhagavatula, Iz Beltagy, and Miles Crawford are listed as authors in the paper.",
+      "citations": [
+        "doc_8e019d9545db6080__ev_0002"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 3663.85,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Waleed Ammar, Dirk Groeneveld, Chandra Bhagavatula, Iz Beltagy, Miles Crawford?",
+      "retrieved_evidence_ids": [
+        "doc_8e019d9545db6080__ev_0002",
+        "doc_8e019d9545db6080__ev_0232",
+        "doc_8e019d9545db6080__ev_0257",
+        "doc_8e019d9545db6080__ev_0165",
+        "doc_8e019d9545db6080__ev_0190",
+        "doc_8e019d9545db6080__ev_0242",
+        "doc_8e019d9545db6080__ev_0245",
+        "doc_8e019d9545db6080__ev_0175"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-017": {
+      "answer": "The paper explicitly states that Lancaster University is located at Lancaster LA1 4YB, UK.\n\nLancaster University is located at Lancaster LA1 4YB, UK",
+      "citations": [
+        "doc_ef76e0ddb970d58c__ev_0004"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 2603.11,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Lancaster University, Lancaster LA1 4YB, UK?",
+      "retrieved_evidence_ids": [
+        "doc_ef76e0ddb970d58c__ev_0004",
+        "doc_ef76e0ddb970d58c__ev_0095",
+        "doc_ef76e0ddb970d58c__ev_0162"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-018": {
+      "answer": "The paper explicitly lists the authors and their email addresses in the first paragraph of the document.\n\nThe paper lists the authors Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova with their email addresses {jacobdevlin,mingweichang,kentonl,kristout}@google.com.",
+      "citations": [
+        "doc_8ea108e044aea8bd__ev_0003"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 3425.32,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Jacob Devlin Ming-Wei Chang Kenton Lee Kristina Toutanova Google AI Language {jacobdevlin,mingweichang,kentonl,kristout}@google.com?",
+      "retrieved_evidence_ids": [
+        "doc_8ea108e044aea8bd__ev_0003",
+        "doc_8ea108e044aea8bd__ev_0569",
+        "doc_8ea108e044aea8bd__ev_0276",
+        "doc_8ea108e044aea8bd__ev_0543",
+        "doc_8ea108e044aea8bd__ev_0250",
+        "doc_8ea108e044aea8bd__ev_0537",
+        "doc_8ea108e044aea8bd__ev_0244",
+        "doc_8ea108e044aea8bd__ev_0013"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-019": {
+      "answer": "The paper explicitly lists the authors in the first paragraph of the document.\n\nThe paper lists the authors Nicholas Carlini, Anish Athalye, Nicolas Papernot, Wieland Brendel, Jonas Rauber, Dimitris Tsipras, Ian Goodfellow, Aleksander M\u0105dry, and Alexey Kurakin.",
+      "citations": [
+        "doc_2ae3f7dce0f1e0c5__ev_0002"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 3598.41,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Nicholas Carlini1, Anish Athalye2, Nicolas Papernot1, Wieland Brendel3, Jonas Rauber3, Dimitris Tsipras2, Ian Goodfellow1, Aleksander M\u0105dry2, Alexey Kurakin1 *?",
+      "retrieved_evidence_ids": [
+        "doc_2ae3f7dce0f1e0c5__ev_0002",
+        "doc_2ae3f7dce0f1e0c5__ev_0456",
+        "doc_2ae3f7dce0f1e0c5__ev_0548",
+        "doc_2ae3f7dce0f1e0c5__ev_0318",
+        "doc_2ae3f7dce0f1e0c5__ev_0410",
+        "doc_2ae3f7dce0f1e0c5__ev_0523",
+        "doc_2ae3f7dce0f1e0c5__ev_0385",
+        "doc_2ae3f7dce0f1e0c5__ev_0509"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-020": {
+      "answer": "The paper lists Rodrigo Nogueira, Wei Yang, Jimmy Lin, and Kyunghyun Cho as authors in the first paragraph of the document.\n\nRodrigo Nogueira, Wei Yang, Jimmy Lin, and Kyunghyun Cho are authors of the paper",
+      "citations": [
+        "doc_964e8ac6be7a870a__ev_0002"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 3199.54,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Rodrigo Nogueira,1 Wei Yang,2 Jimmy Lin,2 and Kyunghyun Cho3,4,5,6?",
+      "retrieved_evidence_ids": [
+        "doc_964e8ac6be7a870a__ev_0002",
+        "doc_964e8ac6be7a870a__ev_0159",
+        "doc_964e8ac6be7a870a__ev_0095",
+        "doc_964e8ac6be7a870a__ev_0190",
+        "doc_964e8ac6be7a870a__ev_0192",
+        "doc_964e8ac6be7a870a__ev_0126",
+        "doc_964e8ac6be7a870a__ev_0128",
+        "doc_964e8ac6be7a870a__ev_0023"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-021": {
+      "answer": "ResNet-152 (He et al., 2016) has a Top1 Acc. of 77.8% and #Params of 60M\n\nEfficientNet-B1 has a Top1 Acc. of 79.1% and #Params of 7.8M\n\nResNeXt-101 (Xie et al., 2017) has a Top1 Acc. of 80.9% and #Params of 84M\n\nEfficientNet-B3 has a Top1 Acc. of 81.6% and #Params of 12M\n\nSENet (Hu et al., 2018) has a Top1 Acc. of 82.7% and #Params of 146M",
+      "citations": [
+        "doc_3f7c33e4d492bc04__ev_0028"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 10443.87,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Top1 Acc. #Params ResNet-152 (He et al., 2016) 77.8% 60M Ef\ufb01cientNet-B1 79.1% 7.8M ResNeXt-101 (Xie et al., 2017) 80.9% 84M Ef\ufb01cientNet-B3 81.6% 12M SENet (Hu et al., 2018) 82.7% 1?",
+      "retrieved_evidence_ids": [
+        "doc_3f7c33e4d492bc04__ev_0028",
+        "doc_3f7c33e4d492bc04__ev_0247",
+        "doc_3f7c33e4d492bc04__ev_0210",
+        "doc_3f7c33e4d492bc04__ev_0208",
+        "doc_3f7c33e4d492bc04__ev_0211",
+        "doc_3f7c33e4d492bc04__ev_0207",
+        "doc_3f7c33e4d492bc04__ev_0209",
+        "doc_3f7c33e4d492bc04__ev_0214"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-022": {
+      "answer": "The paper does not contain enough retrieved evidence to answer this reliably.",
+      "citations": [],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 4312.42,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Abubakar I. Adamu, 1, a) Md. Selim Habib, 2 J. Enrique Antonio Lopez, 2 Peter Uhd Jepsen, 1 Rodrigo Amezcua-Correa, 2 Ole Bang, 1, 3, 4 and Christos Markos1, 4, b)?",
+      "retrieved_evidence_ids": [
+        "doc_76a63ddbfc5d9c97__ev_0251",
+        "doc_76a63ddbfc5d9c97__ev_0002",
+        "doc_76a63ddbfc5d9c97__ev_0109",
+        "doc_76a63ddbfc5d9c97__ev_0037",
+        "doc_76a63ddbfc5d9c97__ev_0205",
+        "doc_76a63ddbfc5d9c97__ev_0051",
+        "doc_76a63ddbfc5d9c97__ev_0035",
+        "doc_76a63ddbfc5d9c97__ev_0254"
+      ],
+      "split": "dev",
+      "status": "INSUFFICIENT_EVIDENCE"
+    },
+    "real-chat-023": {
+      "answer": "The paper does not contain enough retrieved evidence to answer this reliably.",
+      "citations": [],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 1862.71,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Johns Hopkins University, OpenAI?",
+      "retrieved_evidence_ids": [
+        "doc_5ed89b4846a4ca0a__ev_0004",
+        "doc_5ed89b4846a4ca0a__ev_1246",
+        "doc_5ed89b4846a4ca0a__ev_1110",
+        "doc_5ed89b4846a4ca0a__ev_0637",
+        "doc_5ed89b4846a4ca0a__ev_0526",
+        "doc_5ed89b4846a4ca0a__ev_0399",
+        "doc_5ed89b4846a4ca0a__ev_1249",
+        "doc_5ed89b4846a4ca0a__ev_1113"
+      ],
+      "split": "dev",
+      "status": "INSUFFICIENT_EVIDENCE"
+    },
+    "real-chat-024": {
+      "answer": "The paper lists Ben Mildenhall, Pratul P. Srinivasan, and Matthew Tancik as authors in the title section.\n\nBen Mildenhall, Pratul P. Srinivasan, and Matthew Tancik are authors of the paper",
+      "citations": [
+        "doc_7add698830bd13fa__ev_0002"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 2950.65,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Ben Mildenhall1\u22c6 Pratul P. Srinivasan1\u22c6 Matthew Tancik1\u22c6?",
+      "retrieved_evidence_ids": [
+        "doc_7add698830bd13fa__ev_0002",
+        "doc_7add698830bd13fa__ev_0569",
+        "doc_7add698830bd13fa__ev_0606",
+        "doc_7add698830bd13fa__ev_0677",
+        "doc_7add698830bd13fa__ev_0839",
+        "doc_7add698830bd13fa__ev_0853",
+        "doc_7add698830bd13fa__ev_0012",
+        "doc_7add698830bd13fa__ev_0028"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-036": {
+      "answer": "The paper lists Ian J. Goodfellow, Jean Pouget-Abadie, Mehdi Mirza, Bing Xu, and David Warde-Farley as authors in the first paragraph.\n\nIan J. Goodfellow, Jean Pouget-Abadie, Mehdi Mirza, Bing Xu, and David Warde-Farley are authors of the paper.",
+      "citations": [
+        "ev_0002"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 3016.38,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Ian J. Goodfellow, Jean Pouget-Abadie\u2217, Mehdi Mirza, Bing Xu, David Warde-Farley?",
+      "retrieved_evidence_ids": [
+        "ev_0002",
+        "ev_0297",
+        "ev_0213",
+        "ev_0293",
+        "ev_0209",
+        "ev_0295",
+        "ev_0211",
+        "ev_0288"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-037": {
+      "answer": "Sherjil Ozair is a visiting researcher from Indian Institute of Technology Delhi\n\nYoshua Bengio is a CIFAR Senior Fellow\n\nAaron Courville is listed as a co-author in the reference [10] for Maxout networks\n\nAaron Courville is listed as a co-author in the reference [11] for Multi-prediction deep Boltzmann",
+      "citations": [
+        "ev_0011",
+        "ev_0293",
+        "ev_0209",
+        "ev_0295",
+        "ev_0211"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 4948.36,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Sherjil Ozair\u2020, Aaron Courville, Yoshua Bengio\u2021 D\u00b4epartement d\u2019informatique et de recherche op\u00b4erationnelle?",
+      "retrieved_evidence_ids": [
+        "ev_0003",
+        "ev_0011",
+        "ev_0293",
+        "ev_0209",
+        "ev_0295",
+        "ev_0211",
+        "ev_0259",
+        "ev_0025"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-038": {
+      "answer": "Universit\u00b4e de Montr\u00b4eal Montr\u00b4eal, QC H3C 3J7\n\nSherjil Ozair is visiting Universit\u00b4e de Montr\u00b4eal from Indian Institute of Technology Delhi\n\nSherjil Ozair, Aaron Courville, and Yoshua Bengio are affiliated with D\u00b4epartement d\u2019informatique et de recherche op\u00b4erationnelle",
+      "citations": [
+        "ev_0004",
+        "ev_0011",
+        "ev_0003"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 5667.07,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: Universit\u00b4e de Montr\u00b4eal Montr\u00b4eal, QC H3C 3J7?",
+      "retrieved_evidence_ids": [
+        "ev_0004",
+        "ev_0011",
+        "ev_0190",
+        "ev_0088",
+        "ev_0003",
+        "ev_0284",
+        "ev_0200",
+        "ev_0286"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    },
+    "real-chat-039": {
+      "answer": "The grounded answer could not be generated. Please try again.",
+      "citations": [],
+      "error": "The AI provider returned invalid structured output.",
+      "gold_fields_used": false,
+      "latency_ms": 13601.82,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: We propose a new framework for estimating generative models via an adversar- ial process, in which we simultaneously train two models: a generative model G that captures the data d?",
+      "retrieved_evidence_ids": [
+        "ev_0005",
+        "ev_0020",
+        "ev_0013",
+        "ev_0130",
+        "ev_0149",
+        "ev_0157",
+        "ev_0128",
+        "ev_0009"
+      ],
+      "split": "dev",
+      "status": "GENERATION_FAILED"
+    },
+    "real-chat-040": {
+      "answer": "The paper states that using multilayer perceptrons, the entire system can be trained with backpropagation without requiring Markov chains or unrolled approximate inference networks during training or sample generation.\n\nby multilayer perceptrons, the entire system can be trained with backpropagation. There is no need for any Markov chains or unrolled approximate inference networks during either training or generation of samples",
+      "citations": [
+        "ev_0006"
+      ],
+      "error": null,
+      "gold_fields_used": false,
+      "latency_ms": 3222.82,
+      "model": "qwen3:4b",
+      "prompt_hash": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "provider": "ollama",
+      "question": "What does the paper say about: by multilayer perceptrons, the entire system can be trained with backpropagation. There is no need for any Markov chains or unrolled approximate inference net- works during either?",
+      "retrieved_evidence_ids": [
+        "ev_0006",
+        "ev_0185",
+        "ev_0013",
+        "ev_0181",
+        "ev_0161",
+        "ev_0158",
+        "ev_0165",
+        "ev_0166"
+      ],
+      "split": "dev",
+      "status": "ANSWERED"
+    }
+  },
+  "provider": {
+    "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+    "lane": "chat",
+    "model": "qwen3:4b",
+    "provider": "ollama"
+  }
+}

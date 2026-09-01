@@ -161,7 +161,14 @@ class PaperChatService:
         self.database.save_chat_message(user_message, owner_id)
 
         context = _assemble_context(retrieved, self.settings.chat_max_context_chars)
-        if not retrieved or retrieved[0].score < max(self.settings.chat_min_relevance, self.INSUFFICIENT_THRESHOLD) or not context:
+        # RRF scores are rank-fusion weights (roughly 1 / 60), not cosine
+        # relevance scores.  Applying the semantic/lexical threshold to them
+        # would make every HYBRID chat turn abstain before local generation.
+        # Ranking is unchanged; the evidence-grounded output validator still
+        # decides whether the model can answer and which citations are valid.
+        score_is_rrf = bool(retrieved and retrieved[0].retrieval_method == "hybrid-rrf-v1")
+        relevance_ok = bool(retrieved) and (score_is_rrf or retrieved[0].score >= max(self.settings.chat_min_relevance, self.INSUFFICIENT_THRESHOLD))
+        if not relevance_ok or not context:
             assistant = self._message(
                 session,
                 ChatRole.ASSISTANT,

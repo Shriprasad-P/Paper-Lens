@@ -94,7 +94,7 @@ POST /api/workspaces/{workspace_id}/compare
 GET  /api/papers/{paper_id}/citation-graph
 ```
 
-Phase 8 extracts source-first figure, table, equation, and reference artifacts into the Evidence Registry. `RETRIEVAL_MODE` supports `LEXICAL`, `SEMANTIC`, and `HYBRID`; BM25 remains the default, while optional provider-neutral semantic embeddings use a local SQLite cache and reciprocal-rank fusion when `HYBRID_RETRIEVAL_ENABLED=true` or hybrid mode is selected. The workspace UI provides persistent paper sets, evidence-preserving comparison IR, and bounded citation-graph matching over the local corpus. `EMBEDDING_PROVIDER=hash` is available for deterministic local evaluation; the default `none` provider never makes a network call.
+Phase 8 extracts source-first figure, table, equation, and reference artifacts into the Evidence Registry. `RETRIEVAL_MODE` supports `LEXICAL`, `SEMANTIC`, and `HYBRID`; provider-neutral semantic embeddings use a local SQLite cache and reciprocal-rank fusion when `HYBRID_RETRIEVAL_ENABLED=true` or hybrid mode is selected. For key-free local operation, set `AI_PROVIDER=ollama` with `qwen3:4b` and `EMBEDDING_PROVIDER=ollama` with `nomic-embed-text`; Ollama uses Metal when available and falls back to CPU. `EMBEDDING_PROVIDER=hash` remains available for deterministic tests only.
 
 Relevant environment variables are documented in `.env.example`: database URL, arXiv timeout, local PDF storage path, PDF size limit, and frontend origin.
 

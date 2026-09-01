@@ -21,6 +21,7 @@ class AnnotationStatus(str, Enum):
     DRAFT = "DRAFT"
     REVIEWED = "REVIEWED"
     ADJUDICATED = "ADJUDICATED"
+    EXCLUDED = "EXCLUDED"
 
 
 class EvaluationRunMetadata(BaseModel):
@@ -163,6 +164,7 @@ class BenchmarkPaperAnnotation(BaseModel):
     document_id: str | None = None
     document_hash: str | None = None
     reviewer_notes: list[str] = Field(default_factory=list)
+    exclusion_reason: str | None = None
     sections: list[SectionAnnotation] = Field(default_factory=list)
     research_problem: list[ClaimAnnotation] = Field(default_factory=list)
     motivation: list[ClaimAnnotation] = Field(default_factory=list)
@@ -192,6 +194,7 @@ class RetrievalBenchmarkCase(BaseModel):
     reviewer_id: str | None = None
     reviewed_at: datetime | None = None
     reviewer_notes: list[str] = Field(default_factory=list)
+    exclusion_reason: str | None = None
     split: str = "SMOKE"
     difficulty: str = "fixture"
     predictions: dict[str, list[str]] = Field(default_factory=dict)
@@ -229,6 +232,7 @@ class VerificationBenchmarkCase(BaseModel):
     reviewer_id: str | None = None
     reviewed_at: datetime | None = None
     reviewer_notes: list[str] = Field(default_factory=list)
+    exclusion_reason: str | None = None
     split: str = "SMOKE"
     prediction: VerificationStatus | None = None
 
@@ -251,6 +255,7 @@ class ChatBenchmarkCase(BaseModel):
     reviewer_id: str | None = None
     reviewed_at: datetime | None = None
     reviewer_notes: list[str] = Field(default_factory=list)
+    exclusion_reason: str | None = None
     split: str = "SMOKE"
     prediction: dict[str, Any] | None = None
 
@@ -271,6 +276,7 @@ class DiscoveryBenchmarkCase(BaseModel):
     reviewer_id: str | None = None
     reviewed_at: datetime | None = None
     reviewer_notes: list[str] = Field(default_factory=list)
+    exclusion_reason: str | None = None
     split: str = "SMOKE"
     difficulty: str = "fixture"
 

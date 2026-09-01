@@ -1,0 +1,561 @@
+{
+  "annotation_hash": "975cc12353222d35c308dbe438df94e321135e5a7ff3a3605d176da78f210023",
+  "dataset_hash": "eb3925e01260897f383c9832e1c564aeff7197e192a62d19ce63cc0f1a0309c1",
+  "evaluation_schema_version": "1",
+  "paperlens_commit": "a9dacee5ceb0b28183efd35580c5856f07559aff",
+  "prediction_hash": "1c217aa87f4097fa1b509938b20eb796f8f093cf4502d27322755190253a6cfb",
+  "predictions": {
+    "real-verification-001": {
+      "claim": "The paper states: Ian J. Goodfellow, Jean Pouget-Abadie\u2217, Mehdi Mirza, Bing Xu, David Warde-Farley.",
+      "evidence_ids": [
+        "ev_0002"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 4827.64,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text exactly matches the claim's author list without any additional information or modifications. The claim specifies the authors as 'Ian J. Goodfellow, Jean Pouget-. Abadie\u2217, Mehdi Mirza, Bing Xu, David Warde-Farley.' (note: the claim has a typo in 'Pouget-Abadie' as 'Pouget-.' but the evidence has 'Pouget-Abadie\u2217' - however, the claim's typo is part of the claim and the evidence matches the intended author list with the correct spelling and asterisk placement).",
+      "split": "dev"
+    },
+    "real-verification-002": {
+      "claim": "The paper states: Batch Normalization: Accelerating Deep Network Training by.",
+      "evidence_ids": [
+        "doc_f9178cbdbb8aeb8d__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2261.49,
+      "model": "qwen3:4b",
+      "predicted_status": "UNVERIFIED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The AI provider returned invalid structured output.",
+      "split": "dev"
+    },
+    "real-verification-003": {
+      "claim": "The paper states: Rupesh Kumar Srivastava RUPESH@IDSIA.CH Klaus Greff KLAUS@IDSIA.CH J\u00a8urgen Schmidhuber JUERGEN@IDSIA.CH.",
+      "evidence_ids": [
+        "doc_1edd5ee717b59aec__ev_0002"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1981.42,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text exactly matches the claim statement without any modifications or omissions. The claim specifies the exact string of authors and their email addresses as provided in the evidence.",
+      "split": "dev"
+    },
+    "real-verification-004": {
+      "claim": "The paper states: Deep Residual Learning for Image Recognition.",
+      "evidence_ids": [
+        "doc_b87100da882de413__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1521.37,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text explicitly states 'Deep Residual Learning for Image Recognition' which matches the claim exactly.",
+      "split": "dev"
+    },
+    "real-verification-005": {
+      "claim": "The paper states: Under review as a conference paper at ICLR 2017.",
+      "evidence_ids": [
+        "doc_396765f56159e764__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1652.07,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states 'Under review as a conference paper at ICLR 2017', which matches the claim exactly.",
+      "split": "dev"
+    },
+    "real-verification-006": {
+      "claim": "The paper states: Molecular Graph Convolutions: Moving Beyond Fingerprints.",
+      "evidence_ids": [
+        "doc_cd135acb31d725ca__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1630.95,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text explicitly states 'Molecular Graph Convolutions: Moving Beyond Fingerprints', which matches the claim exactly.",
+      "split": "dev"
+    },
+    "real-verification-007": {
+      "claim": "The paper states: UNDERSTANDING DEEP LEARNING REQUIRES RE- THINKING GENERALIZATION.",
+      "evidence_ids": [
+        "doc_5f0ba0897a8bf946__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2163.89,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states the exact claim: 'UNDERSTANDING DEEP LEARNING RE- THINKING GENERALIZATION' matches the claim 'The paper states: UNDERSTANDING DEEP LEARNING RE- THINKING GENERALIZATION' exactly.",
+      "split": "dev"
+    },
+    "real-verification-008": {
+      "claim": "The paper states: Modeling Relational Data with Graph Convolutional Networks.",
+      "evidence_ids": [
+        "doc_1033c5f9bd933ade__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1602.83,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states 'Modeling Relational Data with Graph Convolutional Networks' which matches the claim exactly.",
+      "split": "dev"
+    },
+    "real-verification-009": {
+      "claim": "The paper states: MobileNets: Ef\ufb01cient Convolutional Neural Networks for Mobile Vision.",
+      "evidence_ids": [
+        "doc_08d1b46560c7eaac__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1700.26,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text explicitly states 'MobileNets: Ef\ufb01cient Convolutional Neural Networks for Mobile Vision', which matches the claim exactly.",
+      "split": "dev"
+    },
+    "real-verification-010": {
+      "claim": "The paper states: Inductive Representation Learning on Large Graphs.",
+      "evidence_ids": [
+        "doc_bbf3618a7efd3753__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1515.58,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text explicitly states 'Inductive Representation Learning on Large Graphs' which matches the claim exactly.",
+      "split": "dev"
+    },
+    "real-verification-011": {
+      "claim": "The paper states: Provided proper attribution is provided, Google hereby grants permission to reproduce the tables and figures in this paper solely for use in journalistic or.",
+      "evidence_ids": [
+        "doc_9793a052b7692d76__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2268.0,
+      "model": "qwen3:4b",
+      "predicted_status": "UNVERIFIED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The AI provider returned invalid structured output.",
+      "split": "dev"
+    },
+    "real-verification-012": {
+      "claim": "The paper states: Fast, Robust, and Versatile Event Detection through HMM Belief State.",
+      "evidence_ids": [
+        "doc_8ae772552e130ad8__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1685.83,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text explicitly states 'Fast, Robust, and Versatile Event Detection through HMM Belief State', which matches the claim exactly.",
+      "split": "dev"
+    },
+    "real-verification-013": {
+      "claim": "The paper states: Published as a conference paper at ICLR 2019.",
+      "evidence_ids": [
+        "doc_1f0214c145fbc9cb__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1694.1,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states 'Published as a conference paper at ICLR 2019', which directly matches the claim's statement.",
+      "split": "dev"
+    },
+    "real-verification-014": {
+      "claim": "The paper states: Gibbs Partitions, Riemann-Liouville.",
+      "evidence_ids": [
+        "doc_f9655223c9a32c16__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1714.43,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states 'Gibbs Partitions, Riemann-Liouville' in the source text, matching the claim exactly.",
+      "split": "dev"
+    },
+    "real-verification-015": {
+      "claim": "The paper states: Personalized neural language models for real-world query auto.",
+      "evidence_ids": [
+        "doc_e995d4f02b074689__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2285.62,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text exactly matches the claim statement: 'Personalized neural language models for real-world query auto'. The claim specifies that the source should explicitly state or directly support the claim (AUTHOR_EXPLICIT), and the evidence text is identical to the claim statement.",
+      "split": "dev"
+    },
+    "real-verification-016": {
+      "claim": "The paper states: Construction of the Literature Graph in Semantic Scholar.",
+      "evidence_ids": [
+        "doc_8e019d9545db6080__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1530.92,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states 'Construction of the Literature Graph in Semantic Scholar' which matches the claim exactly.",
+      "split": "dev"
+    },
+    "real-verification-017": {
+      "claim": "The paper states: \u2217Consortium for Fundamental Physics, Physics Department.",
+      "evidence_ids": [
+        "doc_ef76e0ddb970d58c__ev_0003"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2051.07,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text exactly matches the claim's statement: '\u2217Consortium for Fundamental Physics, Physics Department,'. The claim requires explicit statement from the source, and the evidence provides this exact text without modification.",
+      "split": "dev"
+    },
+    "real-verification-018": {
+      "claim": "The paper states: BERT: Pre-training of Deep Bidirectional Transformers for.",
+      "evidence_ids": [
+        "doc_8ea108e044aea8bd__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1865.63,
+      "model": "qwen3:4b",
+      "predicted_status": "UNVERIFIED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The AI provider returned invalid structured output.",
+      "split": "dev"
+    },
+    "real-verification-019": {
+      "claim": "The paper states: On Evaluating Adversarial Robustness.",
+      "evidence_ids": [
+        "doc_2ae3f7dce0f1e0c5__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1832.74,
+      "model": "qwen3:4b",
+      "predicted_status": "UNVERIFIED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The AI provider returned invalid structured output.",
+      "split": "dev"
+    },
+    "real-verification-020": {
+      "claim": "The paper states: Document Expansion by Query Prediction.",
+      "evidence_ids": [
+        "doc_964e8ac6be7a870a__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1433.27,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text explicitly states 'Document Expansion by Query Prediction' which matches the claim exactly.",
+      "split": "dev"
+    },
+    "real-verification-021": {
+      "claim": "The paper states: Ef\ufb01cientNet: Rethinking Model Scaling for Convolutional Neural Networks.",
+      "evidence_ids": [
+        "doc_3f7c33e4d492bc04__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1824.84,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states the title of the paper as 'Ef\ufb01cientNet: Rethinking Model Scaling for Convolutional Neural Networks', which matches the claim exactly.",
+      "split": "dev"
+    },
+    "real-verification-022": {
+      "claim": "The paper states: Noise and spectral stability of deep-UV gas-filled fiber-based supercontinuum sources driven by ultrafast mid-IR pulses.",
+      "evidence_ids": [
+        "doc_76a63ddbfc5d9c97__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2250.82,
+      "model": "qwen3:4b",
+      "predicted_status": "UNVERIFIED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The AI provider returned invalid structured output.",
+      "split": "dev"
+    },
+    "real-verification-023": {
+      "claim": "The paper states: Scaling Laws for Neural Language Models.",
+      "evidence_ids": [
+        "doc_5ed89b4846a4ca0a__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1459.51,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states 'Scaling Laws for Neural Language Models' which matches the claim exactly.",
+      "split": "dev"
+    },
+    "real-verification-024": {
+      "claim": "The paper states: NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis.",
+      "evidence_ids": [
+        "doc_7add698830bd13fa__ev_0001"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1700.13,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text explicitly states 'NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis', which matches the claim exactly.",
+      "split": "dev"
+    },
+    "real-verification-036": {
+      "claim": "The paper states: Ian J. Goodfellow, Jean Pouget-Abadie\u2217, Mehdi Mirza, Bing Xu, David Warde-Farley.",
+      "evidence_ids": [
+        "ev_0002"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 3982.28,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text exactly matches the claim's author list without any additional information or modifications. The claim specifies the authors as 'Ian J. Goodfellow, Jean Pouget-. Abadie\u2217, Mehdi Mirza, Bing Xu, David Warde-Farley.' (note: the claim has a typo in 'Pouget-Abadie' as 'Pouget-.' but the evidence has 'Pouget-Abadie\u2217' - however, the claim's typo is part of the claim and the evidence matches the intended author list with the correct spelling and asterisk placement).",
+      "split": "dev"
+    },
+    "real-verification-037": {
+      "claim": "The paper states: Sherjil Ozair\u2020, Aaron Courville, Yoshua Bengio\u2021 D\u00b4epartement d\u2019informatique et de recherche op\u00b4erationnelle.",
+      "evidence_ids": [
+        "ev_0003"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 1786.97,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text exactly matches the claim's statement, including the authors' names and department description. The claim specifies the authors and department as stated in the evidence.",
+      "split": "dev"
+    },
+    "real-verification-038": {
+      "claim": "The paper states: Universit\u00b4e de Montr\u00b4eal Montr\u00b4eal, QC H3C 3J7.",
+      "evidence_ids": [
+        "ev_0004"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2464.71,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text exactly matches the claim statement: 'Universit\u00b4e de Montr\u00b4eal Montr\u00b4e: QC H3C 3J7'. The claim specifies the exact address format and location as stated in the evidence.",
+      "split": "dev"
+    },
+    "real-verification-039": {
+      "claim": "The paper states: We propose a new framework for estimating generative models via an adversar- ial process, in which we simultaneously train two models: a generative model G that captures the data distribution, and a discriminative model.",
+      "evidence_ids": [
+        "ev_0005"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 3420.97,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states: 'We propose a new framework for estimating generative models via an adversarial process, in which we simultaneously train two models: a generative model G that captures the data: ... and a discriminative model.' This matches the claim exactly, including the description of the generative model G and the discriminative model.",
+      "split": "dev"
+    },
+    "real-verification-040": {
+      "claim": "The paper states: by multilayer perceptrons, the entire system can be trained with backpropagation. There is no need for any Markov chains or unrolled approximate inference net- works during either training or generation of samples. Exper.",
+      "evidence_ids": [
+        "ev_0006"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 3573.58,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text explicitly states: 'by multilayer perceptrons, the entire system can be trained with backpropagation. There is no need for any Markov chains or unrolled approximate inference net- works during either training or generation of samples.' This matches the claim exactly, including all material aspects and preserving the exact phrasing and structure.",
+      "split": "dev"
+    },
+    "real-verification-041": {
+      "claim": "The paper states: arXiv:1406.2661v1 [stat.ML] 10 Jun 2014.",
+      "evidence_ids": [
+        "ev_0008"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2588.09,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text explicitly states 'arXiv:1406.2661v1 [stat.ML] 10 Jun 2014', which matches the claim exactly.",
+      "split": "dev"
+    },
+    "real-verification-042": {
+      "claim": "The paper states: The promise of deep learning is to discover rich, hierarchical models [2] that represent probability distributions over the kinds of data encountered in arti\ufb01cial intelligence applications, such as natural images, audio.",
+      "evidence_ids": [
+        "ev_0009"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 3970.65,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text explicitly states: 'The promise of deep learning is to discover rich, hierarchical models [2] that represent probability distributions over the kinds of data encountered in artificial intelligence applications, such as natural images, audio waveforms containing speech, and symbols in natural language corpora.' This matches the claim's statement exactly, including the phrase 'rich, hierarchical models', 'probability distributions', 'natural images', and 'audio' as examples of data encountered in AI applications. The claim's reference [2] is also present in the evidence.",
+      "split": "dev"
+    },
+    "real-verification-043": {
+      "claim": "The paper states: In the proposed adversarial nets framework, the generative model is pitted against an adversary: a discriminative model that learns to determine whether a sample is from the model distribution or the data distribution. T.",
+      "evidence_ids": [
+        "ev_0010"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2938.95,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states: 'In the proposed adversarial nets framework, the generative model is pitted against an adversary: a discriminative model that learns to determine whether a sample is from the model distribution or the data distribution.' This matches the claim exactly, including the phrase 'pitted against an adversary', 'discriminative model', and the description of the model's purpose. The rest of the evidence provides additional context but does not alter the core claim.",
+      "split": "dev"
+    },
+    "real-verification-044": {
+      "claim": "The paper states: \u2217Jean Pouget-Abadie is visiting Universit\u00b4e de Montr\u00b4eal from Ecole Polytechnique. \u2020Sherjil Ozair is visiting Universit\u00b4e de Montr\u00b4eal from Indian Institute of Technology Delhi \u2021Yoshua Bengio is a CIFAR Senior Fellow. 1A.",
+      "evidence_ids": [
+        "ev_0011"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2599.49,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states all three claims: Jean Pouget-Abadie's affiliation with Ecole Polytechnique, Sherjil Ozair's affiliation with Indian Institute of Technology Delhi, and Yoshua Beng: 1A. The evidence matches the claim exactly in wording and structure.",
+      "split": "dev"
+    },
+    "real-verification-045": {
+      "claim": "The paper states: This framework can yield speci\ufb01c training algorithms for many kinds of model and optimization algorithm. In this article, we explore the special case when the generative model generates samples by passing random noise th.",
+      "evidence_ids": [
+        "ev_0013"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2766.79,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states: 'This framework can yield specific training algorithms for many kinds of model and optimization algorithm.' and 'In this article, we explore the: when the generative model generates samples by passing random noise through a multilayer perceptron...' which matches the claim's statement exactly. The claim's origin is AUTHOR_EXPLICIT, so the evidence must directly support the claim. The evidence provides the exact phrasing and context without modification.",
+      "split": "dev"
+    },
+    "real-verification-046": {
+      "claim": "The paper states: An alternative to directed graphical models with latent variables are undirected graphical models with latent variables, such as restricted Boltzmann machines (RBMs) [27, 16], deep Boltzmann machines (DBMs) [26] and thei.",
+      "evidence_ids": [
+        "ev_0015"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2920.6,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states: 'An alternative to directed graphical models with latent variables are undirected graphical models with latent variables, such as restricted Boltzmann machines (RBMs) [27, 16], deep Boltzmann machines (DBMs) [26] and their numerous variants.' This matches the claim's statement exactly, including the examples and citation numbers. The claim's trailing 'thei.' is a typo and does not affect the semantic claim.",
+      "split": "dev"
+    },
+    "real-verification-047": {
+      "claim": "The paper states: Deep belief networks (DBNs) [16] are hybrid models containing a single undirected layer and sev- eral directed layers. While a fast approximate layer-wise training criterion exists, DBNs incur the computational dif\ufb01culti.",
+      "evidence_ids": [
+        "ev_0016"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2769.38,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states that Deep belief networks (DBNs) [16] are hybrid models containing a single undirected layer and several directed layers. It also explicitly mentions that DBNs incur the computational difficulties associated with both undirected and directed models, which matches the claim's statement about DBNs incurring computational difficulties. The claim's statement about the computational difficulty is consistent with the evidence's description of computational difficulties associated with both model types.",
+      "split": "dev"
+    },
+    "real-verification-048": {
+      "claim": "The paper states: Alternative criteria that do not approximate or bound the log-likelihood have also been proposed, such as score matching [18] and noise-contrastive estimation (NCE) [13]. Both of these require the learned probability den.",
+      "evidence_ids": [
+        "ev_0017"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 3312.87,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states that alternative criteria (score matching [18] and NCE [13]) have been proposed that do not approximate or bound the log-likelihood, and both require the learned probability density to be analytically specified up to a normalization constant. The claim states that both require the learned probability den. (short for density), which matches the evidence's description of requiring the probability density to be analytically specified. The evidence also confirms the citations [18] and [13] as in the claim.",
+      "split": "dev"
+    },
+    "real-verification-049": {
+      "claim": "The paper states: Finally, some techniques do not involve de\ufb01ning a probability distribution explicitly, but rather train a generative machine to draw samples from the desired distribution. This approach has the advantage that such machin.",
+      "evidence_ids": [
+        "ev_0018"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2674.72,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence text explicitly states: 'Finally, some techniques do not involve de\ufb01ning a probability distribution explicitly, but rather train a generative machine to draw samples from the desired distribution.' This matches the claim's exact phrasing. The claim's origin is AUTHOR_EXPLICIT, so the evidence must directly support the claim without inference. The evidence provides the exact statement without modification, confirming the claim is explicitly supported.",
+      "split": "dev"
+    },
+    "real-verification-050": {
+      "claim": "The paper states: The adversarial modeling framework is most straightforward to apply when the models are both multilayer perceptrons. To learn the generator\u2019s distribution pg over data x, we de\ufb01ne a prior on input noise variables pz(z).",
+      "evidence_ids": [
+        "ev_0020"
+      ],
+      "gold_fields_used": false,
+      "latency_ms": 2267.05,
+      "model": "qwen3:4b",
+      "predicted_status": "SUPPORTED",
+      "prompt_hash": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7",
+      "provider": "ollama",
+      "rationale": "The evidence explicitly states: 'The adversarial modeling framework is most straightforward to apply when the models are both multilayer perceptrons. To learn the generator\u2019s distribution pg over data x, we de\ufb01ne a prior on input noise variables pz(z).' This matches the claim exactly, including the exact phrasing and context.",
+      "split": "dev"
+    }
+  },
+  "provider": {
+    "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+    "lane": "verification",
+    "model": "qwen3:4b",
+    "provider": "ollama"
+  }
+}

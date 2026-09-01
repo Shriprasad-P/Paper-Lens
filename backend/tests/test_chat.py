@@ -93,6 +93,16 @@ class ChatTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([item.role.value for item in history], ["USER", "ASSISTANT"])
         self.assertEqual(history[-1].citations[0].page, 2)
 
+    async def test_hybrid_rrf_scores_do_not_trigger_cosine_relevance_abstention(self) -> None:
+        database, paper_id = _document_fixture()
+        provider = ChatFixtureProvider()
+        retriever = SpyRetriever(database, paper_id)
+        retriever.item = retriever.item.model_copy(update={"score": 0.03, "retrieval_method": "hybrid-rrf-v1"})
+        service = PaperChatService(database, provider, settings=Settings(ai_provider="mock", ai_model="chat-fixture"), retriever=retriever)
+        answer = await service.answer(paper_id, service.create_session(paper_id).id, "What method is used?")
+        self.assertEqual(answer.status.value, "ANSWERED")
+        self.assertEqual(provider.calls, 1)
+
     async def test_hallucinated_and_missing_citations_are_not_valid_answers(self) -> None:
         database, paper_id = _document_fixture()
         settings = Settings(ai_provider="mock", ai_model="chat-fixture")

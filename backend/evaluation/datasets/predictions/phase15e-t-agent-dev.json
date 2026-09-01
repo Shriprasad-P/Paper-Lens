@@ -1,0 +1,514 @@
+{
+  "annotation_hash": "975cc12353222d35c308dbe438df94e321135e5a7ff3a3605d176da78f210023",
+  "dataset_hash": "eb3925e01260897f383c9832e1c564aeff7197e192a62d19ce63cc0f1a0309c1",
+  "evaluation_schema_version": "1",
+  "paperlens_commit": "a9dacee5ceb0b28183efd35580c5856f07559aff",
+  "prediction_hash": "2ce27b3eb421e2e25482c82b8b1742ca89f048f4e963075e11b52b1f993ac1c2",
+  "predictions": {
+    "real-agent-01": {
+      "attempt_id": "attempt_153e5a58c33344f88082f7a9e60b707f",
+      "citation_valid": true,
+      "discovered_sources": [
+        "1406.2661",
+        "1805.02262",
+        "2302.01318",
+        "1706.03762",
+        "1810.04805",
+        "1502.03167"
+      ],
+      "duration_seconds": 15.199,
+      "evidence_id_valid": true,
+      "evidence_ids": [],
+      "execution_state": "COMPLETED",
+      "final_report": {
+        "agreements": [],
+        "candidate_count": 1,
+        "contradictions": [],
+        "coverage": {
+          "covered_concepts": [
+            "adversarial",
+            "generative",
+            "main",
+            "method",
+            "networks"
+          ],
+          "evidence_count": 337,
+          "missing_concepts": [
+            "identify",
+            "empirical",
+            "evidence"
+          ],
+          "relevant_paper_ids": [
+            "paper_faf637554e628847"
+          ],
+          "sufficient": false,
+          "summary": "Coverage includes 5 of 8 planned concepts across 1 papers and 337 evidence records."
+        },
+        "discovery_queries": [
+          "Identify the main method and empirical evidence in Generative Adversarial Networks.",
+          "identify main method empirical evidence generative methods",
+          "identify main method empirical evidence generative survey",
+          "identify main method empirical evidence generative evaluation",
+          "identify main method empirical evidence generative benchmark",
+          "identify main method empirical evidence generative detection approaches",
+          "Identify the main method and empirical evidence in Generative Adversarial Networks. identify empirical evidence evidence"
+        ],
+        "executive_summary": [],
+        "future_directions": [],
+        "limitations": [],
+        "methods": [],
+        "papers": [
+          {
+            "analysis_status": "PARTIAL",
+            "authors": [],
+            "ingestion_status": "COMPLETED",
+            "paper_id": "paper_faf637554e628847",
+            "title": "Generative Adversarial Networks",
+            "verification_status": "UNVERIFIED",
+            "why_selected": "Selected by the bounded relevance and diversity ranker.",
+            "year": null
+          }
+        ],
+        "research_gaps": [],
+        "research_question": "Identify the main method and empirical evidence in Generative Adversarial Networks.",
+        "selected_count": 1,
+        "themes": [
+          {
+            "claims": [],
+            "name": "Evidence-grounded findings",
+            "summary": "Evidence from Generative Adversarial Networks."
+          }
+        ]
+      },
+      "gold_fields_used": false,
+      "ingested_document_ids": [
+        "doc_19a360553ef2de5b"
+      ],
+      "ingestion_completed": true,
+      "iterations": 2,
+      "model": "qwen3:4b",
+      "prompt_hashes": {
+        "agent_planning": "65cb336063b03d03f57d79697c358ae4dfbe878abe09240319d3f22756bb061c",
+        "agent_synthesis": "dcc95fdc2417f3dd5fd8fde6e758569c7f96186d012e75cd932a69a8dc570938",
+        "chat": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+        "verification": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7"
+      },
+      "provider": "ollama",
+      "provider_calls": 17,
+      "run_id": "eval_real-agent-01",
+      "selected_sources": [
+        "1406.2661"
+      ],
+      "split": "dev",
+      "task_id": "real-agent-01",
+      "terminal_state": "COMPLETED"
+    },
+    "real-agent-02": {
+      "attempt_id": "attempt_4ca5430c44e94cff8bb000999b91b145",
+      "citation_valid": true,
+      "discovered_sources": [
+        "1502.03167",
+        "2302.01318",
+        "1810.04805",
+        "1805.02262",
+        "1706.03762",
+        "1711.05101"
+      ],
+      "duration_seconds": 18.666,
+      "evidence_id_valid": true,
+      "evidence_ids": [],
+      "execution_state": "COMPLETED",
+      "final_report": {
+        "agreements": [],
+        "candidate_count": 1,
+        "contradictions": [],
+        "coverage": {
+          "covered_concepts": [
+            "accelerating",
+            "batch",
+            "by",
+            "deep",
+            "empirical",
+            "main",
+            "method",
+            "network",
+            "normalization",
+            "training"
+          ],
+          "evidence_count": 456,
+          "missing_concepts": [
+            "identify",
+            "evidence"
+          ],
+          "relevant_paper_ids": [
+            "paper_97a7a16b0c2954ff"
+          ],
+          "sufficient": false,
+          "summary": "Coverage includes 10 of 12 planned concepts across 1 papers and 456 evidence records."
+        },
+        "discovery_queries": [
+          "Identify the main method and empirical evidence in Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift.",
+          "identify main method empirical evidence batch methods",
+          "identify main method empirical evidence batch survey",
+          "identify main method empirical evidence batch evaluation",
+          "identify main method empirical evidence batch benchmark",
+          "identify main method empirical evidence batch detection approaches",
+          "Identify the main method and empirical evidence in Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift. identify evidence evidence"
+        ],
+        "executive_summary": [],
+        "future_directions": [],
+        "limitations": [],
+        "methods": [],
+        "papers": [
+          {
+            "analysis_status": "PARTIAL",
+            "authors": [],
+            "ingestion_status": "COMPLETED",
+            "paper_id": "paper_97a7a16b0c2954ff",
+            "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+            "verification_status": "UNVERIFIED",
+            "why_selected": "Selected by the bounded relevance and diversity ranker.",
+            "year": null
+          }
+        ],
+        "research_gaps": [],
+        "research_question": "Identify the main method and empirical evidence in Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift.",
+        "selected_count": 1,
+        "themes": [
+          {
+            "claims": [],
+            "name": "Evidence-grounded findings",
+            "summary": "Evidence from Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift."
+          }
+        ]
+      },
+      "gold_fields_used": false,
+      "ingested_document_ids": [
+        "doc_f9178cbdbb8aeb8d"
+      ],
+      "ingestion_completed": true,
+      "iterations": 2,
+      "model": "qwen3:4b",
+      "prompt_hashes": {
+        "agent_planning": "65cb336063b03d03f57d79697c358ae4dfbe878abe09240319d3f22756bb061c",
+        "agent_synthesis": "dcc95fdc2417f3dd5fd8fde6e758569c7f96186d012e75cd932a69a8dc570938",
+        "chat": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+        "verification": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7"
+      },
+      "provider": "ollama",
+      "provider_calls": 37,
+      "run_id": "eval_real-agent-02",
+      "selected_sources": [
+        "1502.03167"
+      ],
+      "split": "dev",
+      "task_id": "real-agent-02",
+      "terminal_state": "COMPLETED"
+    },
+    "real-agent-03": {
+      "attempt_id": "attempt_e09c0d33b2684c8d81b6e498c359009e",
+      "citation_valid": true,
+      "discovered_sources": [
+        "1505.00387",
+        "1805.02262",
+        "2302.01318",
+        "1706.03762",
+        "1810.04805",
+        "1502.03167"
+      ],
+      "duration_seconds": 15.883,
+      "evidence_id_valid": true,
+      "evidence_ids": [],
+      "execution_state": "COMPLETED",
+      "final_report": {
+        "agreements": [],
+        "candidate_count": 1,
+        "contradictions": [],
+        "coverage": {
+          "covered_concepts": [
+            "empirical",
+            "highway",
+            "main",
+            "networks"
+          ],
+          "evidence_count": 268,
+          "missing_concepts": [
+            "identify",
+            "method",
+            "evidence"
+          ],
+          "relevant_paper_ids": [
+            "paper_d273258f3fde97e3"
+          ],
+          "sufficient": false,
+          "summary": "Coverage includes 4 of 7 planned concepts across 1 papers and 268 evidence records."
+        },
+        "discovery_queries": [
+          "Identify the main method and empirical evidence in Highway Networks.",
+          "identify main method empirical evidence highway methods",
+          "identify main method empirical evidence highway survey",
+          "identify main method empirical evidence highway evaluation",
+          "identify main method empirical evidence highway benchmark",
+          "identify main method empirical evidence highway detection approaches",
+          "Identify the main method and empirical evidence in Highway Networks. identify method evidence evidence"
+        ],
+        "executive_summary": [],
+        "future_directions": [],
+        "limitations": [],
+        "methods": [],
+        "papers": [
+          {
+            "analysis_status": "PARTIAL",
+            "authors": [],
+            "ingestion_status": "COMPLETED",
+            "paper_id": "paper_d273258f3fde97e3",
+            "title": "Highway Networks",
+            "verification_status": "UNVERIFIED",
+            "why_selected": "Selected by the bounded relevance and diversity ranker.",
+            "year": null
+          }
+        ],
+        "research_gaps": [],
+        "research_question": "Identify the main method and empirical evidence in Highway Networks.",
+        "selected_count": 1,
+        "themes": [
+          {
+            "claims": [],
+            "name": "Evidence-grounded findings",
+            "summary": "Evidence from Highway Networks."
+          }
+        ]
+      },
+      "gold_fields_used": false,
+      "ingested_document_ids": [
+        "doc_1edd5ee717b59aec"
+      ],
+      "ingestion_completed": true,
+      "iterations": 2,
+      "model": "qwen3:4b",
+      "prompt_hashes": {
+        "agent_planning": "65cb336063b03d03f57d79697c358ae4dfbe878abe09240319d3f22756bb061c",
+        "agent_synthesis": "dcc95fdc2417f3dd5fd8fde6e758569c7f96186d012e75cd932a69a8dc570938",
+        "chat": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+        "verification": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7"
+      },
+      "provider": "ollama",
+      "provider_calls": 54,
+      "run_id": "eval_real-agent-03",
+      "selected_sources": [
+        "1505.00387"
+      ],
+      "split": "dev",
+      "task_id": "real-agent-03",
+      "terminal_state": "COMPLETED"
+    },
+    "real-agent-04": {
+      "attempt_id": "attempt_545aa54605014281aa38fd976cf259cc",
+      "citation_valid": true,
+      "discovered_sources": [
+        "1512.03385",
+        "1810.04805",
+        "1502.03167",
+        "1805.02262",
+        "2302.01318",
+        "1706.03762"
+      ],
+      "duration_seconds": 24.673,
+      "evidence_id_valid": true,
+      "evidence_ids": [],
+      "execution_state": "COMPLETED",
+      "final_report": {
+        "agreements": [],
+        "candidate_count": 1,
+        "contradictions": [],
+        "coverage": {
+          "covered_concepts": [
+            "deep",
+            "empirical",
+            "evidence",
+            "image",
+            "learning",
+            "main",
+            "method",
+            "recognition",
+            "residual"
+          ],
+          "evidence_count": 665,
+          "missing_concepts": [
+            "identify"
+          ],
+          "relevant_paper_ids": [
+            "paper_1cae1253f0be4de4"
+          ],
+          "sufficient": false,
+          "summary": "Coverage includes 9 of 10 planned concepts across 1 papers and 665 evidence records."
+        },
+        "discovery_queries": [
+          "Identify the main method and empirical evidence in Deep Residual Learning for Image Recognition.",
+          "identify main method empirical evidence deep methods",
+          "identify main method empirical evidence deep survey",
+          "identify main method empirical evidence deep evaluation",
+          "identify main method empirical evidence deep benchmark",
+          "identify main method empirical evidence deep detection approaches",
+          "Identify the main method and empirical evidence in Deep Residual Learning for Image Recognition. identify evidence"
+        ],
+        "executive_summary": [],
+        "future_directions": [],
+        "limitations": [],
+        "methods": [],
+        "papers": [
+          {
+            "analysis_status": "PARTIAL",
+            "authors": [],
+            "ingestion_status": "COMPLETED",
+            "paper_id": "paper_1cae1253f0be4de4",
+            "title": "Deep Residual Learning for Image Recognition",
+            "verification_status": "UNVERIFIED",
+            "why_selected": "Selected by the bounded relevance and diversity ranker.",
+            "year": null
+          }
+        ],
+        "research_gaps": [],
+        "research_question": "Identify the main method and empirical evidence in Deep Residual Learning for Image Recognition.",
+        "selected_count": 1,
+        "themes": [
+          {
+            "claims": [],
+            "name": "Evidence-grounded findings",
+            "summary": "Evidence from Deep Residual Learning for Image Recognition."
+          }
+        ]
+      },
+      "gold_fields_used": false,
+      "ingested_document_ids": [
+        "doc_b87100da882de413"
+      ],
+      "ingestion_completed": true,
+      "iterations": 2,
+      "model": "qwen3:4b",
+      "prompt_hashes": {
+        "agent_planning": "65cb336063b03d03f57d79697c358ae4dfbe878abe09240319d3f22756bb061c",
+        "agent_synthesis": "dcc95fdc2417f3dd5fd8fde6e758569c7f96186d012e75cd932a69a8dc570938",
+        "chat": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+        "verification": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7"
+      },
+      "provider": "ollama",
+      "provider_calls": 83,
+      "run_id": "eval_real-agent-04",
+      "selected_sources": [
+        "1512.03385"
+      ],
+      "split": "dev",
+      "task_id": "real-agent-04",
+      "terminal_state": "COMPLETED"
+    },
+    "real-agent-05": {
+      "attempt_id": "attempt_e6233d1c95174c0ab7318f4c4bc5ab50",
+      "citation_valid": true,
+      "discovered_sources": [
+        "1602.07360",
+        "2302.01318",
+        "1805.02262",
+        "1706.03762",
+        "1810.04805",
+        "1502.03167"
+      ],
+      "duration_seconds": 13.752,
+      "evidence_id_valid": true,
+      "evidence_ids": [],
+      "execution_state": "COMPLETED",
+      "final_report": {
+        "agreements": [],
+        "candidate_count": 1,
+        "contradictions": [],
+        "coverage": {
+          "covered_concepts": [
+            "0",
+            "50x",
+            "accuracy",
+            "alexnet-level",
+            "fewer",
+            "identify",
+            "main",
+            "method",
+            "parameters",
+            "squeezenet"
+          ],
+          "evidence_count": 461,
+          "missing_concepts": [
+            "empirical",
+            "evidence"
+          ],
+          "relevant_paper_ids": [
+            "paper_e23d2927321347ea"
+          ],
+          "sufficient": false,
+          "summary": "Coverage includes 10 of 12 planned concepts across 1 papers and 461 evidence records."
+        },
+        "discovery_queries": [
+          "Identify the main method and empirical evidence in SqueezeNet: AlexNet-level accuracy with 50x fewer parameters and <0.5MB model size.",
+          "identify main method empirical evidence squeezenet methods",
+          "identify main method empirical evidence squeezenet survey",
+          "identify main method empirical evidence squeezenet evaluation",
+          "identify main method empirical evidence squeezenet benchmark",
+          "identify main method empirical evidence squeezenet detection approaches",
+          "Identify the main method and empirical evidence in SqueezeNet: AlexNet-level accuracy with 50x fewer parameters and <0.5MB model size. empirical evidence evidence"
+        ],
+        "executive_summary": [],
+        "future_directions": [],
+        "limitations": [],
+        "methods": [],
+        "papers": [
+          {
+            "analysis_status": "PARTIAL",
+            "authors": [],
+            "ingestion_status": "COMPLETED",
+            "paper_id": "paper_e23d2927321347ea",
+            "title": "SqueezeNet: AlexNet-level accuracy with 50x fewer parameters and <0.5MB model size",
+            "verification_status": "UNVERIFIED",
+            "why_selected": "Selected by the bounded relevance and diversity ranker.",
+            "year": null
+          }
+        ],
+        "research_gaps": [],
+        "research_question": "Identify the main method and empirical evidence in SqueezeNet: AlexNet-level accuracy with 50x fewer parameters and <0.5MB model size.",
+        "selected_count": 1,
+        "themes": [
+          {
+            "claims": [],
+            "name": "Evidence-grounded findings",
+            "summary": "Evidence from SqueezeNet: AlexNet-level accuracy with 50x fewer parameters and <0.5MB model size."
+          }
+        ]
+      },
+      "gold_fields_used": false,
+      "ingested_document_ids": [
+        "doc_396765f56159e764"
+      ],
+      "ingestion_completed": true,
+      "iterations": 2,
+      "model": "qwen3:4b",
+      "prompt_hashes": {
+        "agent_planning": "65cb336063b03d03f57d79697c358ae4dfbe878abe09240319d3f22756bb061c",
+        "agent_synthesis": "dcc95fdc2417f3dd5fd8fde6e758569c7f96186d012e75cd932a69a8dc570938",
+        "chat": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+        "verification": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7"
+      },
+      "provider": "ollama",
+      "provider_calls": 96,
+      "run_id": "eval_real-agent-05",
+      "selected_sources": [
+        "1602.07360"
+      ],
+      "split": "dev",
+      "task_id": "real-agent-05",
+      "terminal_state": "COMPLETED"
+    }
+  },
+  "provider": {
+    "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+    "lane": "agent",
+    "model": "qwen3:4b",
+    "provider": "ollama"
+  }
+}

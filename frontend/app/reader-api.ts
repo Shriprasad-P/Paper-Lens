@@ -35,6 +35,12 @@ export type CapabilityFlags = {
   beta: boolean;
 };
 
+export type AuthUser = {
+  id: string;
+  email: string;
+  created_at: string;
+};
+
 export async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const desktopToken = runtimeValue("desktopToken");
   let response: Response;
@@ -81,6 +87,31 @@ export async function requestJson<T>(path: string, init?: RequestInit): Promise<
     throw new Error(`PaperLens returned an invalid response (HTTP ${response.status}).`);
   }
   return payload as T;
+}
+
+export async function loadCurrentUser(): Promise<AuthUser> {
+  const payload = await requestJson<{ user: AuthUser }>("/api/auth/me");
+  return payload.user;
+}
+
+export async function registerUser(email: string, password: string): Promise<AuthUser> {
+  const payload = await requestJson<{ user: AuthUser }>("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  return payload.user;
+}
+
+export async function loginUser(email: string, password: string): Promise<AuthUser> {
+  const payload = await requestJson<{ user: AuthUser }>("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  return payload.user;
+}
+
+export async function logoutUser(): Promise<void> {
+  await requestJson<{ ok: boolean }>("/api/auth/logout", { method: "POST" });
 }
 
 export async function loadCapabilities(): Promise<CapabilityFlags> {

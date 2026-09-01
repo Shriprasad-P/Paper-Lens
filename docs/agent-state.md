@@ -200,4 +200,50 @@ regressing tenant ownership or durable research execution.
 
 ## Next Recommended Task
 
-Phase 15 measurement is not closed yet. The next task is to complete human review of the real ledgers, configure an intended embedding/provider path, freeze verification/chat/agent predictions, and run one FINAL offline report without tuning on FINAL.
+Phase 15 measurement is not closed yet. Phase 15D now provides explicit
+review/exclusion states, append-only annotation change logging, and a read-only
+25/50/75/100% progress report. The next task is genuine human review of the
+real ledgers; only after that may later work configure an intended
+embedding/provider path, freeze verification/chat/agent predictions, and run
+one FINAL offline report without tuning on FINAL.
+
+Phase 15E-P now adds a separate provisional DEV evaluator and embedding
+architecture audit. The report contract is explicit (`PROVISIONAL`, `DRAFT`,
+zero human reviewers, not publishable); FINAL rows are excluded before
+scoring, the historical BM25 DEV baseline is preserved, and semantic/Hybrid
+plus provider-backed verification/chat/agent lanes remain `NOT_RUN` because
+no real providers are configured. The current artifacts are intentionally
+uncommitted and Phase 15E-P/15 remain open.
+
+Phase 15E-R audits the actual runtime and provider configuration without
+contacting external services or exposing secrets. PaperLens now has a genuine
+key-free Ollama path for generation and embeddings; prompt hashes and a
+provisional retrieval/RRF/generation/schema configuration hash remain
+recorded. Semantic, Hybrid, verification, chat, and durable-agent lanes stay
+`NOT_RUN` until an explicit DEV run; Phase 15E-R is not closed.
+
+Phase 15E-S audits local runtime enablement without installing a broad ML
+stack or changing provider abstractions. Ollama is installed with `qwen3:4b`
+and `nomic-embed-text`; real local AI and 768-dimensional embedding smoke
+tests pass through the existing adapters. Ollama uses Metal when available
+and can fall back to CPU. The optional MLX/Qwen path remains discoverable but
+is not used when its device import fails. Semantic, Hybrid, verification,
+chat, and durable-agent lanes remain `NOT_RUN` until an explicit DEV run. The
+Phase 15E-S artifacts are provisional, uncommitted, DRAFT-gold, and
+non-publishable; Phase 15E-S and Phase 15 overall remain open.
+
+## Phase 16A — staging closure validation (not closed)
+
+Real Playwright Chromium coverage and the supported Tauri arm64 package were
+executed from `/Users/shriprasad/Documents/Projects/PaperLens`. The browser
+auth/workspace/real-ingestion/reader/evidence/chat/citation/failure/reload
+path passed through the research status assertion. The packaged app built,
+launched its bundled backend/frontend on dynamic loopback ports, reused local
+Ollama configuration, and wrote `database_ready backend_ready` plus
+`frontend_ready desktop_ready` logs. The original durable `PARTIAL` run was
+classified as legitimate degraded behavior after a safe source-save failure.
+Two fresh runs preserved valid reports/evidence but ended `PARTIAL` because
+the fixed 180-second per-paper Ollama analysis step timed out. No model,
+prompt, quality, or budget tuning was performed. Phase 16A and Phase 16 remain
+open because a fresh `COMPLETED` happy-path agent run was not proven; Phase 15
+remains `NOT CLOSED` with DRAFT annotations and zero human reviewers.

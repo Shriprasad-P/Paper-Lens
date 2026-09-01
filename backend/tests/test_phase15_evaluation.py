@@ -15,11 +15,13 @@ from backend.evaluation.metrics import (
     numeric_fidelity_strict,
 )
 from backend.evaluation.provenance import EvaluationDataError, annotation_file_hashes, build_prediction_envelope, combined_annotation_hash, config_hash, embedding_provenance, generation_provenance, load_prediction_envelope, real_corpus_hash, sha256_bytes, sha256_json
+from backend.evaluation.provisional import PROVISIONAL_CONTRACT, build_provisional_dev_report, embedding_architecture_audit, embedding_runtime_audit, generation_provider_audit, local_runtime_audit, prompt_hashes, require_dev_rows, render_markdown
 from backend.evaluation.reports.writer import write_report
 from backend.evaluation.real_runner import retrieval_request
 from backend.evaluation.review_cli import apply_review, refresh_annotation_manifest
 from backend.evaluation.schemas import EvaluationMetric, EvaluationReport, EvaluationResult, EvaluationRunMetadata, EvaluationStatus, RetrievalBenchmarkCase, VerificationBenchmarkCase, VerificationStatus
-from backend.evaluation.validation import require_reviewed_cases, validate_frozen_rankings, validate_manifest, validate_paper_annotations, validate_real_corpus_manifest, validate_real_retrieval_annotations, validate_retrieval_cases, validate_reviewed_cases, validate_verification_cases
+from backend.evaluation.review_progress import summarize_review_progress
+from backend.evaluation.validation import require_resolved_cases, require_reviewed_cases, validate_frozen_rankings, validate_manifest, validate_paper_annotations, validate_real_corpus_manifest, validate_real_retrieval_annotations, validate_retrieval_cases, validate_reviewed_cases, validate_verification_cases
 
 
 class Phase15MetricTests(unittest.TestCase):
@@ -153,10 +155,15 @@ class Phase15ValidationTests(unittest.TestCase):
         self.assertFalse(report.valid)
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "retrieval.jsonl"
-            path.write_text(json.dumps(case.model_dump(mode="json")) + "\n", encoding="utf-8")
+            path.write_text(json.dumps(case.model_copy(update={"annotation_status": "DRAFT"}).model_dump(mode="json")) + "\n", encoding="utf-8")
             reviewed = apply_review(path, "r1", reviewer_id="reviewer_local", notes="Confirmed against the cited passage.")
             self.assertEqual(reviewed["annotation_status"], "REVIEWED")
             self.assertEqual(reviewed["reviewer_id"], "reviewer_local")
+            change_log = path.parent / "change_log.jsonl"
+            self.assertTrue(change_log.is_file())
+            change_record = json.loads(change_log.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(change_record["item_id"], "r1")
+            self.assertTrue(change_record["reason"])
             checked = RetrievalBenchmarkCase.model_validate(reviewed)
             self.assertTrue(validate_retrieval_cases([checked], paper_ids=["p"], evidence_ids_by_paper={"p": ["e1"]}).valid)
             self.assertTrue(require_reviewed_cases([checked]))
@@ -191,6 +198,109 @@ class Phase15ValidationTests(unittest.TestCase):
             (root / "manifest.json").write_text(json.dumps(refreshed), encoding="utf-8")
             with self.assertRaises(EvaluationDataError):
                 apply_review(root / "retrieval.jsonl", "r1", reviewer_id="reviewer", notes="second pass")
+
+    def test_valid_exclusion_is_resolved_but_not_publishable_review(self) -> None:
+        excluded = {
+            "case_id": "r1",
+            "annotation_status": "EXCLUDED",
+            "reviewer_id": "reviewer_01",
+            "reviewed_at": "2026-08-29T00:00:00+00:00",
+            "reviewer_notes": ["The source evidence is missing from the frozen export."],
+            "exclusion_reason": "source evidence missing",
+        }
+        self.assertTrue(require_resolved_cases([excluded]))
+        self.assertFalse(validate_reviewed_cases([excluded]).valid)
+
+    def test_review_progress_counts_draft_rows_and_checkpoints(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for filename in ("retrieval.jsonl", "verification.jsonl", "chat.jsonl", "agent.jsonl"):
+                root.joinpath(filename).write_text(json.dumps({"case_id": filename, "annotation_status": "DRAFT"}) + "\n", encoding="utf-8")
+            summary = summarize_review_progress(root)
+            self.assertEqual(summary["total_cases"], 4)
+            self.assertEqual(summary["resolved_cases"], 0)
+            self.assertEqual(summary["checkpoints"]["25"]["status"], "PENDING")
+
+
+class Phase15ProvisionalTests(unittest.TestCase):
+    def test_provisional_contract_is_explicit_and_markdown_prominent(self) -> None:
+        self.assertEqual(PROVISIONAL_CONTRACT, {
+            "evaluation_status": "PROVISIONAL",
+            "annotation_status": "DRAFT",
+            "human_reviewers": 0,
+            "publishable": False,
+            "publishable_quality_claims": False,
+            "final_dataset_used": False,
+            "tuning": "NONE",
+            "split": "DEV",
+        })
+        markdown = render_markdown({
+            **PROVISIONAL_CONTRACT,
+            "counts": {"retrieval": 1, "verification": 1, "chat": 1, "agent": 1},
+            "retrieval": {lane: {"metrics": None} for lane in ("BM25", "Semantic", "Hybrid")},
+            "embedding": {"status": "NOT_CONFIGURED", "reason": "test"},
+            "provider": {"status": "NOT_CONFIGURED", "provider": "none", "model": None},
+            "corpus_hash": "c", "benchmark_hash": "b", "prediction_hashes": {},
+            "provenance": {"offline_reproduction": "PASS"}, "tuning_performed": "NONE",
+            "final_touched": False, "phase15e_p": "NOT CLOSED", "phase15_overall": "NOT CLOSED",
+        })
+        self.assertIn("PROVISIONAL DEV EVALUATION", markdown)
+        self.assertIn("NOT PUBLISHABLE", markdown)
+        self.assertIn("NOT FINAL", markdown)
+
+    def test_provisional_guard_rejects_explicit_final_and_non_draft(self) -> None:
+        with self.assertRaises(EvaluationDataError):
+            require_dev_rows([{"case_id": "final-1", "split": "final", "annotation_status": "DRAFT"}], kind="retrieval")
+        with self.assertRaises(EvaluationDataError):
+            require_dev_rows([{"case_id": "reviewed-1", "split": "dev", "annotation_status": "REVIEWED"}], kind="retrieval")
+
+    def test_embedding_audit_excludes_hash_fallback(self) -> None:
+        audit = embedding_architecture_audit({"provider": "none", "model": "hash-v1"})
+        self.assertEqual(audit["status"], "NOT_CONFIGURED")
+        self.assertEqual(audit["run_eligibility"], "BLOCKED_WITHOUT_REAL_PROVIDER")
+        self.assertIn("hash-v1", audit["fallback"])
+
+    def test_prompt_and_runtime_audits_are_deterministic_and_secret_free(self) -> None:
+        prompts = prompt_hashes()
+        self.assertEqual(set(prompts["hashes"]), {"verification", "chat", "agent_planning", "agent_synthesis"})
+        self.assertTrue(all(len(value) == 64 for value in prompts["hashes"].values() if value))
+        runtime = embedding_runtime_audit()
+        self.assertEqual(runtime["selected_device"], "NOT_RUN")
+        generation = generation_provider_audit()
+        self.assertIn("provider_available", generation)
+        self.assertFalse(generation["secrets_stored"])
+
+    def test_local_runtime_audit_is_fail_closed_and_secret_free(self) -> None:
+        runtime = local_runtime_audit()
+        self.assertIn("external_runtime", runtime)
+        self.assertIn("local_model_candidates", runtime)
+        self.assertIsNone(runtime["embedding_model_selected"])
+        self.assertEqual(runtime["local_server"]["bind_host"], "127.0.0.1")
+        self.assertEqual(runtime["model_inference"], {"embedding": "NOT_RUN", "generation": "NOT_RUN"})
+        self.assertNotIn("AI_API_KEY", json.dumps(runtime))
+
+    def test_real_provisional_report_is_dev_only_and_preserves_draft_manifest(self) -> None:
+        root = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            prediction_path = Path(directory) / "phase15e-bm25-dev.json"
+            database_path = Path(directory) / "paperlens-test.db"
+            from backend.app.db.database import SQLDatabase
+            SQLDatabase(f"sqlite:///{database_path}", create_schema=True)
+            report = build_provisional_dev_report(
+                corpus_manifest=root / "backend/evaluation/datasets/corpus/manifest.json",
+                annotations=root / "backend/evaluation/datasets/real_annotations",
+                database_url=f"sqlite:///{database_path}",
+                prediction_path=prediction_path,
+            )
+            self.assertEqual({report[key] for key in ("evaluation_status", "annotation_status", "human_reviewers", "publishable", "split")}, {"PROVISIONAL", "DRAFT", 0, False, "DEV"})
+            self.assertEqual(report["retrieval"]["Semantic"]["status"], "NOT_RUN")
+            self.assertEqual(report["retrieval"]["Hybrid"]["status"], "NOT_RUN")
+            self.assertEqual(report["phase15e_s"], "NOT CLOSED")
+            self.assertIn("runtime_enablement", report)
+            self.assertIn("local_generation", report)
+            frozen = load_prediction_envelope(prediction_path)
+            self.assertTrue(frozen.predictions)
+            self.assertEqual({value.get("split") for value in frozen.predictions.values()}, {"dev"})
 
 
 if __name__ == "__main__":

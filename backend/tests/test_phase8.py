@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import unittest
 
+import httpx
+
 from fastapi.testclient import TestClient
 
 from backend.app.comparison.service import PaperComparisonService
@@ -24,7 +26,7 @@ from backend.app.models.document import (
 )
 from backend.app.models.paper import PaperMetadata
 from backend.app.ingestion.raw import ParsedPaper, RawParagraph, RawSection
-from backend.app.retrieval.embeddings import HashEmbeddingProvider
+from backend.app.retrieval.embeddings import HashEmbeddingProvider, OllamaEmbeddingProvider
 from backend.app.retrieval.evaluation import RetrievalCase, evaluate_retriever
 from backend.app.retrieval.hybrid import HybridEvidenceRetriever, SemanticEvidenceRetriever
 from backend.app.chat.retrieval import BM25EvidenceRetriever
@@ -80,6 +82,24 @@ class Phase8ArtifactTests(unittest.TestCase):
 
 
 class Phase8RetrievalTests(unittest.IsolatedAsyncioTestCase):
+    async def test_ollama_embeddings_are_real_provider_vectors_and_normalized(self) -> None:
+        async def handler(request: httpx.Request) -> httpx.Response:
+            self.assertEqual(request.url.path, "/api/embed")
+            self.assertEqual(request.headers["Authorization"], "Bearer local-paperlens")
+            return httpx.Response(200, json={"embeddings": [[3.0, 4.0], [0.0, 2.0]]})
+
+        provider = OllamaEmbeddingProvider(
+            model="nomic-embed-text",
+            dimension=0,
+            version="ollama-test-v1",
+            api_key="local-paperlens",
+            transport=httpx.MockTransport(handler),
+        )
+        vectors = await provider.embed_texts(["one", "two"])
+        self.assertEqual(provider.dimension, 2)
+        self.assertEqual(vectors[0], [0.6, 0.8])
+        self.assertEqual(vectors[1], [0.0, 1.0])
+
     async def test_semantic_cache_is_reused_and_evaluation_is_deterministic(self) -> None:
         db = SQLDatabase("sqlite:///:memory:")
         document_id = _save_paper(db, "paper_semantic", "2234.56789", "Semantic")

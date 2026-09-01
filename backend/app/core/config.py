@@ -54,6 +54,8 @@ class Settings:
     embedding_model: str = "hash-v1"
     embedding_dimension: int = 64
     embedding_version: str = "v1"
+    embedding_base_url: str = "http://127.0.0.1:11434"
+    embedding_api_key: str | None = None
     semantic_retrieval_top_k: int = 8
     hybrid_retrieval_enabled: bool = False
     retrieval_mode: str = "LEXICAL"
@@ -106,8 +108,10 @@ class Settings:
 
         defaults = cls()
         ai_provider = os.getenv("AI_PROVIDER", defaults.ai_provider)
+        local_ai_provider = ai_provider.lower().strip() in {"ollama", "ollama_local", "local_ollama"}
         ai_api_key = os.getenv("AI_API_KEY") or None
-        embedding_provider = os.getenv("EMBEDDING_PROVIDER", defaults.embedding_provider)
+        embedding_provider = os.getenv("EMBEDDING_PROVIDER", "ollama" if local_ai_provider else defaults.embedding_provider)
+        local_embedding_provider = embedding_provider.lower().strip() in {"ollama", "ollama_local", "local_ollama"}
         ai_enabled_raw = os.getenv("PAPERLENS_AI_ANALYSIS_ENABLED") or None
         semantic_enabled_raw = os.getenv("PAPERLENS_SEMANTIC_RETRIEVAL_ENABLED") or None
         research_enabled_raw = os.getenv("PAPERLENS_RESEARCH_AGENT_ENABLED") or None
@@ -140,9 +144,9 @@ class Settings:
             pdf_parser_memory_limit_bytes=_optional_int_env("PDF_PARSER_MEMORY_LIMIT_BYTES", "PAPERLENS_PDF_PARSER_MEMORY_LIMIT_BYTES"),
             pdf_parser_cpu_limit_seconds=_optional_float_env("PDF_PARSER_CPU_LIMIT_SECONDS", "PAPERLENS_PDF_PARSER_CPU_LIMIT_SECONDS"),
             ai_provider=ai_provider,
-            ai_model=os.getenv("AI_MODEL", defaults.ai_model),
+            ai_model=os.getenv("AI_MODEL", "qwen3:4b" if local_ai_provider else defaults.ai_model),
             ai_api_key=ai_api_key,
-            ai_base_url=os.getenv("AI_BASE_URL", defaults.ai_base_url),
+            ai_base_url=os.getenv("AI_BASE_URL", "http://127.0.0.1:11434/v1" if local_ai_provider else defaults.ai_base_url),
             ai_request_timeout=float(os.getenv("AI_REQUEST_TIMEOUT", str(defaults.ai_request_timeout))),
             ai_max_retries=int(os.getenv("AI_MAX_RETRIES", str(defaults.ai_max_retries))),
             chat_retrieval_top_k=max(1, min(int(os.getenv("CHAT_RETRIEVAL_TOP_K", str(defaults.chat_retrieval_top_k))), 20)),
@@ -150,9 +154,15 @@ class Settings:
             chat_min_relevance=max(0.0, float(os.getenv("CHAT_MIN_RELEVANCE", str(defaults.chat_min_relevance)))),
             chat_max_question_chars=max(100, int(os.getenv("CHAT_MAX_QUESTION_CHARS", str(defaults.chat_max_question_chars)))),
             embedding_provider=embedding_provider,
-            embedding_model=os.getenv("EMBEDDING_MODEL", defaults.embedding_model),
-            embedding_dimension=max(8, int(os.getenv("EMBEDDING_DIMENSION", str(defaults.embedding_dimension)))),
-            embedding_version=os.getenv("EMBEDDING_VERSION", defaults.embedding_version),
+            embedding_model=os.getenv("EMBEDDING_MODEL", "nomic-embed-text" if local_embedding_provider else defaults.embedding_model),
+            embedding_dimension=max(8, int(os.getenv("EMBEDDING_DIMENSION", str(768 if local_embedding_provider else defaults.embedding_dimension)))),
+            embedding_version=os.getenv("EMBEDDING_VERSION", "ollama-nomic-embed-text-v1" if local_embedding_provider else defaults.embedding_version),
+            embedding_base_url=_first_env(
+                "EMBEDDING_BASE_URL",
+                "OLLAMA_BASE_URL",
+                default=defaults.embedding_base_url,
+            ),
+            embedding_api_key=os.getenv("EMBEDDING_API_KEY") or os.getenv("OLLAMA_API_KEY") or None,
             semantic_retrieval_top_k=max(1, min(int(os.getenv("SEMANTIC_RETRIEVAL_TOP_K", str(defaults.semantic_retrieval_top_k))), 20)),
             hybrid_retrieval_enabled=os.getenv("HYBRID_RETRIEVAL_ENABLED", str(defaults.hybrid_retrieval_enabled)).lower() in {"1", "true", "yes", "on"},
             retrieval_mode=os.getenv("RETRIEVAL_MODE", defaults.retrieval_mode).upper(),
@@ -189,9 +199,15 @@ class Settings:
             build_sha=os.getenv("PAPERLENS_BUILD_SHA", defaults.build_sha),
             build_timestamp=os.getenv("PAPERLENS_BUILD_TIMESTAMP", defaults.build_timestamp),
             paper_storage_provider=os.getenv("PAPERLENS_STORAGE_PROVIDER", defaults.paper_storage_provider).lower(),
-            ai_analysis_enabled=_as_bool(ai_enabled_raw) if ai_enabled_raw is not None else bool(ai_api_key and ai_provider.lower() not in {"none", "disabled"}),
+            ai_analysis_enabled=_as_bool(ai_enabled_raw) if ai_enabled_raw is not None else bool(
+                (ai_api_key or ai_provider.lower().strip() in {"ollama", "ollama_local", "local_ollama"})
+                and ai_provider.lower() not in {"none", "disabled"}
+            ),
             semantic_retrieval_enabled=_as_bool(semantic_enabled_raw) if semantic_enabled_raw is not None else embedding_provider.lower() not in {"none", "disabled"},
-            research_agent_enabled=_as_bool(research_enabled_raw) if research_enabled_raw is not None else bool(ai_api_key and ai_provider.lower() not in {"none", "disabled"}),
+            research_agent_enabled=_as_bool(research_enabled_raw) if research_enabled_raw is not None else bool(
+                (ai_api_key or ai_provider.lower().strip() in {"ollama", "ollama_local", "local_ollama"})
+                and ai_provider.lower() not in {"none", "disabled"}
+            ),
             desktop_token=os.getenv("PAPERLENS_DESKTOP_TOKEN") or None,
             auth_required=_as_bool(auth_required_raw) if auth_required_raw is not None else environment.strip().lower() in {"staging", "production"},
             auth_cookie_name=os.getenv("PAPERLENS_AUTH_COOKIE_NAME", defaults.auth_cookie_name),

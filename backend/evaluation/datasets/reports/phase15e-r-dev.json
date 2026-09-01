@@ -1,0 +1,582 @@
+{
+  "agent": {
+    "metric_label": "PROVISIONAL DEV / DRAFT GOLD",
+    "metrics": {
+      "completion_rate": null,
+      "duplicate_source_rate": null,
+      "duration": null,
+      "evidence_id_validity": null,
+      "ingestion_success": null,
+      "iterations": null,
+      "provider_calls": null,
+      "valid_citation_rate": null
+    },
+    "reason": "No provider-backed durable DEV agent run was started.",
+    "status": "NOT_RUN",
+    "subjective_metrics": {
+      "human_review_status": "NOT_REVIEWED",
+      "source_relevance": null,
+      "synthesis_quality": null,
+      "task_usefulness": null
+    }
+  },
+  "annotation_hash": "975cc12353222d35c308dbe438df94e321135e5a7ff3a3605d176da78f210023",
+  "annotation_hashes": {
+    "agent.jsonl": "c0e16130be483227c9dd82c78f16c1bed904493e7afc675b13c95bf112829892",
+    "chat.jsonl": "81645d25a5697308f54e541c4c6c1b425070623d11c018604f90d4244d743bd9",
+    "retrieval.jsonl": "5a19b320755b47dc6d9a3d89dc439ad62100365004208556b59b14603cdd4fbf",
+    "verification.jsonl": "a4ae45bed74e4db4bf74d0bed9c6e002f28441e2527440a833fa20b079ced5be"
+  },
+  "annotation_status": "DRAFT",
+  "architecture_decision": {
+    "embedding": "Retain existing EmbeddingProvider \u2192 SemanticEvidenceRetriever \u2192 HybridEvidenceRetriever/RRF path; do not add a parallel subsystem.",
+    "generation": "Retain existing AIProvider/OpenAICompatibleProvider path; do not adapt ambient unsupported credentials or add a second provider.",
+    "model_selection": "No supported real local embedding runtime is available. An existing Qwen MLX instruct artifact was discovered, but its runtime cannot acquire Metal here; affected lanes are explicitly NOT_RUN."
+  },
+  "baseline_commit": "a9dacee5ceb0b28183efd35580c5856f07559aff",
+  "benchmark_hash": "7c3428d3e3f673b4cd67b89a50c3cdf046854ccd8bfd37017aa891079cd4c244",
+  "chat": {
+    "human_review_status": "NOT_REVIEWED",
+    "human_score": null,
+    "metric_label": "PROVISIONAL DEV / DRAFT GOLD",
+    "metrics": {
+      "abstention_behavior": null,
+      "citation_precision": null,
+      "numeric_fidelity": null,
+      "required_evidence_coverage": null,
+      "unsupported_claim_rate": null
+    },
+    "reason": "No real generation provider is configured.",
+    "status": "NOT_RUN"
+  },
+  "computed_benchmark_hash": "aedc26db0422e27659ee8d56aee3b2f390047d135c0f03a1d51624b679388dc8",
+  "corpus_hash": "eb3925e01260897f383c9832e1c564aeff7197e192a62d19ce63cc0f1a0309c1",
+  "counts": {
+    "agent": 5,
+    "chat": 29,
+    "dev_papers": 24,
+    "human_reviewers": 0,
+    "retrieval": 48,
+    "verification": 39
+  },
+  "embedding": {
+    "annotation_status": "DRAFT",
+    "batching": "embed_texts(list[str])",
+    "cache_reuse": "model/version/document/evidence hash must match; stale evidence is re-embedded",
+    "dimension": null,
+    "distance_metric": null,
+    "document_evidence_binding": "retrieval filters one paper/document and stores both IDs",
+    "embedding_config_hash": "85fe1e70e745c29830adfe2230d79042abc672964d7a47d6ecd277f04139ef04",
+    "embedding_provenance_hash": null,
+    "evaluation_status": "PROVISIONAL",
+    "fallback": "HashEmbeddingProvider(hash-v1) exists for deterministic tests only; excluded from benchmark claims",
+    "final_dataset_used": false,
+    "human_reviewers": 0,
+    "implementation": [
+      "backend/app/retrieval/embeddings.py: EmbeddingProvider, cosine_similarity, create_embedding_provider",
+      "backend/app/retrieval/hybrid.py: SemanticEvidenceRetriever and HybridEvidenceRetriever (RRF_K=60)",
+      "backend/app/db/database.py: evidence_embeddings persistence and evidence_hash cache key"
+    ],
+    "local_runtime": {
+      "blockers": [
+        "No supported local embedding runtime/model is available in the PaperLens project environment.",
+        "The discovered mlx-lm runtime fails during import with no usable Metal device in this execution context.",
+        "No loopback OpenAI-compatible server was started and no AIProvider smoke test passed."
+      ],
+      "embedding_model_candidates": [],
+      "embedding_model_selected": null,
+      "external_runtime": {
+        "metal_probe": "UNAVAILABLE",
+        "metal_reason": "MLX core is present, but the mlx-lm runtime import failed before model loading; no usable local inference path is available in this execution context.",
+        "mlx_core_probe": "AVAILABLE",
+        "mlx_lm_executable": "/Users/shriprasad/miniconda3/bin/mlx_lm",
+        "mlx_lm_import_probe": "UNAVAILABLE",
+        "mlx_lm_version": "0.31.3",
+        "mlx_python_detected": true,
+        "project_mlx_installed": false
+      },
+      "local_model_candidates": [
+        {
+          "architectures": [
+            "Qwen2ForCausalLM"
+          ],
+          "max_position_embeddings": 32768,
+          "metadata_hash": "fe2a41f876f2a3427efd57c1eb23e7bd450d8b7e3c57a5ef0dc8b09f4498077c",
+          "model_type": "qwen2",
+          "path": "/Users/shriprasad/Documents/Research-Paper/models/Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28",
+          "quantization": null,
+          "revision": "unknown-local-export",
+          "weight_bytes": 15231271888,
+          "weight_file_count": 4,
+          "weights_format": "safetensors"
+        },
+        {
+          "architectures": [
+            "Qwen2ForCausalLM"
+          ],
+          "max_position_embeddings": 32768,
+          "metadata_hash": "d01402afd6c9061e114ebfe6f8a72873e28b7b23719264231385a839e932a44f",
+          "model_type": "qwen2",
+          "path": "/Users/shriprasad/Documents/Research-Paper/models/mlx-Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28-bf16-v2",
+          "quantization": null,
+          "revision": "unknown-local-export",
+          "weight_bytes": 15231271782,
+          "weight_file_count": 3,
+          "weights_format": "safetensors"
+        },
+        {
+          "architectures": [
+            "Qwen2ForCausalLM"
+          ],
+          "max_position_embeddings": 32768,
+          "metadata_hash": "d01402afd6c9061e114ebfe6f8a72873e28b7b23719264231385a839e932a44f",
+          "model_type": "qwen2",
+          "path": "/Users/shriprasad/Documents/Research-Paper/models/mlx-Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28-bf16-v3",
+          "quantization": null,
+          "revision": "unknown-local-export",
+          "weight_bytes": 15231271782,
+          "weight_file_count": 3,
+          "weights_format": "safetensors"
+        }
+      ],
+      "local_server": {
+        "base_url": "http://127.0.0.1:8001/v1",
+        "bind_host": "127.0.0.1",
+        "reason": "The available MLX runtime cannot acquire a Metal device here; no server was launched.",
+        "smoke_test": "NOT_RUN",
+        "status": "NOT_STARTED"
+      },
+      "memory": {
+        "embedding_peak_bytes": null,
+        "generation_peak_bytes": null,
+        "sequential_runtime_required": true,
+        "swap_observed": null
+      },
+      "model_inference": {
+        "embedding": "NOT_RUN",
+        "generation": "NOT_RUN"
+      },
+      "project_environment": {
+        "embedding_runtime": "NOT_INSTALLED",
+        "generation_runtime": "NOT_INSTALLED"
+      },
+      "python": "3.14.2",
+      "selected_generation_model": {
+        "architectures": [
+          "Qwen2ForCausalLM"
+        ],
+        "max_position_embeddings": 32768,
+        "metadata_hash": "d01402afd6c9061e114ebfe6f8a72873e28b7b23719264231385a839e932a44f",
+        "model_type": "qwen2",
+        "path": "/Users/shriprasad/Documents/Research-Paper/models/mlx-Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28-bf16-v3",
+        "quantization": null,
+        "revision": "unknown-local-export",
+        "weight_bytes": 15231271782,
+        "weight_file_count": 3,
+        "weights_format": "safetensors"
+      }
+    },
+    "model": null,
+    "normalization": null,
+    "provenance": "evidence_id, document_id, evidence_hash, model, version, dimension",
+    "provider": "none",
+    "publishable": false,
+    "publishable_quality_claims": false,
+    "reason": "No real embedding provider is configured; hash-v1 is test-only and excluded.",
+    "revision": null,
+    "run_eligibility": "BLOCKED_WITHOUT_REAL_PROVIDER",
+    "runtime": {
+      "cache_hits": null,
+      "cache_misses": null,
+      "duration_seconds": null,
+      "failed_embeddings": 0,
+      "installed_runtimes": {
+        "mlx": false,
+        "mlx_lm": false,
+        "numpy": false,
+        "onnxruntime": false,
+        "sentence_transformers": false,
+        "torch": false,
+        "transformers": false
+      },
+      "machine": "arm64",
+      "model_loaded": false,
+      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+      "records_embedded": 0,
+      "selected_device": "NOT_RUN",
+      "supported_device_paths": [
+        "CPU"
+      ]
+    },
+    "split": "DEV",
+    "status": "NOT_CONFIGURED",
+    "storage": "evidence_embeddings JSON vectors keyed by paper/document/evidence/model/version",
+    "tuning": "NONE"
+  },
+  "evaluation_config": {
+    "bm25": {
+      "depth": 10,
+      "version": "bm25-v1"
+    },
+    "embedding": {
+      "dimension": null,
+      "distance_metric": null,
+      "embedding_config_hash": "85fe1e70e745c29830adfe2230d79042abc672964d7a47d6ecd277f04139ef04",
+      "model": null,
+      "normalization": null,
+      "provider": "none",
+      "revision": null
+    },
+    "evaluation_schema_version": "1",
+    "generation": {
+      "base_url": "https://api.openai.com/v1",
+      "configured_intended_model": "gpt-4o-mini",
+      "max_retries": 2,
+      "model": null,
+      "model_configured": false,
+      "provider": "openai_compatible",
+      "timeout_seconds": 60.0
+    },
+    "local_generation": {
+      "context_configured": 32768,
+      "local_server_base_url": "http://127.0.0.1:8001/v1",
+      "model_id": "/Users/shriprasad/Documents/Research-Paper/models/mlx-Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28-bf16-v3",
+      "model_revision": "unknown-local-export",
+      "provider_base_url": "https://api.openai.com/v1",
+      "provider_smoke_test": "NOT_RUN",
+      "quantization": null,
+      "runtime": "mlx-lm",
+      "runtime_version": "0.31.3",
+      "server_status": "NOT_STARTED"
+    },
+    "prompt_hashes": {
+      "agent_planning": "65cb336063b03d03f57d79697c358ae4dfbe878abe09240319d3f22756bb061c",
+      "agent_synthesis": "dcc95fdc2417f3dd5fd8fde6e758569c7f96186d012e75cd932a69a8dc570938",
+      "chat": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "verification": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7"
+    },
+    "rrf": {
+      "k": 60,
+      "version": "hybrid-rrf-v1"
+    }
+  },
+  "evaluation_config_hash": "4afd22ce7d3a6fa0d3609d93817739a51ee1f3bba00e604657cfd515c3401673",
+  "evaluation_status": "PROVISIONAL",
+  "failure_preservation": {
+    "description": "DEV-only prediction/annotation disagreements remain diagnostics; no FINAL or human-error claim is made.",
+    "status": "PRESERVED"
+  },
+  "final_dataset_used": false,
+  "final_touched": false,
+  "generated_at": "2026-08-29T13:26:30.724848+00:00",
+  "historical_bm25_baseline": {
+    "annotation": "DRAFT",
+    "metric_label": "PROVISIONAL DEV / DRAFT GOLD (historical value preserved)",
+    "mrr": 0.9297,
+    "note": "Historical all-split values are preserved as supplied by the prior frozen baseline; this run scores DEV only and does not inspect FINAL aggregates.",
+    "recall_at_1": 0.9,
+    "recall_at_3": 0.95,
+    "recall_at_5": 0.9833,
+    "recomputed_in_this_run": false,
+    "status": "PRESERVED_FROM_FROZEN_BASELINE"
+  },
+  "historical_bm25_prediction_hash": "ab51abfee8e981ad3d1798b6f279ae18b22156fa0d119102d317f128fd3fb52b",
+  "human_reviewers": 0,
+  "local_generation": {
+    "context_configured": 32768,
+    "local_server_base_url": "http://127.0.0.1:8001/v1",
+    "model_id": "/Users/shriprasad/Documents/Research-Paper/models/mlx-Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28-bf16-v3",
+    "model_revision": "unknown-local-export",
+    "provider_base_url": "https://api.openai.com/v1",
+    "provider_smoke_test": "NOT_RUN",
+    "quantization": null,
+    "reason": "No local generation request was made because the discovered mlx-lm runtime fails during import with no usable Metal device in this execution context.",
+    "runtime": "mlx-lm",
+    "runtime_version": "0.31.3",
+    "server_status": "NOT_STARTED",
+    "status": "NOT_RUN"
+  },
+  "phase15_overall": "NOT CLOSED",
+  "phase15e_p": "NOT CLOSED",
+  "phase15e_r": "NOT CLOSED",
+  "phase15e_s": "NOT CLOSED",
+  "prediction_hashes": {
+    "agent": null,
+    "bm25": "8c7873a127e65393f1ecc6cfe76e2d1c8c97f72b105bce3e2515630393f9bcb5",
+    "chat": null,
+    "hybrid": null,
+    "semantic": null,
+    "verification": null
+  },
+  "prediction_provenance": {
+    "agent": {
+      "gold_fields_used": false,
+      "hash": null,
+      "reason": "Provider-backed durable worker run not started.",
+      "status": "NOT_RUN"
+    },
+    "bm25": {
+      "gold_fields_used": false,
+      "hash": "8c7873a127e65393f1ecc6cfe76e2d1c8c97f72b105bce3e2515630393f9bcb5",
+      "historical_hash": "ab51abfee8e981ad3d1798b6f279ae18b22156fa0d119102d317f128fd3fb52b",
+      "retriever_version": "bm25-v1",
+      "status": "FROZEN_DEV"
+    },
+    "chat": {
+      "gold_fields_used": false,
+      "hash": null,
+      "reason": "Generation provider not configured.",
+      "status": "NOT_RUN"
+    },
+    "hybrid": {
+      "gold_fields_used": false,
+      "hash": null,
+      "reason": "Semantic lane unavailable; existing RRF was not run or tuned.",
+      "status": "NOT_RUN"
+    },
+    "semantic": {
+      "gold_fields_used": false,
+      "hash": null,
+      "reason": "No real embedding provider is configured; hash-v1 is test-only and excluded.",
+      "status": "NOT_RUN"
+    },
+    "verification": {
+      "gold_fields_used": false,
+      "hash": null,
+      "reason": "Generation provider not configured.",
+      "status": "NOT_RUN"
+    }
+  },
+  "prompt_hashes": {
+    "hashes": {
+      "agent_planning": "65cb336063b03d03f57d79697c358ae4dfbe878abe09240319d3f22756bb061c",
+      "agent_synthesis": "dcc95fdc2417f3dd5fd8fde6e758569c7f96186d012e75cd932a69a8dc570938",
+      "chat": "17471bff55a550c60002b261f8c3652a03ab1583e0adcd7c51bcb993b89d6d7c",
+      "verification": "36c8cf0592b6f840dbfaa1147ee7498a9fd5e97a8b557945f237f62719ed83d7"
+    },
+    "versions": {
+      "agent_planning": "v1",
+      "agent_synthesis": "v1",
+      "chat": "v1",
+      "verification": "v1"
+    }
+  },
+  "provenance": {
+    "bm25_gold_fields_used": false,
+    "cost": "unavailable",
+    "hybrid_gold_fields_used": false,
+    "latency_context": "Local deterministic BM25 timing only; no formal performance claim.",
+    "offline_reproduction": "PASS for report construction and BM25 prediction hash; provider lanes NOT_RUN",
+    "owner_id": "user_legacy_local",
+    "provider_calls": 0,
+    "semantic_gold_fields_used": false
+  },
+  "provider": {
+    "availability": {
+      "adapter": "OpenAICompatibleProvider",
+      "base_url": "https://api.openai.com/v1",
+      "configured_intended_model": "gpt-4o-mini",
+      "max_retries": 2,
+      "missing_configuration": [
+        "AI_API_KEY"
+      ],
+      "model": null,
+      "model_configured": false,
+      "provider": "openai_compatible",
+      "provider_available": false,
+      "reason": "PaperLens supports OpenAI-compatible generation, but AI_API_KEY is unset; available Anthropic variables are not consumed by this adapter.",
+      "secrets_stored": false,
+      "timeout_seconds": 60.0,
+      "unsupported_environment_configuration": [
+        "ANTHROPIC_API_KEY",
+        "ANTHROPIC_AUTH_TOKEN",
+        "ANTHROPIC_BASE_URL",
+        "ANTHROPIC_MODEL"
+      ]
+    },
+    "generation_config": {
+      "max_output_tokens": null,
+      "model": null,
+      "prompt_versions": {},
+      "provider": "none",
+      "retry_policy": {},
+      "revision": null,
+      "temperature": null,
+      "top_p": null,
+      "validation_config": {}
+    },
+    "generation_config_hash": "16e97f022ddf79c4e1c6500844a1ab37dbd4336351fef06ff0fdee90fecf7ed6",
+    "intended_model": "gpt-4o-mini",
+    "model": null,
+    "provider": "openai_compatible",
+    "revision": null,
+    "secrets_stored": false,
+    "status": "NOT_CONFIGURED"
+  },
+  "publishable": false,
+  "publishable_quality_claims": false,
+  "remaining_blockers": [
+    "No supported local embedding runtime/model is available in the PaperLens project environment.",
+    "The discovered mlx-lm runtime fails during import with no usable Metal device in this execution context.",
+    "No loopback OpenAI-compatible server was started and no AIProvider smoke test passed.",
+    "provider-backed verification/chat/agent DEV predictions",
+    "offline reproduction of each frozen provider lane",
+    "human review before any publishable quality claim"
+  ],
+  "retrieval": {
+    "BM25": {
+      "annotation": "DRAFT GOLD",
+      "metrics": {
+        "mrr": 0.9121527777777778,
+        "ndcg_at_1": 0.875,
+        "ndcg_at_3": 0.9117054063988107,
+        "ndcg_at_5": 0.9287372681760594,
+        "recall_at_1": 0.875,
+        "recall_at_3": 0.9375,
+        "recall_at_5": 0.9791666666666666
+      },
+      "status": "MEASURED_PROVISIONAL",
+      "version": "bm25-v1"
+    },
+    "Hybrid": {
+      "metrics": null,
+      "reason": "Semantic DEV lane is unavailable; RRF was not run or tuned.",
+      "status": "NOT_RUN"
+    },
+    "Semantic": {
+      "metrics": null,
+      "reason": "No real embedding provider is configured; hash-v1 is test-only and excluded.",
+      "status": "NOT_RUN"
+    },
+    "comparison": {
+      "BM25": {
+        "mrr": 0.9121527777777778,
+        "ndcg_at_1": 0.875,
+        "ndcg_at_3": 0.9117054063988107,
+        "ndcg_at_5": 0.9287372681760594,
+        "recall_at_1": 0.875,
+        "recall_at_3": 0.9375,
+        "recall_at_5": 0.9791666666666666
+      },
+      "Hybrid": null,
+      "Semantic": null
+    },
+    "metric_label": "PROVISIONAL DEV / DRAFT GOLD"
+  },
+  "runtime_enablement": {
+    "blockers": [
+      "No supported local embedding runtime/model is available in the PaperLens project environment.",
+      "The discovered mlx-lm runtime fails during import with no usable Metal device in this execution context.",
+      "No loopback OpenAI-compatible server was started and no AIProvider smoke test passed."
+    ],
+    "embedding_model_candidates": [],
+    "embedding_model_selected": null,
+    "external_runtime": {
+      "metal_probe": "UNAVAILABLE",
+      "metal_reason": "MLX core is present, but the mlx-lm runtime import failed before model loading; no usable local inference path is available in this execution context.",
+      "mlx_core_probe": "AVAILABLE",
+      "mlx_lm_executable": "/Users/shriprasad/miniconda3/bin/mlx_lm",
+      "mlx_lm_import_probe": "UNAVAILABLE",
+      "mlx_lm_version": "0.31.3",
+      "mlx_python_detected": true,
+      "project_mlx_installed": false
+    },
+    "local_model_candidates": [
+      {
+        "architectures": [
+          "Qwen2ForCausalLM"
+        ],
+        "max_position_embeddings": 32768,
+        "metadata_hash": "fe2a41f876f2a3427efd57c1eb23e7bd450d8b7e3c57a5ef0dc8b09f4498077c",
+        "model_type": "qwen2",
+        "path": "/Users/shriprasad/Documents/Research-Paper/models/Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28",
+        "quantization": null,
+        "revision": "unknown-local-export",
+        "weight_bytes": 15231271888,
+        "weight_file_count": 4,
+        "weights_format": "safetensors"
+      },
+      {
+        "architectures": [
+          "Qwen2ForCausalLM"
+        ],
+        "max_position_embeddings": 32768,
+        "metadata_hash": "d01402afd6c9061e114ebfe6f8a72873e28b7b23719264231385a839e932a44f",
+        "model_type": "qwen2",
+        "path": "/Users/shriprasad/Documents/Research-Paper/models/mlx-Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28-bf16-v2",
+        "quantization": null,
+        "revision": "unknown-local-export",
+        "weight_bytes": 15231271782,
+        "weight_file_count": 3,
+        "weights_format": "safetensors"
+      },
+      {
+        "architectures": [
+          "Qwen2ForCausalLM"
+        ],
+        "max_position_embeddings": 32768,
+        "metadata_hash": "d01402afd6c9061e114ebfe6f8a72873e28b7b23719264231385a839e932a44f",
+        "model_type": "qwen2",
+        "path": "/Users/shriprasad/Documents/Research-Paper/models/mlx-Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28-bf16-v3",
+        "quantization": null,
+        "revision": "unknown-local-export",
+        "weight_bytes": 15231271782,
+        "weight_file_count": 3,
+        "weights_format": "safetensors"
+      }
+    ],
+    "local_server": {
+      "base_url": "http://127.0.0.1:8001/v1",
+      "bind_host": "127.0.0.1",
+      "reason": "The available MLX runtime cannot acquire a Metal device here; no server was launched.",
+      "smoke_test": "NOT_RUN",
+      "status": "NOT_STARTED"
+    },
+    "memory": {
+      "embedding_peak_bytes": null,
+      "generation_peak_bytes": null,
+      "sequential_runtime_required": true,
+      "swap_observed": null
+    },
+    "model_inference": {
+      "embedding": "NOT_RUN",
+      "generation": "NOT_RUN"
+    },
+    "project_environment": {
+      "embedding_runtime": "NOT_INSTALLED",
+      "generation_runtime": "NOT_INSTALLED"
+    },
+    "python": "3.14.2",
+    "selected_generation_model": {
+      "architectures": [
+        "Qwen2ForCausalLM"
+      ],
+      "max_position_embeddings": 32768,
+      "metadata_hash": "d01402afd6c9061e114ebfe6f8a72873e28b7b23719264231385a839e932a44f",
+      "model_type": "qwen2",
+      "path": "/Users/shriprasad/Documents/Research-Paper/models/mlx-Qwen2.5-7B-Instruct-a09a35458c702b33eeacc393d103063234e8bc28-bf16-v3",
+      "quantization": null,
+      "revision": "unknown-local-export",
+      "weight_bytes": 15231271782,
+      "weight_file_count": 3,
+      "weights_format": "safetensors"
+    }
+  },
+  "schema_version": "1.0",
+  "split": "DEV",
+  "tuning": "NONE",
+  "tuning_performed": "NONE",
+  "verification": {
+    "metric_label": "PROVISIONAL DEV / DRAFT GOLD",
+    "metrics": {
+      "accuracy": null,
+      "false_rejection_rate": null,
+      "false_support_rate": null,
+      "macro_f1": null,
+      "numeric_fidelity": null,
+      "per_label": null
+    },
+    "reason": "No real generation provider is configured; DRAFT gold is not used as model input.",
+    "status": "NOT_RUN"
+  }
+}

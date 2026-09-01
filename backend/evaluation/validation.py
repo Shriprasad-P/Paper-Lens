@@ -25,6 +25,11 @@ from .schemas import (
 )
 
 
+REVIEWED_STATUSES = {AnnotationStatus.REVIEWED.value, AnnotationStatus.ADJUDICATED.value}
+EXCLUDED_STATUS = AnnotationStatus.EXCLUDED.value
+RESOLVED_STATUSES = REVIEWED_STATUSES | {EXCLUDED_STATUS}
+
+
 @dataclass(frozen=True)
 class ValidationReport:
     """Structured result suitable for a machine-readable evaluation report."""
@@ -70,6 +75,36 @@ def validate_reviewed_cases(cases: Sequence[object]) -> ValidationReport:
     return ValidationReport(len(cases), tuple(errors), counts=counts)
 
 
+def validate_resolved_cases(cases: Sequence[object]) -> ValidationReport:
+    """Require every case to be reviewed or explicitly excluded by a human."""
+
+    errors: list[str] = []
+    counts: Counter[str] = Counter()
+    for case in cases:
+        def field(name: str, default: object | None = None) -> object | None:
+            if isinstance(case, Mapping):
+                return case.get(name, default)
+            return getattr(case, name, default)
+
+        status = field("annotation_status")
+        status_value = getattr(status, "value", status)
+        counts[str(status_value or "MISSING")] += 1
+        case_id = value_for_id(case)
+        if status_value not in RESOLVED_STATUSES:
+            errors.append(f"{case_id}: annotation is not resolved")
+        reviewer_id = field("reviewer_id")
+        if not isinstance(reviewer_id, str) or not reviewer_id.strip() or not field("reviewed_at"):
+            errors.append(f"{case_id}: reviewer metadata is missing")
+        reviewer_notes = field("reviewer_notes", [])
+        if not isinstance(reviewer_notes, Sequence) or isinstance(reviewer_notes, (str, bytes)) or not any(str(note).strip() for note in reviewer_notes):
+            errors.append(f"{case_id}: reviewer notes are missing")
+        if status_value == EXCLUDED_STATUS:
+            reason = field("exclusion_reason")
+            if not isinstance(reason, str) or not reason.strip():
+                errors.append(f"{case_id}: excluded annotation requires an exclusion reason")
+    return ValidationReport(len(cases), tuple(errors), counts=counts)
+
+
 def require_reviewed_cases(cases: Sequence[object]) -> list[object]:
     """Return cases safe for publishable metrics, or fail closed.
 
@@ -78,6 +113,14 @@ def require_reviewed_cases(cases: Sequence[object]) -> list[object]:
     """
 
     report = validate_reviewed_cases(cases)
+    report.raise_if_invalid()
+    return list(cases)
+
+
+def require_resolved_cases(cases: Sequence[object]) -> list[object]:
+    """Return cases safe for completion checks, including valid exclusions."""
+
+    report = validate_resolved_cases(cases)
     report.raise_if_invalid()
     return list(cases)
 
@@ -292,7 +335,12 @@ def validate_retrieval_cases(
             unknown = sorted(set(case.relevant_evidence_ids) - allowed)
             if unknown:
                 errors.append(f"{case.case_id}: unknown evidence IDs {unknown}")
-        if case.annotation_status in {AnnotationStatus.REVIEWED, AnnotationStatus.ADJUDICATED}:
+        if case.annotation_status is AnnotationStatus.EXCLUDED:
+            if not case.exclusion_reason:
+                errors.append(f"{case.case_id}: excluded retrieval annotation requires an exclusion reason")
+            if not case.reviewer_id or case.reviewed_at is None or not case.reviewer_notes:
+                errors.append(f"{case.case_id}: excluded retrieval annotation requires reviewer metadata and notes")
+        elif case.annotation_status in {AnnotationStatus.REVIEWED, AnnotationStatus.ADJUDICATED}:
             if not case.reviewer_notes:
                 errors.append(f"{case.case_id}: reviewed retrieval annotation requires reviewer notes")
             if not case.reviewer_id or case.reviewed_at is None:
@@ -357,7 +405,12 @@ def validate_verification_cases(
             unknown = sorted(set(case.allowed_evidence_ids) - allowed)
             if unknown:
                 errors.append(f"{case.case_id}: unknown evidence IDs {unknown}")
-        if case.annotation_status in {AnnotationStatus.REVIEWED, AnnotationStatus.ADJUDICATED}:
+        if case.annotation_status is AnnotationStatus.EXCLUDED:
+            if not case.exclusion_reason:
+                errors.append(f"{case.case_id}: excluded verification item requires an exclusion reason")
+            if not case.reviewer_id or case.reviewed_at is None or not case.reviewer_notes:
+                errors.append(f"{case.case_id}: excluded verification item requires reviewer metadata and notes")
+        elif case.annotation_status in {AnnotationStatus.REVIEWED, AnnotationStatus.ADJUDICATED}:
             if not case.rationale:
                 errors.append(f"{case.case_id}: reviewed verification item requires rationale")
             if not case.reviewer_notes:
@@ -380,7 +433,12 @@ def validate_chat_cases(cases: Sequence[ChatBenchmarkCase]) -> ValidationReport:
             errors.append(f"{case.case_id}: answerable case requires expected answer points")
         if not case.answerable and case.required_evidence_ids:
             errors.append(f"{case.case_id}: unanswerable case cannot require evidence")
-        if case.annotation_status in {AnnotationStatus.REVIEWED, AnnotationStatus.ADJUDICATED}:
+        if case.annotation_status is AnnotationStatus.EXCLUDED:
+            if not case.exclusion_reason:
+                errors.append(f"{case.case_id}: excluded chat case requires an exclusion reason")
+            if not case.reviewer_id or case.reviewed_at is None or not case.reviewer_notes:
+                errors.append(f"{case.case_id}: excluded chat case requires reviewer metadata and notes")
+        elif case.annotation_status in {AnnotationStatus.REVIEWED, AnnotationStatus.ADJUDICATED}:
             if not case.reviewer_id or case.reviewed_at is None or not case.reviewer_notes:
                 errors.append(f"{case.case_id}: reviewed chat case requires reviewer metadata and notes")
     return ValidationReport(
@@ -401,7 +459,12 @@ def validate_agent_tasks(cases: Sequence[DiscoveryBenchmarkCase]) -> ValidationR
             errors.append(f"{case.case_id}: bounded task requires success_criteria")
         if case.max_iterations < 1 or case.search_budget < 1:
             errors.append(f"{case.case_id}: budgets must be positive")
-        if case.annotation_status in {AnnotationStatus.REVIEWED, AnnotationStatus.ADJUDICATED}:
+        if case.annotation_status is AnnotationStatus.EXCLUDED:
+            if not case.exclusion_reason:
+                errors.append(f"{case.case_id}: excluded agent task requires an exclusion reason")
+            if not case.reviewer_id or case.reviewed_at is None or not case.reviewer_notes:
+                errors.append(f"{case.case_id}: excluded agent task requires reviewer metadata and notes")
+        elif case.annotation_status in {AnnotationStatus.REVIEWED, AnnotationStatus.ADJUDICATED}:
             if not case.reviewer_id or case.reviewed_at is None or not case.reviewer_notes:
                 errors.append(f"{case.case_id}: reviewed agent task requires reviewer metadata and notes")
     return ValidationReport(len(cases), tuple(errors), counts={"tasks": len(cases)})
