@@ -62,7 +62,7 @@ GET /api/papers/{paper_id}/reader
 GET /api/papers/{paper_id}/source
 ```
 
-Open the visual reader at `http://localhost:3000/papers/{paper_id}`. It loads compact persisted PaperIR metadata, fetches evidence passages only when requested, and opens the persisted PDF through the ownership-checked source endpoint.
+Open the visual reader at `http://localhost:3000/papers/{paper_id}`. It loads a reconstructed interactive paper when blocks exist (simplified explanation, inline diagrams, equations, figures, and tables in one scroll), fetches evidence passages only when requested, and opens the persisted PDF through the ownership-checked source endpoint. The earlier sectioned analysis remains under Source analysis.
 
 Phase 6 verification endpoints are:
 

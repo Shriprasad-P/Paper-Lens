@@ -12,6 +12,7 @@ from .api.routes import router
 from .core.config import ConfigurationError, Settings
 from .core.hardening import CookieCSRFMiddleware, DesktopTokenMiddleware, Metrics, RateLimitMiddleware, RequestBodyLimitMiddleware, RequestContextMiddleware, SecurityHeadersMiddleware, error_body
 from .db.database import SQLDatabase
+from .interactive.service import InteractivePaperService
 from .extraction.service import ResearchExtractionService
 from .ingestion.service import IngestionService
 from .verification.service import PaperVerificationService
@@ -29,6 +30,7 @@ def create_app(
     ingestion_service: IngestionService | None = None,
     ai_provider: AIProvider | None = None,
     extraction_service: ResearchExtractionService | None = None,
+    interactive_paper_service: InteractivePaperService | None = None,
     verification_service: PaperVerificationService | None = None,
     chat_service: PaperChatService | None = None,
     research_agent: ResearchAgent | None = None,
@@ -54,6 +56,11 @@ def create_app(
     )
     resolved_provider = ai_provider or create_ai_provider(resolved_settings)
     app.state.extraction_service = extraction_service or ResearchExtractionService(
+        app.state.database,
+        resolved_provider,
+        settings=resolved_settings,
+    )
+    app.state.interactive_paper_service = interactive_paper_service or InteractivePaperService(
         app.state.database,
         resolved_provider,
         settings=resolved_settings,

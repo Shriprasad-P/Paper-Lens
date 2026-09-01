@@ -248,3 +248,15 @@ until a fresh bounded run reaches `COMPLETED`; Phase 15 remains open.
 
 The complete evidence is recorded in
 `backend/evaluation/datasets/reports/phase16-staging-proof.md` and `.json`.
+
+## Phase 17 — Unified Interactive Paper
+
+- [x] Typed InteractivePaper / mixed-content block schema and visualization IR.
+- [x] Fail-closed evidence and inferred-edge validation.
+- [x] Deterministic assembler from StructuredDocument + PaperIR.
+- [x] Bounded per-block simplification through existing AIProvider.
+- [x] Persistence (`interactive_papers`) with source/version cache identity.
+- [x] Continuous reader with inline diagrams, equations, figures, tables.
+- [x] Existing evidence drawer + contextual Ask PaperLens.
+- [x] Backend unit tests and Playwright unified-reader coverage.
+- [ ] Live browser proof against a real unmocked API (env-gated; run with `PAPERLENS_E2E_PASSWORD`).

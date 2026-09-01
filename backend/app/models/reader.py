@@ -7,6 +7,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
 
 from .document import PaperEquation, PaperFigure, PaperIR, PaperMetadata, PaperReference, PaperTable
+from .interactive_paper import InteractivePaper
 from .verification import PaperVerificationResponse
 
 
@@ -120,3 +121,4 @@ class ReaderResponse(BaseModel):
     source: ReaderSource
     verification: PaperVerificationResponse | None = None
     capabilities: CapabilityFlags | None = None
+    interactive_paper: InteractivePaper | None = None

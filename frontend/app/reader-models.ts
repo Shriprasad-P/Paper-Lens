@@ -1,5 +1,7 @@
 import type { Edge, Node } from "@xyflow/react";
 
+import type { InteractivePaper } from "./interactive-models";
+
 export type StatementOrigin = "AUTHOR_EXPLICIT" | "MODEL_INFERRED";
 export type ExtractionState = { status: string; error: string | null };
 export type VerificationStatus = "SUPPORTED" | "PARTIALLY_SUPPORTED" | "UNSUPPORTED" | "CONTRADICTORY" | "UNVERIFIED";
@@ -251,6 +253,7 @@ export type ReaderResponse = {
     supported_sources: string[];
     beta: boolean;
   } | null;
+  interactive_paper?: InteractivePaper | null;
 };
 
 export type ChatCitation = {

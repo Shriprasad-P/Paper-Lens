@@ -70,12 +70,14 @@ Phase 10 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/Evi
 
 ## Current Phase
 
-Phase 14 — Untrusted PDF isolation and bounded ingestion (complete)
+Phase 17 — Unified Interactive Paper (V1 implemented; review uncommitted)
 
 ## Current Task
 
-Prepared and validated a one-pass, bounded, isolated PDF ingestion path without
-regressing tenant ownership or durable research execution.
+Replaced the fragmented visual-reader destinations with one evidence-grounded
+InteractivePaper: typed mixed-content blocks, visualization IR, inline
+renderer, staged local generation through the existing AIProvider, and the
+existing evidence drawer / Ask PaperLens chat.
 
 ## Validation
 

@@ -354,3 +354,50 @@ non-retryable failures remain terminal. Configure the worker with
 `PAPERLENS_RESEARCH_WORKER_ENABLED`, `RESEARCH_WORKER_CONCURRENCY`,
 `RESEARCH_CLAIM_LEASE_SECONDS`, and `RESEARCH_MAX_ATTEMPTS`, then run
 `python -m backend.app.research.worker` as a separate process when enabled.
+
+## Unified Interactive Paper (Phase 17)
+
+PaperLens reconstructs an ingested paper as one evidence-grounded interactive
+document rather than a set of destination tabs.
+
+```text
+StructuredDocument + Evidence Registry + PaperIR
+        ↓
+deterministic block plan / assembler
+        ↓
+optional bounded per-block AIProvider simplification (Ollama / qwen3:4b)
+        ↓
+schema + evidence + visualization IR validation (fail closed)
+        ↓
+interactive_papers persistence (document/source hash + analysis fingerprint + cache key)
+        ↓
+GET /api/papers/{paper_id}/reader → InteractivePaper
+        ↓
+continuous reader (outline + mixed-content blocks + evidence drawer + Ask PaperLens)
+```
+
+`InteractivePaper` is a discriminated block list. A block may hold simplified
+prose, a typed visualization IR, equation explanations, original figures, and
+important tables at the same time. Visualization IR is limited to
+`flow`, `architecture`, `pipeline`, `hierarchy`, `sequence`, `data_flow`, and
+`comparison`. Nodes and edges require evidence IDs unless `inferred` is true.
+Unsupported visual claims are dropped; text can remain `READY`.
+
+Equations keep original expression, optional KaTeX, a plain-language
+explanation, and term breakdowns, all bound to evidence. Figures stay original
+unless marked `PaperLens reconstruction`. Tables are included only when they
+look structurally important.
+
+Generation is staged: assemble from existing PaperIR/document first, persist,
+then optionally simplify each block through the existing `AIProvider`. There
+is no second LLM provider and no raw HTML rendering. Cache identity includes
+document hash, source hash, analysis fingerprint, schema/prompt versions,
+provider/model, and generation mode. A changed PDF or analysis does not reuse
+the previous reconstructed paper.
+
+The previous sectioned reader remains under **Source analysis** while the
+unified document is the default when blocks exist.
+
+Fallback: papers without architecture, equations, tables, or experiments omit
+those blocks. Assembler-only output still works when the provider is
+unavailable.

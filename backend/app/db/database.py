@@ -31,6 +31,7 @@ from ..models.document import (
     StructuredDocument,
 )
 from ..models.document import PaperIR
+from ..models.interactive_paper import InteractivePaper
 from ..models.paper import IngestedPaper, PaperMetadata, ParsedSection
 from ..models.verification import VerificationResult
 from ..models.chat import ChatMessage, ChatMessageStatus, ChatRole, ChatSession
@@ -380,6 +381,28 @@ class AnalysisRecord(Base):
     document_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     provider: Mapped[str] = mapped_column(String(64))
     model: Mapped[str] = mapped_column(String(128))
+    prompt_version: Mapped[str] = mapped_column(String(32))
+    schema_version: Mapped[str] = mapped_column(String(32))
+    cache_key: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    payload: Mapped[dict[str, object]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class InteractivePaperRecord(Base):
+    __tablename__ = "interactive_papers"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    paper_id: Mapped[str] = mapped_column(ForeignKey("papers.id", ondelete="CASCADE"), unique=True, index=True)
+    document_id: Mapped[str] = mapped_column(String(64))
+    document_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    source_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    provider: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    model: Mapped[str | None] = mapped_column(String(128), nullable=True)
     prompt_version: Mapped[str] = mapped_column(String(32))
     schema_version: Mapped[str] = mapped_column(String(32))
     cache_key: Mapped[str] = mapped_column(String(128), unique=True, index=True)
@@ -1911,6 +1934,48 @@ class SQLDatabase:
                         setattr(record, key, value)
         except SQLAlchemyError as exc:
             raise PaperPersistenceError("The paper analysis could not be saved.") from exc
+
+    def get_interactive_paper_record(
+        self, paper_id: str, owner_id: str = LEGACY_OWNER_ID
+    ) -> tuple[InteractivePaper, str] | None:
+        with self.session_factory() as session:
+            record = session.scalar(
+                select(InteractivePaperRecord)
+                .join(PaperRecord, PaperRecord.id == InteractivePaperRecord.paper_id)
+                .where(InteractivePaperRecord.paper_id == paper_id, PaperRecord.owner_id == owner_id)
+            )
+            if record is None:
+                return None
+            return InteractivePaper.model_validate(record.payload), record.cache_key
+
+    def save_interactive_paper(self, paper: InteractivePaper, *, owner_id: str = LEGACY_OWNER_ID) -> None:
+        try:
+            with self.session_factory.begin() as session:
+                if session.scalar(select(PaperRecord.id).where(PaperRecord.id == paper.paper_id, PaperRecord.owner_id == owner_id)) is None:
+                    raise PaperPersistenceError("The paper was not found.")
+                record = session.scalar(
+                    select(InteractivePaperRecord)
+                    .join(PaperRecord, PaperRecord.id == InteractivePaperRecord.paper_id)
+                    .where(InteractivePaperRecord.paper_id == paper.paper_id, PaperRecord.owner_id == owner_id)
+                )
+                values = {
+                    "document_id": paper.document_id,
+                    "document_hash": paper.document_hash,
+                    "source_hash": paper.source_hash,
+                    "provider": paper.provider,
+                    "model": paper.model,
+                    "prompt_version": paper.prompt_version,
+                    "schema_version": paper.schema_version,
+                    "cache_key": paper.cache_key,
+                    "payload": paper.model_dump(mode="json"),
+                }
+                if record is None:
+                    session.add(InteractivePaperRecord(paper_id=paper.paper_id, **values))
+                else:
+                    for key, value in values.items():
+                        setattr(record, key, value)
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The interactive paper could not be saved.") from exc
 
     def update_status(
         self, paper_id: str, status: str, *, error_message: str | None = None, owner_id: str = LEGACY_OWNER_ID

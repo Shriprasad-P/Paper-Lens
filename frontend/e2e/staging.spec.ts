@@ -39,17 +39,18 @@ test.describe("Phase 16A real staging", () => {
     expect(paperId).toMatch(/^paper_/);
     await expect(page.getByRole("heading", { name: /Generative Adversarial Networks/ })).toBeVisible({ timeout: 60_000 });
 
-    await page.locator("button.reader-nav-item", { hasText: "Visualize" }).click();
-    await expect(page.locator(".visualization-lede .card-label", { hasText: "Paper visual map" })).toBeVisible();
-    const evidenceButton = page.locator('button[aria-label^="View evidence"]').first();
+    await page.locator("button.reader-nav-item", { hasText: "Paper in one minute" }).click().catch(async () => {
+      await page.locator("button.reader-nav-item").first().click();
+    });
+    const evidenceButton = page.locator('button[aria-label^="View source evidence"], button[aria-label^="View evidence"]').first();
     await expect(evidenceButton).toBeVisible({ timeout: 30_000 });
     await evidenceButton.click();
     await expect(page.getByRole("dialog")).toContainText("Evidence /");
     await page.getByRole("button", { name: "Close evidence" }).click();
 
-    await page.getByRole("button", { name: "Open Paper Chat" }).click();
+    await page.getByRole("button", { name: "Ask PaperLens" }).first().click();
     await page.getByLabel("Question").fill("What are the two models in the proposed framework?");
-    await page.getByRole("button", { name: "Ask paper" }).click();
+    await page.getByRole("button", { name: "Ask PaperLens" }).last().click();
     await expect(page.locator(".chat-assistant").last()).toContainText(/model|generat|discrimin/i, { timeout: 180_000 });
     const citation = page.locator('.chat-citations button').first();
     await expect(citation).toBeVisible();

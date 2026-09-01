@@ -40,22 +40,10 @@ import {
   type VerificationStatus,
   documentSectionsToFlow,
 } from "../reader-models";
+import { InteractivePaperView } from "./interactive-paper";
+import type { ChatFocus } from "../interactive-models";
 
-type ReaderSectionId =
-  | "overview"
-  | "visualize"
-  | "problem"
-  | "gap"
-  | "contributions"
-  | "method"
-  | "equations"
-  | "experiments"
-  | "results"
-  | "figures"
-  | "tables"
-  | "limitations"
-  | "future-work"
-  | "references";
+type ReaderSectionId = string;
 
 type EvidenceDrawer = {
   title: string;
@@ -75,7 +63,7 @@ type PaperReaderProps = {
 
 type VerificationLookup = Map<string, ClaimVerification>;
 
-const sectionLabels: Record<ReaderSectionId, string> = {
+const sectionLabels: Record<string, string> = {
   overview: "Overview",
   visualize: "Visualize",
   problem: "Problem",
@@ -94,9 +82,9 @@ const sectionLabels: Record<ReaderSectionId, string> = {
 
 export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verificationError }: PaperReaderProps) {
   const [activeSection, setActiveSection] = useState<ReaderSectionId>("overview");
-  const [pdfOpen, setPdfOpen] = useState(reader.source.available);
+  const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfPage, setPdfPage] = useState<number | null>(null);
-  const [pdfLoading, setPdfLoading] = useState(reader.source.available);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [drawer, setDrawer] = useState<EvidenceDrawer | null>(null);
   const [selectedMethodNode, setSelectedMethodNode] = useState<MethodFlowNode | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
@@ -105,10 +93,13 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
   const [chatLoading, setChatLoading] = useState(false);
   const [chatSending, setChatSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [chatFocus, setChatFocus] = useState<ChatFocus | null>(null);
+  const [outlineOpen, setOutlineOpen] = useState(false);
   const evidenceCache = useRef(new Map<string, Evidence>());
 
   const analysis = reader.analysis;
   const navigation = useMemo(() => buildNavigation(reader), [reader]);
+  const legacyNavigation = useMemo(() => buildLegacyNavigation(reader), [reader]);
   const verificationByClaim = useMemo(
     () => new Map((reader.verification?.results ?? []).map((result) => [result.claim_id, result])),
     [reader.verification],
@@ -121,11 +112,20 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
   }, [navigation]);
 
   useEffect(() => {
+    if (reader.source.available && window.matchMedia("(min-width: 761px)").matches) setPdfOpen(true);
+  }, [reader.source.available]);
+
+  useEffect(() => {
     if (pdfOpen && sourceUrl) setPdfLoading(true);
   }, [pdfOpen, pdfPage, sourceUrl]);
 
-  const goToSection = useCallback((section: ReaderSectionId) => {
+  useEffect(() => {
+    if (reader.source.available && window.matchMedia("(min-width: 761px)").matches) setPdfOpen(true);
+  }, [reader.source.available]);
+
+  const goToSection = useCallback((section: string) => {
     setActiveSection(section);
+    setOutlineOpen(false);
     window.history.replaceState(null, "", `#${section}`);
     document.getElementById(section)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
@@ -220,10 +220,13 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
   const submitChat = useCallback(async (question: string) => {
     const session = await ensureChatSession();
     if (!session || !question.trim()) return;
+    const focused = chatFocus
+      ? `Regarding "${chatFocus.title}"${chatFocus.evidenceIds.length ? ` (evidence ${chatFocus.evidenceIds.slice(0, 6).join(", ")})` : ""}: ${question}`
+      : question;
     setChatSending(true);
     setChatError(null);
     try {
-      await sendChatMessage(reader.paper.id, session.id, question);
+      await sendChatMessage(reader.paper.id, session.id, focused);
       const loaded = await loadChatSession(reader.paper.id, session.id);
       setChatSession(loaded.session);
       setChatMessages(loaded.messages);
@@ -239,7 +242,7 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
     } finally {
       setChatSending(false);
     }
-  }, [ensureChatSession, reader.paper.id]);
+  }, [ensureChatSession, reader.paper.id, chatFocus]);
 
   useEffect(() => {
     if (chatOpen && !chatSession && !chatLoading) void ensureChatSession();
@@ -263,7 +266,7 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
         <div className="reader-header-actions">
           <span className="paper-status">{reader.paper.status}</span>
           {reader.capabilities?.ai_analysis_enabled === false ? <span className="beta-unavailable">AI features unavailable</span> : <button type="button" className="secondary-button" onClick={() => setChatOpen((open) => !open)} aria-expanded={chatOpen}>
-            {chatOpen ? "Hide Paper Chat" : "Open Paper Chat"}
+            {chatOpen ? "Hide PaperLens" : "Ask PaperLens"}
           </button>}
           {sourceUrl ? (
             <button type="button" className="secondary-button" onClick={() => setPdfOpen((open) => !open)}>
@@ -274,8 +277,11 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
       </header>
 
       <div className={`reader-layout${pdfOpen && sourceUrl ? " reader-with-source" : ""}`}>
-        <aside className="reader-sidebar" aria-label="Reader sections">
-          <div className="sidebar-label">Research story</div>
+        <aside className={`reader-sidebar${outlineOpen ? " open" : ""}`} aria-label="Paper outline">
+          <button type="button" className="reader-outline-toggle" aria-expanded={outlineOpen} onClick={() => setOutlineOpen((open) => !open)}>
+            {outlineOpen ? "Hide outline" : "Show outline"}
+          </button>
+          <div className="sidebar-label">{reader.interactive_paper?.blocks.length ? "Paper outline" : "Research story"}</div>
           <nav>
             {navigation.map((item) => (
               <button
@@ -297,6 +303,21 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
         </aside>
 
         <article className="reader-story">
+          {reader.interactive_paper?.blocks.some((block) => block.status !== "FAILED") ? (
+            <InteractivePaperView
+              paper={reader.interactive_paper}
+              reader={reader}
+              onEvidence={openEvidence}
+              onPage={openPage}
+              onAsk={(focus) => {
+                setChatFocus(focus);
+                setChatOpen(true);
+              }}
+            />
+          ) : null}
+
+          <details className="source-analysis" open={!reader.interactive_paper?.blocks.length}>
+            <summary>Source analysis</summary>
           <ReaderSection id="overview" title="Overview" eyebrow="01 / ORIENTATION">
             <OverviewSection reader={reader} analysis={analysis} verification={verificationByClaim} onEvidence={openEvidence} onNavigate={goToSection} />
           </ReaderSection>
@@ -305,68 +326,69 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
             <VisualizationBoard reader={reader} analysis={analysis} verification={verificationByClaim} selectedMethodNodeId={selectedMethodNode?.id ?? null} onEvidence={openEvidence} onNodeClick={handleMethodNodeClick} onPage={openPage} />
           </ReaderSection>
 
-          {hasSection(navigation, "problem") ? (
+          {hasSection(legacyNavigation, "problem") ? (
             <ReaderSection id="problem" title="Problem" eyebrow="03 / QUESTION">
               <ProblemSection analysis={analysis} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
-          {hasSection(navigation, "gap") ? (
+          {hasSection(legacyNavigation, "gap") ? (
             <ReaderSection id="gap" title="Research Gap" eyebrow="04 / GAP">
               <ClaimList claims={analysis?.research_gap ?? []} emptyState={analysis?.extraction.research_gap} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
-          {hasSection(navigation, "contributions") ? (
+          {hasSection(legacyNavigation, "contributions") ? (
             <ReaderSection id="contributions" title="Contributions" eyebrow="05 / WHAT THIS PAPER ADDS">
               <ClaimList claims={analysis?.contributions ?? []} emptyState={analysis?.extraction.contributions} verification={verificationByClaim} onEvidence={openEvidence} numbered />
             </ReaderSection>
           ) : null}
-          {hasSection(navigation, "method") ? (
+          {hasSection(legacyNavigation, "method") ? (
             <ReaderSection id="method" title="Method" eyebrow="06 / HOW IT WORKS">
               <MethodSection method={analysis?.method ?? null} state={analysis?.extraction.method} verification={verificationByClaim} selectedNodeId={selectedMethodNode?.id ?? null} onEvidence={openEvidence} onNodeClick={handleMethodNodeClick} />
             </ReaderSection>
           ) : null}
-          {hasSection(navigation, "equations") ? (
+          {hasSection(legacyNavigation, "equations") ? (
             <ReaderSection id="equations" title="Equations" eyebrow="07 / MATHEMATICAL OBJECTS">
               <EquationSection equations={analysis?.equations ?? []} sourceEquations={reader.document.equations} state={analysis?.extraction.equations} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
-          {hasSection(navigation, "experiments") ? (
+          {hasSection(legacyNavigation, "experiments") ? (
             <ReaderSection id="experiments" title="Experiments" eyebrow="08 / EVALUATION SETUP">
               <ExperimentSection experiments={analysis?.experiments ?? []} state={analysis?.extraction.experiments} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
-          {hasSection(navigation, "results") ? (
+          {hasSection(legacyNavigation, "results") ? (
             <ReaderSection id="results" title="Results" eyebrow="09 / FINDINGS">
               <ResultsSection analysis={analysis} specs={reader.visualizations} state={analysis?.extraction.results} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
-          {hasSection(navigation, "figures") ? (
+          {hasSection(legacyNavigation, "figures") ? (
             <ReaderSection id="figures" title="Figures" eyebrow="10 / VISUAL EVIDENCE">
               <FiguresSection figures={reader.document.figures} paperId={reader.paper.id} documentId={reader.document.id} onEvidence={openEvidence} onPage={openPage} />
             </ReaderSection>
           ) : null}
-          {hasSection(navigation, "tables") ? (
+          {hasSection(legacyNavigation, "tables") ? (
             <ReaderSection id="tables" title="Tables" eyebrow="11 / STRUCTURED RESULTS">
               <TablesSection tables={reader.document.tables} onEvidence={openEvidence} onPage={openPage} />
             </ReaderSection>
           ) : null}
-          {hasSection(navigation, "limitations") ? (
+          {hasSection(legacyNavigation, "limitations") ? (
             <ReaderSection id="limitations" title="Limitations" eyebrow="12 / BOUNDARIES">
               <ClaimList claims={analysis?.limitations ?? []} emptyState={analysis?.extraction.limitations} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
-          {hasSection(navigation, "future-work") ? (
+          {hasSection(legacyNavigation, "future-work") ? (
             <ReaderSection id="future-work" title="Future Work" eyebrow="13 / WHAT COMES NEXT">
               <ClaimList claims={analysis?.future_work ?? []} emptyState={analysis?.extraction.future_work} verification={verificationByClaim} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
-          {hasSection(navigation, "references") ? (
+          {hasSection(legacyNavigation, "references") ? (
             <ReaderSection id="references" title="References" eyebrow="14 / SOURCES">
               <ReferencesSection references={reader.document.references} onEvidence={openEvidence} />
             </ReaderSection>
           ) : null}
 
           {analysis ? <><VerificationSummaryCard verification={reader.verification} onVerify={onVerify} error={verificationError} /><ExtractionSummary analysis={analysis} /></> : <EmptyAnalysis onAnalyze={onAnalyze} error={analysisError} />}
+          </details>
         </article>
 
         {pdfOpen && sourceUrl ? (
@@ -413,6 +435,8 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
           loading={chatLoading}
           sending={chatSending}
           error={chatError}
+          focus={chatFocus}
+          onClearFocus={() => setChatFocus(null)}
           onClose={() => setChatOpen(false)}
           onNewChat={() => void startNewChat()}
           onSend={(question) => void submitChat(question)}
@@ -799,6 +823,8 @@ function ChatPanel({
   loading,
   sending,
   error,
+  focus,
+  onClearFocus,
   onClose,
   onNewChat,
   onSend,
@@ -808,6 +834,8 @@ function ChatPanel({
   loading: boolean;
   sending: boolean;
   error: string | null;
+  focus: ChatFocus | null;
+  onClearFocus: () => void;
   onClose: () => void;
   onNewChat: () => void;
   onSend: (question: string) => void;
@@ -828,11 +856,17 @@ function ChatPanel({
     onSend(question);
   }
   return (
-    <aside className="chat-panel" aria-label="Paper Chat">
+    <aside className="chat-panel" aria-label="Ask PaperLens">
       <div className="chat-panel-header">
-        <div><div className="card-label">Paper Chat</div><strong>Ask this paper</strong></div>
-        <div className="chat-panel-actions"><button type="button" className="secondary-button" onClick={onNewChat} disabled={loading || sending}>New chat</button><button type="button" className="close-button" onClick={onClose} aria-label="Close Paper Chat">×</button></div>
+        <div><div className="card-label">Ask PaperLens</div><strong>Ask this paper</strong></div>
+        <div className="chat-panel-actions"><button type="button" className="secondary-button" onClick={onNewChat} disabled={loading || sending}>New chat</button><button type="button" className="close-button" onClick={onClose} aria-label="Close Ask PaperLens">×</button></div>
       </div>
+      {focus ? (
+        <p className="chat-focus">
+          Asking about <strong>{focus.title}</strong>
+          <button type="button" className="secondary-button" onClick={onClearFocus}>Clear</button>
+        </p>
+      ) : null}
       <p className="chat-grounding-note">Answers use only retrieved passages from the current paper. Citations open the source evidence.</p>
       <div className="chat-messages" aria-live="polite">
         {loading ? <p className="chat-state">Opening a document-bound chat…</p> : null}
@@ -852,7 +886,7 @@ function ChatPanel({
       <form className="chat-composer" onSubmit={submit}>
         <label htmlFor="paper-chat-question">Question</label>
         <textarea id="paper-chat-question" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask about the paper…" rows={3} disabled={sending || loading} />
-        <button type="submit" disabled={sending || loading || !input.trim()}>{sending ? "Answering…" : "Ask paper"}</button>
+        <button type="submit" disabled={sending || loading || !input.trim()}>{sending ? "Answering…" : "Ask PaperLens"}</button>
       </form>
     </aside>
   );
@@ -927,7 +961,7 @@ function ExtractionSummary({ analysis }: { analysis: Analysis }) {
   return <div className="extraction-summary reader-summary">{Object.entries(analysis.extraction).map(([name, state]) => <span key={name} data-status={state.status}>{name}: {state.status}</span>)}</div>;
 }
 
-function buildNavigation(reader: ReaderResponse): { id: ReaderSectionId; label: string; index: string }[] {
+function buildLegacyNavigation(reader: ReaderResponse): { id: ReaderSectionId; label: string; index: string }[] {
   const analysis = reader.analysis;
   const available: ReaderSectionId[] = ["overview", "visualize"];
   if (analysis?.problem || analysis?.motivation) available.push("problem");
@@ -942,7 +976,16 @@ function buildNavigation(reader: ReaderResponse): { id: ReaderSectionId; label: 
   if (analysis?.limitations.length) available.push("limitations");
   if (analysis?.future_work.length) available.push("future-work");
   if (reader.document.references.length > 0) available.push("references");
-  return available.map((id, index) => ({ id, label: sectionLabels[id], index: String(index + 1).padStart(2, "0") }));
+  return available.map((id, index) => ({ id, label: sectionLabels[id] || id, index: String(index + 1).padStart(2, "0") }));
+}
+
+function buildNavigation(reader: ReaderResponse): { id: ReaderSectionId; label: string; index: string }[] {
+  const interactive = reader.interactive_paper;
+  const outline = interactive?.outline.filter((item) => interactive.blocks.some((block) => block.id === item.block_id && block.status !== "FAILED")) ?? [];
+  if (outline.length) {
+    return outline.map((item, index) => ({ id: item.block_id, label: item.title, index: String(index + 1).padStart(2, "0") }));
+  }
+  return buildLegacyNavigation(reader);
 }
 
 function hasSection(navigation: { id: ReaderSectionId }[], id: ReaderSectionId): boolean {

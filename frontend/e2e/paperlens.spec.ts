@@ -25,8 +25,8 @@ const readerFixture = {
     document_hash: "hash",
     sections: [{ id: "sec_001", title: "Method", order: 0, page_start: 1, page_end: 1, paragraph_count: 1 }],
     references: [],
-    figures: [],
-    tables: [],
+    figures: [{ id: "fig_1", label: "Figure 1", number: "1", caption: "Architecture diagram from the paper.", page: 1, source_region: null, image_reference: null, evidence_ids: ["ev_fixture"] }],
+    tables: [{ id: "tbl_1", label: "Table 1", number: "1", caption: "Benchmark comparison.", headers: ["Model", "F1"], rows: [["Ours", "0.51"], ["Baseline", "0.40"]], raw_text: null, page: 1, source_region: null, evidence_ids: ["ev_fixture"] }],
     equations: [],
     section_count: 1,
     paragraph_count: 1,
@@ -51,6 +51,88 @@ const readerFixture = {
   visualizations: [],
   source: { available: true, endpoint: "/api/papers/paper_fixture/source", page_count: 2 },
   verification: null,
+  interactive_paper: {
+    schema_version: "interactive-paper-v1",
+    paper_id: "paper_fixture",
+    document_id: "doc_fixture",
+    source_hash: "hash",
+    document_hash: "hash",
+    analysis_fingerprint: "fp",
+    generation_mode: "assembler",
+    generation_config: {},
+    cache_key: "cache",
+    provider: "fixture",
+    model: "fixture",
+    prompt_version: "v1",
+    status: "READY",
+    overview: "A deterministic fixture paper.",
+    outline: [
+      { block_id: "block_overview", title: "Paper in one minute", type: "overview" },
+      { block_id: "block_method", title: "How it works", type: "method" },
+    ],
+    concepts: [],
+    generated_at: new Date().toISOString(),
+    blocks: [
+      {
+        id: "block_overview",
+        type: "overview",
+        title: "Paper in one minute",
+        simplified_explanation: "A deterministic fixture paper.",
+        visual: null,
+        equations: [],
+        figures: [],
+        tables: [],
+        key_points: [],
+        evidence_ids: ["ev_fixture"],
+        status: "READY",
+        inferred: false,
+        validator_status: "PASSED",
+        error: null,
+      },
+      {
+        id: "block_method",
+        type: "method",
+        title: "How it works",
+        simplified_explanation: "The system encodes then attends.",
+        visual: {
+          type: "architecture",
+          title: "How the proposed method works",
+          reconstructed: true,
+          nodes: [
+            { id: "encoder", label: "Encoder", description: "Encode inputs.", role: "model", evidence_ids: ["ev_fixture"], inferred: false, related_equation_ids: ["eq_1"], related_figure_ids: [] },
+            { id: "attention", label: "Attention", description: "Attend over features.", role: "model", evidence_ids: ["ev_fixture"], inferred: false, related_equation_ids: ["eq_1"], related_figure_ids: [] },
+          ],
+          edges: [{ id: "e1", source: "encoder", target: "attention", label: "features", evidence_ids: ["ev_fixture"], inferred: false }],
+        },
+        equations: [
+          {
+            id: "eq_1",
+            equation_id: "eq_1",
+            original_expression: "L = -\\sum y_i \\log(\\hat{y}_i)",
+            latex: "L = -\\sum y_i \\log(\\hat{y}_i)",
+            explanation: "Cross-entropy measures how far predicted probabilities are from the labels.",
+            terms: [
+              { symbol: "L", meaning: "total error", evidence_ids: ["ev_fixture"] },
+              { symbol: "y_i", meaning: "true target", evidence_ids: ["ev_fixture"] },
+            ],
+            evidence_ids: ["ev_fixture"],
+            page: 1,
+            section_id: "sec_001",
+            related_node_ids: ["attention"],
+            origin: "SIMPLIFIED",
+          },
+        ],
+        figures: [{ figure_id: "fig_1", simplified_explanation: "The paper's architecture figure.", evidence_ids: ["ev_fixture"], reconstructed: false }],
+        tables: [{ table_id: "tbl_1", simplified_explanation: "The proposed model improves F1 versus the baseline.", important_cells: [], evidence_ids: ["ev_fixture"] }],
+        key_points: [],
+        evidence_ids: ["ev_fixture"],
+        status: "READY",
+        inferred: false,
+        validator_status: "PASSED",
+        error: null,
+      },
+    ],
+  },
 };
 
 test("reader, evidence drawer, PDF navigation, and grounded chat work with deterministic mocks", async ({ page }) => {
@@ -71,23 +153,42 @@ test("reader, evidence drawer, PDF navigation, and grounded chat work with deter
   await page.getByRole("button", { name: "Open visual reader" }).click();
   await expect(page).toHaveURL(/papers\/paper_fixture/);
   await expect(page.getByRole("heading", { name: /Attention Is All You Need/ })).toBeVisible();
-  await page.getByRole("button", { name: /Visualize/ }).click();
-  await expect(page.getByRole("heading", { name: "Visualize", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "How the proposed method works" })).toBeVisible();
-  await expect(page.getByText("Paper visual map", { exact: true })).toBeVisible();
-  await expect(page.getByTitle("Original paper PDF")).toBeVisible();
-  await page.getByRole("region", { name: "Method" }).getByRole("button", { name: "View evidence for Method summary" }).click();
+  await expect(page.getByRole("heading", { name: "Paper in one minute" })).toBeVisible();
+  await page.locator("button.reader-nav-item", { hasText: "How it works" }).click();
+  await expect(page.getByRole("heading", { name: "How it works" })).toBeVisible();
+  await page.getByRole("button", { name: "Attention" }).click();
+  await expect(page.getByText("Attend over features.")).toBeVisible();
+  await page.getByRole("button", { name: /View source evidence for Attention/ }).click();
   await expect(page.getByRole("dialog")).toContainText("fixture method");
   await page.getByRole("button", { name: "Close evidence" }).click();
-  await page.getByRole("button", { name: "Open Paper Chat" }).click();
-  await expect(page.getByText("Paper Chat", { exact: true })).toBeVisible();
+  await expect(page.getByText("Cross-entropy measures").first()).toBeVisible();
+  await expect(page.getByText("Architecture diagram from the paper.").first()).toBeVisible();
+  await expect(page.getByText("Benchmark comparison.").first()).toBeVisible();
+  await expect(page.getByTitle("Original paper PDF")).toBeVisible();
+  await page.getByRole("button", { name: "Ask PaperLens" }).first().click();
+  await expect(page.getByText("Ask this paper", { exact: true })).toBeVisible();
   await page.getByLabel("Question").fill("Explain the method.");
-  await page.getByRole("button", { name: "Ask paper" }).click();
+  await page.getByRole("button", { name: "Ask PaperLens" }).last().click();
   await expect(page.getByText("The fixture method is source grounded.")).toBeVisible();
   await page.getByRole("button", { name: "[1]" }).click();
   await expect(page.getByRole("dialog")).toContainText("fixture method");
   await page.getByRole("button", { name: "Close evidence" }).click();
+  await page.getByText("Source analysis").click();
   await page.getByRole("button", { name: "Verify analysis" }).click();
+});
+
+test("unified paper outline remains usable at a mobile width", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route("**/api/papers/ingest", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "paper_fixture" }) }));
+  await page.route("**/api/papers/paper_fixture/reader", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(readerFixture) }));
+  await page.route("**/api/papers/paper_fixture/source", async (route) => route.fulfill({ status: 200, contentType: "application/pdf", body: "%PDF-fixture" }));
+  await page.goto("/");
+  await page.getByLabel("arXiv URL or identifier").fill("1706.03762");
+  await page.getByRole("button", { name: "Open visual reader" }).click();
+  await expect(page.getByRole("heading", { name: "Paper in one minute" })).toBeVisible();
+  await page.getByRole("button", { name: "Show outline" }).click();
+  await page.locator("button.reader-nav-item", { hasText: "How it works" }).click();
+  await expect(page.getByRole("heading", { name: "How it works" })).toBeVisible();
 });
 
 test("workspace and research entry points remain navigable without live providers", async ({ page }) => {
@@ -102,7 +203,7 @@ test("workspace and research entry points remain navigable without live provider
   await page.route("**/api/workspaces/workspace_fixture/papers/*", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...workspaceFixture, papers: [{ paper_id: "paper_a", title: "Paper A", arxiv_id: "1706.03762", analyzed: true, added_at: new Date().toISOString() }, { paper_id: "paper_b", title: "Paper B", arxiv_id: "1706.03763", analyzed: true, added_at: new Date().toISOString() }] }) }));
   await page.route("**/api/workspaces/workspace_fixture/compare", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ paper_ids: ["paper_a", "paper_b"], dimensions: [{ name: "Method", entries: [], comparability: "NOT_COMPARABLE", note: "Fixture" }] }) }));
   await page.route("**/api/research/runs", async (route) => route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ run: { id: "research_fixture", status: "CREATED" } }) }));
-  await page.route("**/api/research/runs/research_fixture", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ run: { id: "research_fixture", workspace_id: null, research_question: "Which methods improve retrieval?", status: "COMPLETED", created_at: new Date().toISOString(), updated_at: new Date().toISOString(), completed_at: new Date().toISOString(), max_iterations: 1, max_candidates: 1, max_ingested_papers: 1, planner_provider: "fixture", planner_model: "fixture", prompt_version: "v1", schema_version: "v1" }, plan: null, queries: ["retrieval methods"], candidates: [], events: [{ id: "event_fixture", research_run_id: "research_fixture", event_type: "RUN_COMPLETED", message: "Fixture report completed.", metadata: {}, created_at: new Date().toISOString() }], coverage: { sufficient: true, covered_concepts: ["retrieval"], missing_concepts: [], relevant_paper_ids: ["paper_fixture"], evidence_count: 1, summary: "Fixture coverage." }, report: { research_question: "Which methods improve retrieval?", executive_summary: [{ claim_id: "claim_fixture", statement: "The fixture method is source grounded.", source_papers: ["paper_fixture"], evidence_refs: [{ paper_id: "paper_fixture", document_id: "doc_fixture", evidence_id: "ev_fixture" }], origin: "AUTHOR_EXPLICIT", verification_status: "UNVERIFIED" }], themes: [], methods: [], agreements: [], contradictions: [], research_gaps: [], limitations: [], future_directions: [], papers: [], coverage: { sufficient: true, covered_concepts: ["retrieval"], missing_concepts: [], relevant_paper_ids: ["paper_fixture"], evidence_count: 1, summary: "Fixture coverage." }, discovery_queries: ["retrieval methods"], candidate_count: 1, selected_count: 1 } }) }));
+  await page.route("**/api/research/runs/research_fixture", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ run: { id: "research_fixture", workspace_id: null, research_question: "Which methods improve retrieval?", status: "COMPLETED", execution_state: "COMPLETED", created_at: new Date().toISOString(), updated_at: new Date().toISOString(), completed_at: new Date().toISOString(), max_iterations: 1, max_candidates: 1, max_ingested_papers: 1, planner_provider: "fixture", planner_model: "fixture", prompt_version: "v1", schema_version: "v1" }, plan: null, queries: ["retrieval methods"], candidates: [], events: [{ id: "event_fixture", research_run_id: "research_fixture", event_type: "RUN_COMPLETED", message: "Fixture report completed.", metadata: {}, created_at: new Date().toISOString() }], coverage: { sufficient: true, covered_concepts: ["retrieval"], missing_concepts: [], relevant_paper_ids: ["paper_fixture"], evidence_count: 1, summary: "Fixture coverage." }, report: { research_question: "Which methods improve retrieval?", executive_summary: [{ claim_id: "claim_fixture", statement: "The fixture method is source grounded.", source_papers: ["paper_fixture"], evidence_refs: [{ paper_id: "paper_fixture", document_id: "doc_fixture", evidence_id: "ev_fixture" }], origin: "AUTHOR_EXPLICIT", verification_status: "UNVERIFIED" }], themes: [], methods: [], agreements: [], contradictions: [], research_gaps: [], limitations: [], future_directions: [], papers: [], coverage: { sufficient: true, covered_concepts: ["retrieval"], missing_concepts: [], relevant_paper_ids: ["paper_fixture"], evidence_count: 1, summary: "Fixture coverage." }, discovery_queries: ["retrieval methods"], candidate_count: 1, selected_count: 1 } }) }));
   await page.route("**/api/papers/paper_fixture/evidence/ev_fixture", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "ev_fixture", paper_id: "paper_fixture", document_id: "doc_fixture", evidence_type: "PARAGRAPH", source_text: "The fixture method is source grounded.", page: 1, section_id: "sec_001", paragraph_id: "para_001", equation_id: null, source_region: null }) }));
   await page.goto("/workspaces");
   await page.getByLabel("Create workspace").fill("Fixture workspace");
@@ -119,7 +220,7 @@ test("workspace and research entry points remain navigable without live provider
   await page.getByLabel("Research question").fill("Which methods improve retrieval?");
   await page.getByRole("button", { name: "Start evidence search" }).click();
   await expect(page).toHaveURL(/research\/research_fixture/);
-  await expect(page.getByText("COMPLETED", { exact: true })).toBeVisible();
+  await expect(page.locator(".run-status")).toContainText("COMPLETED");
   await page.getByRole("button", { name: /paper_fixture · ev_fixture/ }).click();
   await expect(page.getByRole("dialog", { name: "Research evidence" })).toContainText("fixture method");
 });

@@ -26,6 +26,8 @@ from ..auth import audit, clear_session_cookie, get_current_user, issue_session,
 from ..models.auth import UserLogin, UserRegistration, UserResponse
 from ..extraction.service import ResearchExtractionError
 from ..models.document import Evidence, PaperIR, StructuredDocument
+from ..models.interactive_paper import InteractivePaper
+from ..interactive.service import InteractivePaperError
 from ..models.paper import IngestRequest, IngestedPaper
 from ..models.reader import (
     CapabilityFlags,
@@ -312,6 +314,7 @@ async def get_reader(paper_id: str, request: Request) -> ReaderResponse:
             semantic_retrieval_enabled=request.app.state.settings.semantic_retrieval_enabled,
             research_agent_enabled=request.app.state.settings.research_agent_enabled,
         ),
+        interactive_paper=await _interactive_paper(request, paper_id, owner_id),
     )
 
 
@@ -362,6 +365,29 @@ async def extract_paper(paper_id: str, request: Request) -> PaperIR:
     try:
         return await request.app.state.extraction_service.extract(paper_id, owner_id)
     except ResearchExtractionError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/api/papers/{paper_id}/interactive", response_model=InteractivePaper)
+async def generate_interactive_paper(paper_id: str, request: Request) -> InteractivePaper:
+    """Assemble, optionally simplify, and persist the unified interactive paper."""
+
+    owner_id = require_current_user(request).id
+    simplify = request.app.state.settings.ai_analysis_enabled
+    try:
+        return await request.app.state.interactive_paper_service.generate(paper_id, owner_id, simplify=simplify)
+    except InteractivePaperError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/api/papers/{paper_id}/interactive", response_model=InteractivePaper)
+async def get_interactive_paper(paper_id: str, request: Request) -> InteractivePaper:
+    """Return the current interactive paper, assembling from evidence if needed."""
+
+    owner_id = require_current_user(request).id
+    try:
+        return await request.app.state.interactive_paper_service.get_or_assemble(paper_id, owner_id)
+    except InteractivePaperError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
@@ -627,6 +653,13 @@ async def get_research_report(run_id: str, request: Request) -> object:
     if report is None:
         raise HTTPException(status_code=404, detail="Research report not found.")
     return report
+
+
+async def _interactive_paper(request: Request, paper_id: str, owner_id: str) -> InteractivePaper | None:
+    try:
+        return await request.app.state.interactive_paper_service.get_or_assemble(paper_id, owner_id)
+    except InteractivePaperError:
+        return None
 
 
 def _safe_source_path(request: Request, source_path: object) -> Path | None:

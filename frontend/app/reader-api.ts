@@ -1,4 +1,5 @@
 import type { ChatAnswerResponse, ChatSession, ChatSessionResponse, CitationGraph, Evidence, PaperComparisonIR, ReaderResponse, ResearchReport, ResearchRunResponse, Workspace, WorkspaceResponse } from "./reader-models";
+import type { InteractivePaper } from "./interactive-models";
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -128,6 +129,10 @@ export async function loadEvidence(paperId: string, evidenceId: string): Promise
 
 export async function loadReader(paperId: string): Promise<ReaderResponse> {
   return requestJson<ReaderResponse>(`/api/papers/${paperId}/reader`);
+}
+
+export async function generateInteractivePaper(paperId: string): Promise<InteractivePaper> {
+  return requestJson<InteractivePaper>(`/api/papers/${paperId}/interactive`, { method: "POST" });
 }
 
 export async function createChatSession(paperId: string): Promise<ChatSession> {
