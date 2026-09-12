@@ -2,17 +2,17 @@
 
 Turn research papers into visual, verifiable explanations.
 
-PaperLens is a local-first research-paper ingestion and visualization platform in limited public beta. The application keeps paper parsing, evidence provenance, semantic extraction, verification, and deterministic rendering as separate stages.
+PaperLens is a local-first research-paper ingestion and visualization platform in limited public beta. The application maintains strict separation between paper parsing, evidence provenance, semantic extraction, verification, and deterministic rendering stages.
 
-## Repository layout
+## Repository Layout
 
 - `backend/` — FastAPI service and portable persistence boundary
 - `frontend/` — Next.js reader shell
-- `docs/` — architecture and incremental project state
+- `docs/` — Architecture and incremental project state
 
-## Local development
+## Local Development
 
-Prerequisites: Python 3.11+, Node.js 20+, and npm. The backend uses SQLite by default for local development; PostgreSQL remains the production target behind the SQLAlchemy boundary.
+**Prerequisites:** Python 3.11+, Node.js 20+, and npm. The backend uses SQLite by default for local development; PostgreSQL remains the production target behind the SQLAlchemy boundary.
 
 ### Backend
 
@@ -159,7 +159,7 @@ npm run build
 npm run test:e2e
 ```
 
-## Public beta deployment
+## Public Beta Deployment
 
 The supported production-like architecture is a Next.js frontend behind an
 HTTPS edge, a FastAPI backend, PostgreSQL, and a durable paper-storage volume.
@@ -187,11 +187,11 @@ live credentials the reader, evidence, PDF, workspace, and BM25 paths remain
 available while AI controls are disabled cleanly. Phase 10 evaluation results
 are explicitly `PRELIMINARY` and are not claims of scientific accuracy.
 
-## Current phase
+## Current Phase
 
 Phase 12 — Deployment & Public Beta (`v0.1.0-beta`).
 
-## macOS local app
+## macOS Local App
 
 PaperLens also ships a local Tauri 2 macOS shell. It bundles the FastAPI
 backend as a PyInstaller sidecar, the Next.js standalone server, and Node.js;
