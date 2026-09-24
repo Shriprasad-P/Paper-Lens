@@ -91,6 +91,8 @@ class Phase13AAuthTests(unittest.TestCase):
             self.assertEqual(client.get(f"/api/papers/{foreign_paper}/evidence/ev_0001").status_code, 404)
             self.assertEqual(client.get(f"/api/papers/{foreign_paper}/source").status_code, 404)
             self.assertEqual(client.get(f"/api/papers/{foreign_paper}/reader").status_code, 404)
+            self.assertEqual(client.get(f"/api/papers/{foreign_paper}/interactive").status_code, 404)
+            self.assertEqual(client.post(f"/api/papers/{foreign_paper}/interactive").status_code, 404)
             self.assertEqual(client.get(f"/api/papers/{foreign_paper}/analysis").status_code, 404)
             self.assertEqual(client.get(f"/api/papers/{foreign_paper}/verification").status_code, 404)
             self.assertEqual(client.get(f"/api/papers/{foreign_paper}/citation-graph").status_code, 404)

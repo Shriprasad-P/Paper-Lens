@@ -20,7 +20,7 @@ import {
 } from "recharts";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { apiUrl, createChatSession, loadChatSession, loadEvidence, sendChatMessage } from "../reader-api";
+import { apiUrl, createChatSession, loadChatSession, loadEvidence, loadSourcePdf, sendChatMessage } from "../reader-api";
 import {
   type Analysis,
   type ClaimVerification,
@@ -85,6 +85,8 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
   const [pdfOpen, setPdfOpen] = useState(false);
   const [pdfPage, setPdfPage] = useState<number | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const [drawer, setDrawer] = useState<EvidenceDrawer | null>(null);
   const [selectedMethodNode, setSelectedMethodNode] = useState<MethodFlowNode | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
@@ -112,16 +114,42 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
   }, [navigation]);
 
   useEffect(() => {
-    if (reader.source.available && window.matchMedia("(min-width: 761px)").matches) setPdfOpen(true);
+    const media = window.matchMedia("(min-width: 761px)");
+    const sync = () => {
+      if (!reader.source.available) {
+        setPdfOpen(false);
+        return;
+      }
+      setPdfOpen(media.matches);
+    };
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
   }, [reader.source.available]);
 
   useEffect(() => {
-    if (pdfOpen && sourceUrl) setPdfLoading(true);
-  }, [pdfOpen, pdfPage, sourceUrl]);
-
-  useEffect(() => {
-    if (reader.source.available && window.matchMedia("(min-width: 761px)").matches) setPdfOpen(true);
-  }, [reader.source.available]);
+    if (!pdfOpen || !sourceUrl) return undefined;
+    const controller = new AbortController();
+    let objectUrl: string | null = null;
+    setPdfBlobUrl(null);
+    setPdfError(null);
+    setPdfLoading(true);
+    loadSourcePdf(reader.paper.id, controller.signal).then((blob) => {
+      if (controller.signal.aborted) return;
+      objectUrl = URL.createObjectURL(blob);
+      setPdfBlobUrl(objectUrl);
+      setPdfError(null);
+    }).catch((error: unknown) => {
+      if (!controller.signal.aborted) {
+        setPdfError(error instanceof Error ? error.message : "The original PDF could not be loaded.");
+        setPdfLoading(false);
+      }
+    });
+    return () => {
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [pdfOpen, reader.paper.id, sourceUrl]);
 
   const goToSection = useCallback((section: string) => {
     setActiveSection(section);
@@ -269,7 +297,7 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
             {chatOpen ? "Hide PaperLens" : "Ask PaperLens"}
           </button>}
           {sourceUrl ? (
-            <button type="button" className="secondary-button" onClick={() => setPdfOpen((open) => !open)}>
+            <button type="button" className="secondary-button" onClick={() => { setPdfLoading(true); setPdfOpen((open) => !open); }}>
               {pdfOpen ? "Hide original" : "Show original"}
             </button>
           ) : null}
@@ -316,7 +344,7 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
             />
           ) : null}
 
-          <details className="source-analysis" open={!reader.interactive_paper?.blocks.length}>
+          <details className="source-analysis" open={!reader.interactive_paper?.blocks.length || !reader.analysis}>
             <summary>Source analysis</summary>
           <ReaderSection id="overview" title="Overview" eyebrow="01 / ORIENTATION">
             <OverviewSection reader={reader} analysis={analysis} verification={verificationByClaim} onEvidence={openEvidence} onNavigate={goToSection} />
@@ -413,14 +441,16 @@ export function PaperReader({ reader, onAnalyze, analysisError, onVerify, verifi
               />
               <span>of {reader.source.page_count ?? "?"}</span>
             </div>
-            {pdfLoading ? <div className="source-loading" aria-live="polite">Loading original paper…</div> : null}
-            <iframe
-              key={`${sourceUrl}-${pdfPage ?? "document"}`}
+            {pdfLoading && !pdfError ? <div className="source-loading" aria-live="polite">Loading original paper…</div> : null}
+            {pdfError ? <p className="source-error" role="alert">{pdfError}</p> : null}
+            {pdfBlobUrl ? <iframe
+              key={`${pdfBlobUrl}-${pdfPage ?? "document"}`}
               className="source-frame"
               title="Original paper PDF"
-              src={`${sourceUrl}${pdfPage ? `#page=${pdfPage}` : ""}`}
+              src={`${pdfBlobUrl}${pdfPage ? `#page=${pdfPage}` : ""}`}
               onLoad={() => setPdfLoading(false)}
-            />
+            /> : null}
+            {pdfBlobUrl ? <a className="source-open-link" href={pdfBlobUrl} target="_blank" rel="noreferrer">Open PDF in a new tab</a> : null}
             <p className="source-panel-note">Page navigation is deterministic. Region highlighting is not enabled until coordinate mapping is reliable.</p>
           </aside>
         ) : null}

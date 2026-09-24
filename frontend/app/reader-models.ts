@@ -91,6 +91,7 @@ export type Analysis = {
 export type ReaderPaper = {
   id: string;
   status: string;
+  last_opened_at: string | null;
   metadata: {
     arxiv_id: string;
     title: string;
@@ -102,6 +103,26 @@ export type ReaderPaper = {
     source_url: string;
     pdf_url: string;
   };
+};
+
+export type ResolvedPaper = {
+  canonical_id: string;
+  source_type: string;
+  title: string;
+  authors: string[];
+  year: number | null;
+  venue: string | null;
+  doi: string | null;
+  arxiv_id: string | null;
+  pmid: string | null;
+  pmcid: string | null;
+  publisher_url: string | null;
+  open_access_pdf_url: string | null;
+  user_uploaded_pdf: boolean;
+  resolver_provenance: Record<string, unknown>;
+  metadata_raw_hash: string | null;
+  candidate_confidence: number | null;
+  candidates: Record<string, unknown>[];
 };
 
 export type ReaderSectionSummary = {

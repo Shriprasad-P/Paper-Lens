@@ -178,6 +178,8 @@ class InteractiveAssemblerTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn(BlockType.LIMITATION, types)
         method = next(block for block in paper.blocks if block.type == BlockType.METHOD)
         self.assertIsNotNone(method.visual)
+        self.assertEqual(method.visual.type, DiagramType.PIPELINE)
+        self.assertEqual(method.archify_ir["diagram"]["diagram_type"], "workflow")
         self.assertTrue(method.visual.nodes)
         self.assertTrue(any(edge.inferred for edge in method.visual.edges) or method.visual.edges == [])
         self.assertTrue(method.evidence_ids)
@@ -268,6 +270,12 @@ class InteractiveApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(payload)
         self.assertEqual(payload["schema_version"], INTERACTIVE_SCHEMA_VERSION)
         self.assertTrue(payload["blocks"])
+        for block in payload["blocks"]:
+            visual = block.get("visual") or {}
+            for edge in visual.get("edges") or []:
+                self.assertIn("source", edge)
+                self.assertIn("target", edge)
+                self.assertNotIn("from", edge)
         generated = client.post(f"/api/papers/{paper_id}/interactive")
         self.assertEqual(generated.status_code, 200)
         self.assertEqual(generated.json()["provider"], "mock")

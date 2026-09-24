@@ -1,11 +1,11 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { Background, Controls, ReactFlow, type Edge, type Node, type NodeMouseHandler } from "@xyflow/react";
+import { Background, Controls, Position, ReactFlow, type Edge, type Node, type NodeMouseHandler } from "@xyflow/react";
 import katex from "katex";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { apiUrl } from "../reader-api";
+import { apiUrl, loadArchifyHtml } from "../reader-api";
 import type { ReaderFigure, ReaderResponse, ReaderTable } from "../reader-models";
 import type {
   ChatFocus,
@@ -89,10 +89,8 @@ function InteractivePaperBlockView({
           ))}
         </ul>
       ) : null}
-      {block.visual ? <VisualDiagram diagram={block.visual} equations={block.equations} figures={block.figures} onEvidence={onEvidence} onAsk={onAsk} /> : null}
-      {block.equations.map((equation) => (
-        <EquationCard key={equation.id} equation={equation} onEvidence={onEvidence} onAsk={onAsk} />
-      ))}
+      {block.visual ? <VisualDiagram diagram={block.visual} equations={block.equations} figures={block.figures} paperId={paperId} blockId={block.id} archify={Boolean(block.archify_ir)} onEvidence={onEvidence} onAsk={onAsk} /> : null}
+      {block.equations.length ? <EquationTable equations={block.equations} onEvidence={onEvidence} onAsk={onAsk} /> : null}
       {block.figures.map((binding) => {
         const figure = figures.get(binding.figure_id);
         return figure ? (
@@ -143,33 +141,58 @@ function VisualDiagram({
   diagram,
   equations,
   figures,
+  paperId,
+  blockId,
+  archify,
   onEvidence,
   onAsk,
 }: {
   diagram: VisualDiagramIR;
   equations: EquationExplanation[];
   figures: { figure_id: string }[];
+  paperId: string;
+  blockId: string;
+  archify: boolean;
   onEvidence: (ids: string[], title: string) => void;
   onAsk: (focus: ChatFocus) => void;
 }) {
   const [selected, setSelected] = useState<VisualNode | VisualEdge | null>(null);
+  const [archifyHtml, setArchifyHtml] = useState<string | null>(null);
+  const [archifyError, setArchifyError] = useState(false);
   const flow = useMemo(() => diagramToFlow(diagram), [diagram]);
   const onNodeClick: NodeMouseHandler = (_event, node) => {
     const match = diagram.nodes.find((item) => item.id === node.id) ?? null;
     setSelected(match);
   };
-  const selectedNode = selected && "role" in selected ? (selected as VisualNode) : null;
-  const selectedEdge = selected && "source" in selected && !("role" in selected) ? (selected as VisualEdge) : null;
+  const selectedNode = selected && diagram.nodes.some((item) => item.id === selected.id) ? (selected as VisualNode) : null;
+  const selectedEdge = selected && diagram.edges.some((item) => item.id === selected.id) ? (selected as VisualEdge) : null;
   const relatedEquations = selectedNode
     ? equations.filter((equation) => selectedNode.related_equation_ids.includes(equation.id) || equation.related_node_ids.includes(selectedNode.id))
     : [];
+  useEffect(() => {
+    if (!archify) return undefined;
+    let active = true;
+    void loadArchifyHtml(paperId, blockId).then((html) => { if (active) setArchifyHtml(html); }).catch(() => { if (active) setArchifyError(true); });
+    return () => { active = false; };
+  }, [archify, blockId, paperId]);
+  useEffect(() => {
+    if (!archify) return undefined;
+    const onMessage = (event: MessageEvent<{ source?: string; nodeId?: string; edgeId?: string; sourceId?: string; targetId?: string }>) => {
+      if (event.data?.source !== "paperlens-archify") return;
+      if (event.data.nodeId) setSelected(diagram.nodes.find((item) => item.id === event.data.nodeId) ?? null);
+      if (event.data.edgeId || (event.data.sourceId && event.data.targetId)) setSelected(diagram.edges.find((item) => item.id === event.data.edgeId || (item.source === event.data.sourceId && item.target === event.data.targetId)) ?? null);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [archify, diagram.edges, diagram.nodes]);
   return (
     <div className="visual-diagram">
       <div className="visual-diagram-label">
-        <span>{diagram.reconstructed ? "PaperLens reconstruction" : "Original structure"}</span>
+        <span>{archify ? "Archify visualization" : diagram.reconstructed ? "PaperLens reconstruction" : "Original structure"}</span>
         <strong>{diagram.title}</strong>
       </div>
-      <div className="visual-diagram-canvas" aria-label={diagram.title}>
+      {archifyHtml && !archifyError ? <iframe className="archify-frame" title={`${diagram.title} · Archify`} srcDoc={archifyHtml} sandbox="allow-scripts" /> : null}
+      {!archifyHtml || archifyError ? <div className="visual-diagram-canvas" style={{ height: Math.max(300, diagram.nodes.length * 118 + 48) }} aria-label={diagram.title}>
         <ReactFlow
           nodes={flow.nodes}
           edges={flow.edges}
@@ -182,7 +205,7 @@ function VisualDiagram({
           <Background color="#d8d8d0" gap={24} />
           <Controls showInteractive={false} />
         </ReactFlow>
-      </div>
+      </div> : null}
       <ol className="visual-outline">
         {diagram.nodes.map((node) => (
           <li key={node.id}>
@@ -192,7 +215,8 @@ function VisualDiagram({
               aria-pressed={selectedNode?.id === node.id}
               onClick={() => setSelected(node)}
             >
-              {node.label}
+              <span>{node.label}</span>
+              {node.description ? <small>{node.description}</small> : null}
               {node.inferred ? " (inferred)" : ""}
             </button>
           </li>
@@ -286,6 +310,54 @@ function EquationCard({
       </button>
     </article>
   );
+}
+
+function EquationTable({
+  equations,
+  onEvidence,
+  onAsk,
+}: {
+  equations: EquationExplanation[];
+  onEvidence: (ids: string[], title: string) => void;
+  onAsk: (focus: ChatFocus) => void;
+}) {
+  return (
+    <div className="equation-table-wrap">
+      <table className="equation-table">
+        <caption>Formulas used in this section</caption>
+        <thead><tr><th scope="col">Formula</th><th scope="col">What it describes</th><th scope="col">Why it is used</th></tr></thead>
+        <tbody>
+          {equations.map((equation) => (
+            <tr key={equation.id}>
+              <td>
+                <EquationFormula equation={equation} />
+                {equation.terms.length ? <details><summary>Symbols</summary><dl className="variable-list">{equation.terms.map((term) => <div key={term.symbol}><dt>{term.symbol}</dt><dd>{term.meaning}</dd></div>)}</dl></details> : null}
+              </td>
+              <td>{equation.explanation || "The paper does not explain this formula in the extracted text."}</td>
+              <td>
+                <p>{equation.purpose || "The paper does not state its purpose in the extracted text."}</p>
+                <EvidenceTrigger evidenceIds={equation.evidence_ids} title={`Formula ${equation.equation_id || equation.id}`} onEvidence={onEvidence} />
+                <button type="button" className="secondary-button" onClick={() => onAsk({ title: equation.equation_id || "this formula", evidenceIds: equation.evidence_ids })}>Ask about this</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function EquationFormula({ equation }: { equation: EquationExplanation }) {
+  const latex = equation.latex || equation.original_expression;
+  const rendered = useMemo(() => {
+    try {
+      return katex.renderToString(latex, { displayMode: false, throwOnError: true, trust: false });
+    } catch {
+      return null;
+    }
+  }, [latex]);
+  return rendered ? <span className="equation-rendered" role="img" aria-label={equation.original_expression} dangerouslySetInnerHTML={{ __html: rendered }} />
+    : <code className="equation-fallback">{equation.original_expression}</code>;
 }
 
 function FigureCard({
@@ -405,6 +477,8 @@ function diagramToFlow(diagram: VisualDiagramIR): { nodes: Node[]; edges: Edge[]
     id: node.id,
     type: "default",
     position: { x: 36, y: index * 118 },
+    sourcePosition: Position.Bottom,
+    targetPosition: Position.Top,
     className: node.inferred ? "visual-node-inferred" : undefined,
     data: { label: node.label },
   }));

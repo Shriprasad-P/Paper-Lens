@@ -1,5 +1,17 @@
 # PaperLens Build Plan
 
+## Local methodology VLM (2026-09-25)
+
+- [x] Use Smart Search VL's Qwen3-VL-4B MLX checkpoint for optional methodology-page analysis.
+- [x] Validate cited steps and relations before passing them to the existing workflow view.
+- [x] Keep text extraction when the local VLM cannot run or returns an invalid graph.
+
+## Reader repair (2026-09-24)
+
+- [x] Show ordered methodology steps as a workflow with a readable fallback for longer flows.
+- [x] Group section formulas with grounded descriptions of what they mean and why they are used.
+- [x] Restore the adjacent original PDF viewer through authenticated blob loading.
+
 ## Current Phase
 
 Phase 12 — Deployment & Public Beta (complete); macOS local validation complete
@@ -259,4 +271,4 @@ The complete evidence is recorded in
 - [x] Continuous reader with inline diagrams, equations, figures, tables.
 - [x] Existing evidence drawer + contextual Ask PaperLens.
 - [x] Backend unit tests and Playwright unified-reader coverage.
-- [ ] Live browser proof against a real unmocked API (env-gated; run with `PAPERLENS_E2E_PASSWORD`).
+- [x] Live browser proof against a real unmocked API (env-gated; run with `PAPERLENS_E2E_PASSWORD`). Phase 17A CLOSED; see `docs/phase17a-closure.md`.

@@ -34,6 +34,24 @@ export type CapabilityFlags = {
   research_agent_enabled: boolean;
   supported_sources: string[];
   beta: boolean;
+  provider_configured: boolean;
+  provider_types: string[];
+};
+
+export type ProviderConfig = {
+  id: string;
+  provider_type: "ollama" | "mlx" | "openai" | "anthropic" | "gemini" | "openai_compatible";
+  display_name: string;
+  base_url: string;
+  generation_model: string;
+  embedding_model: string | null;
+  secret_configured: boolean;
+  masked_secret: string | null;
+  enabled: boolean;
+  last_tested_at: string | null;
+  last_test_status: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type AuthUser = {
@@ -117,6 +135,75 @@ export async function logoutUser(): Promise<void> {
 
 export async function loadCapabilities(): Promise<CapabilityFlags> {
   return requestJson<CapabilityFlags>("/api/capabilities");
+}
+
+export async function listProviderConfigs(): Promise<ProviderConfig[]> {
+  return requestJson<ProviderConfig[]>("/api/provider-configs");
+}
+
+export async function saveProviderConfig(payload: {
+  provider_type: ProviderConfig["provider_type"];
+  display_name: string;
+  base_url: string;
+  generation_model: string;
+  embedding_model?: string | null;
+  api_key?: string | null;
+  enabled?: boolean;
+}): Promise<ProviderConfig> {
+  return requestJson<ProviderConfig>("/api/provider-configs", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function testProviderConfig(id: string): Promise<{ provider_id: string; status: string; message: string; tested_at: string }> {
+  return requestJson(`/api/provider-configs/${encodeURIComponent(id)}/test`, { method: "POST" });
+}
+
+export async function listPapers(): Promise<import("./reader-models").ReaderPaper[]> {
+  return requestJson<import("./reader-models").ReaderPaper[]>("/api/papers");
+}
+
+export async function uploadPaper(file: File): Promise<{ id: string }> {
+  const desktopToken = runtimeValue("desktopToken");
+  const form = new FormData();
+  form.append("file", file);
+  const response = await fetch(apiUrl("/api/papers/upload"), {
+    method: "POST", credentials: "include", body: form,
+    headers: desktopToken ? { "X-PaperLens-Desktop-Token": desktopToken } : undefined,
+  });
+  const raw = await response.text();
+  let payload: unknown = null;
+  try { payload = raw ? JSON.parse(raw) : null; } catch { payload = raw; }
+  if (!response.ok) {
+    const detail = payload && typeof payload === "object" && "detail" in payload ? String((payload as { detail: unknown }).detail) : "The PDF could not be uploaded.";
+    throw new Error(detail);
+  }
+  return payload as { id: string };
+}
+
+export async function resolvePaper(source: string): Promise<import("./reader-models").ResolvedPaper> {
+  return requestJson<import("./reader-models").ResolvedPaper>("/api/papers/resolve", { method: "POST", body: JSON.stringify({ source }) });
+}
+
+export async function loadArchifyHtml(paperId: string, blockId: string): Promise<string> {
+  const desktopToken = runtimeValue("desktopToken");
+  const response = await fetch(apiUrl(`/api/papers/${encodeURIComponent(paperId)}/interactive/${encodeURIComponent(blockId)}/archify`), {
+    credentials: "include",
+    headers: desktopToken ? { "X-PaperLens-Desktop-Token": desktopToken } : undefined,
+  });
+  if (!response.ok) throw new Error("The Archify visualization could not be rendered.");
+  return response.text();
+}
+
+export async function loadSourcePdf(paperId: string, signal?: AbortSignal): Promise<Blob> {
+  const desktopToken = runtimeValue("desktopToken");
+  const response = await fetch(apiUrl(`/api/papers/${encodeURIComponent(paperId)}/source`), {
+    credentials: "include",
+    headers: desktopToken ? { "X-PaperLens-Desktop-Token": desktopToken } : undefined,
+    signal,
+  });
+  if (!response.ok) throw new Error(`The original PDF could not be loaded (HTTP ${response.status}).`);
+  const blob = await response.blob();
+  if (!blob.size || !blob.type.toLowerCase().includes("pdf")) throw new Error("The source did not return a PDF.");
+  return blob;
 }
 
 export function evidencePath(paperId: string, evidenceId: string): string {

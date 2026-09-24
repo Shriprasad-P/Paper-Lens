@@ -20,7 +20,7 @@ PaperLens is a local-first research-paper ingestion and visualization platform i
 python3 -m venv .venv
 .venv/bin/pip install -r backend/requirements.txt
 cp .env.example .env
-.venv/bin/uvicorn app.main:app --app-dir backend --reload
+.venv/bin/uvicorn app.main:app --app-dir backend --env-file .env --reload
 ```
 
 Health endpoints are available at `http://localhost:8000/health/live` and
@@ -54,6 +54,8 @@ GET  /api/papers/{paper_id}/analysis
 ```
 
 Extraction is provider-neutral and evidence-grounded. Configure an OpenAI-compatible provider with the `AI_*` variables in `.env.example`. Without credentials, the API records safe `FAILED`/`NO_EVIDENCE` component states rather than fabricating analysis.
+
+For local methodology-page vision analysis, set `PAPERLENS_VLM_ENABLED=true` in `.env`. Set `PAPERLENS_VLM_PYTHON` to a Python environment with `mlx-vlm` installed (the Smart Search VL virtualenv can be reused). PaperLens uses `lmstudio-community/Qwen3-VL-4B-Instruct-MLX-4bit` by default, validates cited steps and edges, and falls back to text extraction when the VLM cannot run.
 
 Phase 5 reader endpoints are:
 

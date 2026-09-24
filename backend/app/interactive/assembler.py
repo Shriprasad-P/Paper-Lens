@@ -27,6 +27,7 @@ from ..models.interactive_paper import (
     VisualNode,
 )
 from .validator import validate_paper
+from ..visualization.archify import ARCHIFY_COMMIT, ARCHIFY_VERSION, ArchifyAdapterError, paper_visual_graph, to_archify_ir
 
 _IMPORTANT_TABLE = re.compile(
     r"ablat|baseline|dataset|compar|result|accuracy|f1|bleu|auc|performance|benchmark",
@@ -53,6 +54,8 @@ def interactive_cache_key(
     provider: str | None,
     model: str | None,
     generation_mode: GenerationMode,
+    embedding_model: str | None = None,
+    visual_adapter_version: str = f"archify-{ARCHIFY_VERSION}@{ARCHIFY_COMMIT}",
 ) -> str:
     parts = [
         owner_id,
@@ -64,6 +67,8 @@ def interactive_cache_key(
         prompt_version,
         provider or "",
         model or "",
+        embedding_model or "",
+        visual_adapter_version,
         generation_mode.value,
     ]
     return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()
@@ -322,7 +327,7 @@ def _method_block(analysis: PaperIR, document: StructuredDocument) -> Interactiv
                     inferred=True,
                 )
             )
-    visual = VisualDiagram(type=DiagramType.ARCHITECTURE, title="How the proposed method works", nodes=nodes, edges=edges)
+    visual = VisualDiagram(type=DiagramType.PIPELINE, title="How the proposed method works", nodes=nodes, edges=edges)
     equations = [_equation_explanation(item, document, [node.id for node in nodes]) for item in analysis.equations[:4]]
     figures = [
         FigureBinding(figure_id=figure.id, simplified_explanation=figure.caption, evidence_ids=figure.evidence_ids)
@@ -335,6 +340,7 @@ def _method_block(analysis: PaperIR, document: StructuredDocument) -> Interactiv
         title="How it works",
         simplified_explanation=method.summary,
         visual=visual,
+        archify_ir=_archify_payload(visual, document.id),
         equations=equations,
         figures=figures,
         evidence_ids=_unique([*method.evidence_ids, *(eid for node in nodes for eid in node.evidence_ids)]),
@@ -389,6 +395,7 @@ def _experiment_block(analysis: PaperIR, document: StructuredDocument) -> Intera
         title="Experiments",
         simplified_explanation=explanation,
         visual=visual,
+        archify_ir=_archify_payload(visual, document.id) if visual else None,
         tables=tables,
         evidence_ids=experiment.evidence_ids,
         status=BlockStatus.READY,
@@ -446,6 +453,7 @@ def _source_equation_block(document: StructuredDocument) -> InteractivePaperBloc
             original_expression=equation.raw_text,
             latex=equation.raw_text,
             explanation=equation.explanation,
+            purpose=None,
             evidence_ids=equation.evidence_ids,
             page=equation.page,
             origin=ProvenanceKind.ORIGINAL,
@@ -506,6 +514,7 @@ def _equation_explanation(item, document: StructuredDocument, node_ids: list[str
         original_expression=item.expression,
         latex=item.expression,
         explanation=item.explanation or item.interpretation,
+        purpose=item.role,
         terms=terms,
         evidence_ids=item.evidence_ids,
         page=source.page if source else None,
@@ -548,3 +557,15 @@ def _unique(values) -> list[str]:
         if value and value not in seen:
             seen.append(value)
     return seen
+
+
+def _archify_payload(visual: VisualDiagram, document_id: str) -> dict[str, object] | None:
+    # Archify workflow has six columns; additional steps would overlap.
+    if visual.type == DiagramType.PIPELINE and len(visual.nodes) > 6:
+        return None
+    try:
+        return to_archify_ir(paper_visual_graph(visual, document_id=document_id))
+    except ArchifyAdapterError:
+        # The text/evidence block remains useful when an optional diagram is
+        # rejected by the stricter Archify contract.
+        return None

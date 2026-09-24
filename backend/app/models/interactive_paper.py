@@ -8,7 +8,7 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
-INTERACTIVE_SCHEMA_VERSION = "interactive-paper-v1"
+INTERACTIVE_SCHEMA_VERSION = "interactive-paper-v1.1"
 INTERACTIVE_PROMPT_VERSION = "v1"
 
 
@@ -85,8 +85,8 @@ class VisualEdge(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     id: str = Field(min_length=1)
-    source: str = Field(min_length=1, alias="from")
-    target: str = Field(min_length=1, alias="to")
+    source: str = Field(min_length=1)
+    target: str = Field(min_length=1)
     label: str | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     inferred: bool = False
@@ -120,6 +120,7 @@ class EquationExplanation(BaseModel):
     original_expression: str = Field(min_length=1)
     latex: str | None = None
     explanation: str | None = None
+    purpose: str | None = None
     terms: list[EquationTerm] = Field(default_factory=list)
     evidence_ids: list[str] = Field(min_length=1)
     page: int | None = None
@@ -180,6 +181,7 @@ class InteractivePaperBlock(BaseModel):
     title: str = Field(min_length=1)
     simplified_explanation: str | None = None
     visual: VisualDiagram | None = None
+    archify_ir: dict[str, object] | None = None
     equations: list[EquationExplanation] = Field(default_factory=list)
     figures: list[FigureBinding] = Field(default_factory=list)
     tables: list[TableBinding] = Field(default_factory=list)

@@ -1,5 +1,17 @@
 # PaperLens Agent State
 
+## Local methodology VLM (2026-09-25)
+
+- Optional `mlx-vlm` extraction uses the same `lmstudio-community/Qwen3-VL-4B-Instruct-MLX-4bit` checkpoint as Smart Search VL on a rendered method page.
+- Validated, evidence-linked steps and edges feed the existing method workflow renderer; the text extractor remains the fallback.
+- Set `PAPERLENS_VLM_ENABLED=true` and `PAPERLENS_VLM_PYTHON` to a Python environment with `mlx-vlm` to use it. The model process is isolated from the API.
+
+## Reader repair (2026-09-24)
+
+- Methodology steps now use the pinned Archify workflow renderer, with a vertical React Flow fallback when a method exceeds its six-column limit.
+- Section equations display together in a formula/meaning/purpose table; purpose comes from the extracted equation role and remains explicitly unavailable when absent.
+- The original PDF panel loads an authenticated PDF blob before embedding it, so desktop token authentication and the API's frame-deny header no longer prevent display.
+
 ## Architecture
 
 Phase 10 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/EvidenceRegistry, Phase 4 evidence-grounded PaperIR, Phase 5 deterministic visual reader, Phase 6 claim-level faithfulness verification, Phase 7 single-paper evidence-grounded chat, Phase 8 research intelligence, Phase 9 research agent/discovery, and Phase 10 offline evaluation/benchmarking.
@@ -70,14 +82,13 @@ Phase 10 vertical slice: Phase 2 arXiv ingestion, Phase 3 StructuredDocument/Evi
 
 ## Current Phase
 
-Phase 17 — Unified Interactive Paper (V1 implemented; review uncommitted)
+Phase 17 — Unified Interactive Paper (V1 CLOSED after Phase 17A live proof)
 
 ## Current Task
 
-Replaced the fragmented visual-reader destinations with one evidence-grounded
-InteractivePaper: typed mixed-content blocks, visualization IR, inline
-renderer, staged local generation through the existing AIProvider, and the
-existing evidence drawer / Ask PaperLens chat.
+Phase 17A live unmocked staging browser proof for the unified Interactive
+Paper. Phase 17 V1 is closed. Phase 15 remains open (DRAFT annotations,
+zero human reviewers, FINAL not run).
 
 ## Validation
 
@@ -202,6 +213,8 @@ existing evidence drawer / Ask PaperLens chat.
 
 ## Next Recommended Task
 
+The next product phase should not start automatically. Phase 17 V1 is closed.
+
 Phase 15 measurement is not closed yet. Phase 15D now provides explicit
 review/exclusion states, append-only annotation change logging, and a read-only
 25/50/75/100% progress report. The next task is genuine human review of the
@@ -249,3 +262,21 @@ the fixed 180-second per-paper Ollama analysis step timed out. No model,
 prompt, quality, or budget tuning was performed. Phase 16A and Phase 16 remain
 open because a fresh `COMPLETED` happy-path agent run was not proven; Phase 15
 remains `NOT CLOSED` with DRAFT annotations and zero human reviewers.
+
+## Phase 17A — unmocked unified reader closure (CLOSED)
+
+Live Playwright Chromium ran against the real Phase 16 staging topology
+(PostgreSQL 15.17 on `127.0.0.1:55433`, FastAPI `18080`, independent research
+worker, Next.js `13000`, Ollama `qwen3:4b` / `nomic-embed-text`). Paper
+`1406.2661` / `paper_5d57429b9ca8546f` ingested through Phase 14, assembled
+InteractivePaper `interactive-paper-v1` with 8 blocks, inline `pipeline`
+diagram, KaTeX, figures, result block, contextual Ask PaperLens
+(`ANSWERED` via qwen3:4b), citation evidence, reload, mobile smoke, invalid
+ingest failure, logout, and post-logout route rejection. Evidence integrity
+on the persisted payload was 0 missing IDs (337 registry rows). External AI
+provider calls: 0. Table and limitation blocks were `NOT_APPLICABLE` for this
+paper's pipeline output. Two-user InteractivePaper isolation is covered by
+backend IDOR tests, not a second live browser user. Details:
+[docs/phase17a-closure.md](phase17a-closure.md).
+
+Phase 17A: CLOSED. Phase 17 V1: CLOSED. Phase 15 overall: NOT CLOSED.

@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
-import { loadCurrentUser, loginUser, logoutUser, registerUser, type AuthUser } from "./reader-api";
+import { listProviderConfigs, loadCurrentUser, loginUser, logoutUser, registerUser, type AuthUser } from "./reader-api";
 
-const stagingAuthRequired = process.env.NEXT_PUBLIC_AUTH_REQUIRED === "true";
+const stagingAuthRequired = true;
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -15,6 +16,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [providerReady, setProviderReady] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     if (!stagingAuthRequired) return;
@@ -23,6 +27,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       .catch(() => setUser(null))
       .finally(() => setChecking(false));
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    void listProviderConfigs().then((providers) => {
+      const healthy = providers.some((provider) => provider.enabled && provider.last_test_status === "PASSED");
+      setProviderReady(healthy);
+      if (!healthy && pathname !== "/setup/provider") router.replace("/setup/provider");
+    }).catch(() => setProviderReady(false));
+  }, [pathname, router, user]);
 
   if (!stagingAuthRequired) return <>{children}</>;
   if (checking) return <main className="reader-loading"><div className="eyebrow">PAPERLENS / STAGING</div><h1>Checking your session…</h1><p>Reconnecting to the local PaperLens API.</p></main>;
@@ -35,6 +48,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       const nextUser = mode === "register" ? await registerUser(email.trim(), password) : await loginUser(email.trim(), password);
       setUser(nextUser);
       setPassword("");
+      const providers = await listProviderConfigs();
+      const healthy = providers.some((provider) => provider.enabled && provider.last_test_status === "PASSED");
+      setProviderReady(healthy);
+      if (!healthy) router.replace("/setup/provider");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Authentication could not be completed.");
     } finally {
@@ -59,5 +76,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return <main className="page-shell auth-shell"><section className="auth-card" aria-labelledby="auth-title"><div className="eyebrow">PAPERLENS / STAGING</div><h1 id="auth-title">{mode === "register" ? "Create your PaperLens account" : "Sign in to PaperLens"}</h1><p className="hero-copy">Your papers, evidence, and research runs stay private to your account.</p><form onSubmit={submit}><label htmlFor="auth-email">Email<input id="auth-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><label htmlFor="auth-password">Password<input id="auth-password" type="password" autoComplete={mode === "register" ? "new-password" : "current-password"} minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required /></label><button type="submit" disabled={busy}>{busy ? "Working…" : mode === "register" ? "Create account" : "Sign in"}</button></form>{error ? <div className="status-card error-card" role="alert"><p>{error}</p></div> : null}<button className="auth-mode-button" type="button" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(null); }}>{mode === "register" ? "Already have an account? Sign in" : "Need an account? Create one"}</button></section></main>;
   }
 
+  if (!providerReady && pathname !== "/setup/provider") return <main className="reader-loading"><div className="eyebrow">PAPERLENS / SETUP</div><h1>Preparing provider setup…</h1><p>Choose where PaperLens should run its analysis.</p></main>;
   return <><div className="auth-toolbar"><span>Signed in as {user.email}</span><button type="button" className="secondary-button" onClick={() => void signOut()} disabled={busy}>Log out</button></div>{error ? <div className="auth-toolbar-error" role="alert">{error}</div> : null}{children}</>;
 }

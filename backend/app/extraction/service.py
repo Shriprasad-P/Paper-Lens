@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import hashlib
+import logging
+from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel
@@ -51,6 +53,10 @@ from .extractors import (
 )
 from .grounding import EvidenceGroundingError, validate_payload_grounding
 from .selector import EvidenceSelector
+from .vlm import extract_method_from_pdf
+
+
+logger = logging.getLogger(__name__)
 
 
 class ResearchExtractionError(Exception):
@@ -103,6 +109,7 @@ class ResearchExtractionService:
             model_name,
             self.PROMPT_VERSION,
             self.SCHEMA_VERSION,
+            self.settings.vlm_model if self.settings.vlm_enabled else None,
         )
         cached = self.database.get_analysis_record(paper_id, owner_id)
         if cached is not None and cached[1] == cache_key:
@@ -138,6 +145,26 @@ class ResearchExtractionService:
                 continue
             state.status = ExtractionStatus.RUNNING
             try:
+                if stage == "method" and self.settings.vlm_enabled:
+                    source = self.database.get_source_pdf_path(paper_id, owner_id)
+                    root = Path(self.settings.paper_storage_path).expanduser().resolve()
+                    if source is not None:
+                        source = source.expanduser().resolve()
+                        if source.is_file() and source.is_relative_to(root):
+                            try:
+                                visual = await extract_method_from_pdf(
+                                    document, classifications, source,
+                                    model=self.settings.vlm_model,
+                                    python=self.settings.vlm_python,
+                                )
+                                if visual is not None:
+                                    self._apply(stage, paper_ir, visual)
+                                    state.status = ExtractionStatus.COMPLETED
+                                    state.provider = "mlx-vlm"
+                                    state.model = self.settings.vlm_model
+                                    continue
+                            except Exception as exc:
+                                logger.warning("Method VLM unavailable for paper %s: %s", paper_id, _safe_error(exc))
                 payload = await extractor.extract(evidence)
                 validate_payload_grounding(payload, {item.id for item in evidence})
                 if not _has_semantic_content(payload):

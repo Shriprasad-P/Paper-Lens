@@ -211,10 +211,18 @@ def create_ai_provider(settings: Settings) -> AIProvider:
     # loopback sentinel only for the adapter's auth-header contract.
     api_key = settings.ai_api_key
     base_url = settings.ai_base_url
-    if provider in {"ollama", "ollama_local", "local_ollama"}:
+    if provider in {"ollama", "ollama_local", "local_ollama", "mlx", "mlx_lm"}:
         api_key = api_key or "local-paperlens"
         if not base_url or base_url.rstrip("/") == "https://api.openai.com/v1":
-            base_url = "http://127.0.0.1:11434/v1"
+            base_url = "http://127.0.0.1:8080/v1" if provider in {"mlx", "mlx_lm"} else "http://127.0.0.1:11434/v1"
+        if provider in {"mlx", "mlx_lm"}:
+            return OpenAICompatibleProvider(
+                api_key=api_key,
+                model=settings.ai_model,
+                base_url=base_url,
+                timeout=settings.ai_request_timeout,
+                max_retries=settings.ai_max_retries,
+            )
         return OllamaAIProvider(
             api_key=api_key,
             model=settings.ai_model,

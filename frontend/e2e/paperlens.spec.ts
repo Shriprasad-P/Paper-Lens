@@ -52,7 +52,7 @@ const readerFixture = {
   source: { available: true, endpoint: "/api/papers/paper_fixture/source", page_count: 2 },
   verification: null,
   interactive_paper: {
-    schema_version: "interactive-paper-v1",
+    schema_version: "interactive-paper-v1.1",
     paper_id: "paper_fixture",
     document_id: "doc_fixture",
     source_hash: "hash",
@@ -95,7 +95,7 @@ const readerFixture = {
         title: "How it works",
         simplified_explanation: "The system encodes then attends.",
         visual: {
-          type: "architecture",
+          type: "pipeline",
           title: "How the proposed method works",
           reconstructed: true,
           nodes: [
@@ -111,6 +111,7 @@ const readerFixture = {
             original_expression: "L = -\\sum y_i \\log(\\hat{y}_i)",
             latex: "L = -\\sum y_i \\log(\\hat{y}_i)",
             explanation: "Cross-entropy measures how far predicted probabilities are from the labels.",
+            purpose: "Training objective for the model.",
             terms: [
               { symbol: "L", meaning: "total error", evidence_ids: ["ev_fixture"] },
               { symbol: "y_i", meaning: "true target", evidence_ids: ["ev_fixture"] },
@@ -135,6 +136,36 @@ const readerFixture = {
   },
 };
 
+test.beforeEach(async ({ page }) => {
+  // Phase 18 makes authentication and provider readiness part of the normal
+  // entry path. Keep deterministic reader fixtures focused on reader behavior
+  // by supplying that authenticated boundary explicitly.
+  await page.route("**/api/auth/me", async (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ user: { id: "user_fixture", email: "fixture@example.test", created_at: new Date().toISOString() } }),
+  }));
+  await page.route("**/api/provider-configs", async (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([{
+      id: "provider_fixture",
+      provider_type: "ollama",
+      display_name: "Fixture Ollama",
+      base_url: "http://127.0.0.1:11434",
+      generation_model: "qwen3:4b",
+      embedding_model: "nomic-embed-text",
+      secret_configured: false,
+      masked_secret: null,
+      enabled: true,
+      last_tested_at: new Date().toISOString(),
+      last_test_status: "PASSED",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }]),
+  }));
+});
+
 test("reader, evidence drawer, PDF navigation, and grounded chat work with deterministic mocks", async ({ page }) => {
   let chatAnswered = false;
   await page.route("**/api/papers/ingest", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "paper_fixture" }) }));
@@ -148,23 +179,25 @@ test("reader, evidence drawer, PDF navigation, and grounded chat work with deter
     return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ message_id: "message_fixture", answer: "The fixture method is source grounded.", status: "ANSWERED", sufficient_evidence: true, citations: [{ evidence_id: "ev_fixture", page: 1, section_id: "sec_001" }] }) });
   });
   await page.route("**/api/papers/paper_fixture/chat/sessions/session_fixture", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ session: { id: "session_fixture", paper_id: "paper_fixture", document_id: "doc_fixture", document_hash: "hash", created_at: new Date().toISOString(), updated_at: new Date().toISOString() }, messages: chatAnswered ? [{ id: "user_fixture", session_id: "session_fixture", role: "USER", content: "Explain the method.", status: null, citations: [], sufficient_evidence: null, document_id: "doc_fixture", retrieval_query: "explain method", retrieved_evidence_ids: ["ev_fixture"], retrieval_scores: {}, retriever_version: "bm25-v1", provider: "fixture", model: "fixture", created_at: new Date().toISOString() }, { id: "message_fixture", session_id: "session_fixture", role: "ASSISTANT", content: "The fixture method is source grounded.", status: "ANSWERED", citations: [{ evidence_id: "ev_fixture", page: 1, section_id: "sec_001" }], sufficient_evidence: true, document_id: "doc_fixture", retrieval_query: "explain method", retrieved_evidence_ids: ["ev_fixture"], retrieval_scores: {}, retriever_version: "bm25-v1", provider: "fixture", model: "fixture", created_at: new Date().toISOString() }] : [] }) }));
-  await page.goto("/");
-  await page.getByLabel("arXiv URL or identifier").fill("1706.03762");
-  await page.getByRole("button", { name: "Open visual reader" }).click();
+  await page.goto("/library");
+  await page.getByLabel("Paper identifier, citation, or URL").fill("1706.03762");
+  await page.getByRole("button", { name: "Open Interactive Paper" }).click();
   await expect(page).toHaveURL(/papers\/paper_fixture/);
   await expect(page.getByRole("heading", { name: /Attention Is All You Need/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Paper in one minute" })).toBeVisible();
   await page.locator("button.reader-nav-item", { hasText: "How it works" }).click();
   await expect(page.getByRole("heading", { name: "How it works" })).toBeVisible();
   await page.getByRole("button", { name: "Attention" }).click();
-  await expect(page.getByText("Attend over features.")).toBeVisible();
+  await expect(page.locator(".visual-detail").getByText("Attend over features.")).toBeVisible();
   await page.getByRole("button", { name: /View source evidence for Attention/ }).click();
   await expect(page.getByRole("dialog")).toContainText("fixture method");
   await page.getByRole("button", { name: "Close evidence" }).click();
   await expect(page.getByText("Cross-entropy measures").first()).toBeVisible();
+  await expect(page.getByRole("table", { name: "Formulas used in this section" })).toContainText("Training objective for the model.");
   await expect(page.getByText("Architecture diagram from the paper.").first()).toBeVisible();
   await expect(page.getByText("Benchmark comparison.").first()).toBeVisible();
   await expect(page.getByTitle("Original paper PDF")).toBeVisible();
+  await expect(page.getByTitle("Original paper PDF")).toHaveAttribute("src", /^blob:/);
   await page.getByRole("button", { name: "Ask PaperLens" }).first().click();
   await expect(page.getByText("Ask this paper", { exact: true })).toBeVisible();
   await page.getByLabel("Question").fill("Explain the method.");
@@ -182,9 +215,9 @@ test("unified paper outline remains usable at a mobile width", async ({ page }) 
   await page.route("**/api/papers/ingest", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "paper_fixture" }) }));
   await page.route("**/api/papers/paper_fixture/reader", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(readerFixture) }));
   await page.route("**/api/papers/paper_fixture/source", async (route) => route.fulfill({ status: 200, contentType: "application/pdf", body: "%PDF-fixture" }));
-  await page.goto("/");
-  await page.getByLabel("arXiv URL or identifier").fill("1706.03762");
-  await page.getByRole("button", { name: "Open visual reader" }).click();
+  await page.goto("/library");
+  await page.getByLabel("Paper identifier, citation, or URL").fill("1706.03762");
+  await page.getByRole("button", { name: "Open Interactive Paper" }).click();
   await expect(page.getByRole("heading", { name: "Paper in one minute" })).toBeVisible();
   await page.getByRole("button", { name: "Show outline" }).click();
   await page.locator("button.reader-nav-item", { hasText: "How it works" }).click();
@@ -227,18 +260,18 @@ test("workspace and research entry points remain navigable without live provider
 
 test("ingestion failure is visible and does not navigate", async ({ page }) => {
   await page.route("**/api/papers/ingest", async (route) => route.fulfill({ status: 422, contentType: "application/json", body: JSON.stringify({ detail: "Invalid arXiv identifier." }) }));
-  await page.goto("/");
-  await page.getByLabel("arXiv URL or identifier").fill("not-an-arxiv-id");
-  await page.getByRole("button", { name: "Open visual reader" }).click();
-  await expect(page.locator(".error-card")).toContainText("could not prepare");
-  await expect(page).toHaveURL("http://127.0.0.1:3000/");
+  await page.goto("/library");
+  await page.getByLabel("Paper identifier, citation, or URL").fill("not-an-arxiv-id");
+  await page.getByRole("button", { name: "Open Interactive Paper" }).click();
+  await expect(page.locator(".error-card")).toContainText("Invalid arXiv identifier.");
+  await expect(page).toHaveURL("http://127.0.0.1:3000/library");
 });
 
 test("plain-text ingestion failures retain the upstream reason", async ({ page }) => {
   await page.route("**/api/papers/ingest", async (route) => route.fulfill({ status: 502, contentType: "text/plain", body: "arXiv is temporarily unavailable." }));
-  await page.goto("/");
-  await page.getByLabel("arXiv URL or identifier").fill("1706.03762");
-  await page.getByRole("button", { name: "Open visual reader" }).click();
+  await page.goto("/library");
+  await page.getByLabel("Paper identifier, citation, or URL").fill("1706.03762");
+  await page.getByRole("button", { name: "Open Interactive Paper" }).click();
   await expect(page.locator(".error-card")).toContainText("arXiv is temporarily unavailable.");
   await expect(page.locator(".error-card")).not.toContainText("Request failed.");
 });

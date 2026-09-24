@@ -16,6 +16,7 @@ fi
   --add-data "$ROOT_DIR/alembic.ini:." \
   --add-data "$ROOT_DIR/migrations:migrations" \
   --add-data "$ROOT_DIR/backend/app/prompts:backend/app/prompts" \
+  --add-data "$ROOT_DIR/backend/app/extraction/vlm_runner.py:backend/app/extraction" \
   --distpath "$DESKTOP_DIR/src-tauri/resources" \
   --workpath "$DESKTOP_DIR/.build/pyinstaller" \
   --specpath "$DESKTOP_DIR/.build" \

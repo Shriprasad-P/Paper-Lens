@@ -107,6 +107,8 @@ class CapabilityFlags(BaseModel):
     research_agent_enabled: bool
     supported_sources: list[str] = Field(default_factory=lambda: ["arxiv"])
     beta: bool = True
+    provider_configured: bool = False
+    provider_types: list[str] = Field(default_factory=list)
 
 
 class ReaderResponse(BaseModel):

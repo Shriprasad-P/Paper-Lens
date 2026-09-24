@@ -94,6 +94,7 @@ class InteractivePaperService:
             provider=provider_name,
             model=model_name,
             generation_mode=mode,
+            embedding_model=self.settings.embedding_model,
         )
         cached = self.database.get_interactive_paper_record(paper_id, owner_id)
         if cached is not None and cached[1] == cache_key:

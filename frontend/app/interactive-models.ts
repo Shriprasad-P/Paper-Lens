@@ -62,6 +62,7 @@ export type EquationExplanation = {
   original_expression: string;
   latex: string | null;
   explanation: string | null;
+  purpose: string | null;
   terms: EquationTerm[];
   evidence_ids: string[];
   page: number | null;
@@ -90,6 +91,7 @@ export type InteractivePaperBlock = {
   title: string;
   simplified_explanation: string | null;
   visual: VisualDiagramIR | null;
+  archify_ir?: Record<string, unknown> | null;
   equations: EquationExplanation[];
   figures: FigureBinding[];
   tables: TableBinding[];

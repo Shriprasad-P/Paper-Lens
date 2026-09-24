@@ -8,8 +8,9 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Request, Response, status
-from fastapi.responses import FileResponse, PlainTextResponse
+import httpx
+from fastapi import APIRouter, HTTPException, Request, Response, UploadFile, File, status
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 
 from ..ingestion.errors import (
     ArxivMetadataError,
@@ -22,12 +23,18 @@ from ..ingestion.errors import (
     PdfTooLargeError,
     PdfValidationError,
 )
+from ..ingestion.resolver import ResolverError, ResolvedPaper
 from ..auth import audit, clear_session_cookie, get_current_user, issue_session, normalize_email, password_hash, require_current_user, revoke_presented_session, set_session_cookie, verify_password
 from ..models.auth import UserLogin, UserRegistration, UserResponse
-from ..extraction.service import ResearchExtractionError
+from ..models.provider import ProviderConfigCreate, ProviderConfigPublic, ProviderTestResponse
+from ..provider_config import ProviderSecretError, decrypt_secret, encrypt_secret, mask_secret, public_config, runtime_provider, test_provider_connection
+from ..visualization.archify import ArchifyAdapterError, render_archify_ir_async
+from ..extraction.service import ResearchExtractionError, ResearchExtractionService
 from ..models.document import Evidence, PaperIR, StructuredDocument
 from ..models.interactive_paper import InteractivePaper
-from ..interactive.service import InteractivePaperError
+from ..interactive.service import InteractivePaperError, InteractivePaperService
+from ..verification.service import PaperVerificationService
+from ..chat.service import PaperChatService
 from ..models.paper import IngestRequest, IngestedPaper
 from ..models.reader import (
     CapabilityFlags,
@@ -99,15 +106,79 @@ async def current_user(request: Request) -> UserResponse:
     return UserResponse(user=require_current_user(request))
 
 
+@router.get("/api/provider-configs", response_model=list[ProviderConfigPublic])
+async def list_provider_configs(request: Request) -> list[ProviderConfigPublic]:
+    owner_id = require_current_user(request).id
+    return [public_config(record) for record in request.app.state.database.list_provider_configs(owner_id)]
+
+
+@router.post("/api/provider-configs", response_model=ProviderConfigPublic, status_code=status.HTTP_201_CREATED)
+async def save_provider_config(payload: ProviderConfigCreate, request: Request) -> ProviderConfigPublic:
+    owner_id = require_current_user(request).id
+    if payload.provider_type.value in {"ollama", "mlx"} and not payload.base_url.startswith(("http://127.0.0.1", "http://localhost")):
+        raise HTTPException(status_code=422, detail="Local providers must use an explicitly configured loopback endpoint.")
+    existing = next((item for item in request.app.state.database.list_provider_configs(owner_id) if item.display_name == payload.display_name), None)
+    secret = payload.api_key
+    if secret is None and existing is not None:
+        encrypted_secret = existing.encrypted_secret
+        hint = existing.secret_hint
+    else:
+        encrypted_secret = encrypt_secret(request.app.state.settings, secret or "")
+        hint = mask_secret(secret)
+    try:
+        record = request.app.state.database.save_provider_config(
+            config_id=existing.id if existing else f"provider_{uuid4().hex}", owner_id=owner_id,
+            provider_type=payload.provider_type.value, display_name=payload.display_name,
+            base_url=payload.base_url.rstrip("/"), generation_model=payload.generation_model,
+            embedding_model=payload.embedding_model, encrypted_secret=encrypted_secret,
+            secret_version="fernet-v1", secret_hint=hint, enabled=payload.enabled,
+        )
+    except PaperPersistenceError as exc:
+        raise HTTPException(status_code=409, detail="A provider with that name already exists.") from exc
+    audit(request, "provider_config_saved", owner_id, {"provider_type": payload.provider_type.value})
+    return public_config(record)
+
+
+@router.post("/api/provider-configs/{config_id}/test", response_model=ProviderTestResponse)
+async def test_provider_config(config_id: str, request: Request) -> ProviderTestResponse:
+    owner_id = require_current_user(request).id
+    record = request.app.state.database.get_provider_config(config_id, owner_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Provider configuration not found.")
+    config = public_config(record)
+    tested_at = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+    try:
+        message = await test_provider_connection(config, decrypt_secret(request.app.state.settings, record.encrypted_secret))
+    except (ProviderSecretError, httpx.HTTPError, ValueError, TypeError) as exc:
+        request.app.state.database.update_provider_test(config_id, owner_id, status="FAILED", tested_at=tested_at)
+        raise HTTPException(status_code=502, detail="The provider connection test failed.") from exc
+    request.app.state.database.update_provider_test(config_id, owner_id, status="PASSED", tested_at=tested_at)
+    return ProviderTestResponse(provider_id=config_id, status="PASSED", message=message, tested_at=tested_at)
+
+
+@router.delete("/api/provider-configs/{config_id}")
+async def delete_provider_config(config_id: str, request: Request) -> dict[str, bool]:
+    owner_id = require_current_user(request).id
+    if not request.app.state.database.delete_provider_config(config_id, owner_id):
+        raise HTTPException(status_code=404, detail="Provider configuration not found.")
+    audit(request, "provider_config_revoked", owner_id, {"provider_id": config_id})
+    return {"ok": True}
+
+
 @router.get("/api/capabilities", response_model=CapabilityFlags)
 async def capabilities(request: Request) -> CapabilityFlags:
     """Expose beta feature availability without leaking provider configuration."""
 
     settings = request.app.state.settings
+    current = get_current_user(request)
+    provider_configs = request.app.state.database.list_provider_configs(current.id) if current is not None else []
     return CapabilityFlags(
         ai_analysis_enabled=settings.ai_analysis_enabled,
         semantic_retrieval_enabled=settings.semantic_retrieval_enabled,
         research_agent_enabled=settings.research_agent_enabled,
+        provider_configured=bool(provider_configs) or bool(settings.ai_api_key) or settings.ai_provider.lower() in {"ollama", "ollama_local", "local_ollama"},
+        provider_types=sorted({item.provider_type for item in provider_configs}) or ([settings.ai_provider] if settings.ai_provider else []),
+        supported_sources=["arxiv", "doi", "pmid", "pmcid", "scholarly_url", "citation_text", "bibtex", "ris", "pdf_upload"],
     )
 
 
@@ -185,7 +256,7 @@ async def ingest_paper(payload: IngestRequest, request: Request) -> IngestedPape
         if cached is not None:
             return IngestedPaper.model_validate(cached)
     try:
-        result = await request.app.state.ingestion_service.ingest(payload.source, owner_id)
+        result = await request.app.state.ingestion_service.ingest_input(payload.source, owner_id)
         if idempotency_key:
             request.app.state.database.save_idempotent_response(scope, idempotency_key, result.model_dump(mode="json"))
         return result
@@ -207,6 +278,41 @@ async def ingest_paper(payload: IngestRequest, request: Request) -> IngestedPape
         raise HTTPException(status_code=500, detail="The paper could not be saved.") from exc
     except IngestionError as exc:
         raise HTTPException(status_code=500, detail="The paper could not be ingested.") from exc
+    except ResolverError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+
+
+@router.post("/api/papers/resolve", response_model=ResolvedPaper)
+async def resolve_paper(payload: IngestRequest, request: Request) -> ResolvedPaper:
+    require_current_user(request)
+    try:
+        return await request.app.state.ingestion_service.resolve(payload.source)
+    except ResolverError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/api/papers/upload", response_model=IngestedPaper, status_code=status.HTTP_200_OK)
+async def upload_paper(request: Request, file: UploadFile = File(...)) -> IngestedPaper:
+    owner_id = require_current_user(request).id
+    filename = file.filename or "paper.pdf"
+    if not filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=422, detail="Only PDF uploads are supported.")
+    content = await file.read()
+    try:
+        return await request.app.state.ingestion_service.ingest_upload(content, filename, owner_id)
+    except PdfTooLargeError as exc:
+        raise HTTPException(status_code=413, detail={"code": getattr(exc, "code", "PDF_TOO_LARGE"), "message": "The uploaded paper exceeds the configured size limit."}) from exc
+    except PdfValidationError as exc:
+        raise HTTPException(status_code=422, detail={"code": getattr(exc, "code", "PDF_MALFORMED"), "message": "The uploaded file is not a usable PDF."}) from exc
+    except PaperParseError as exc:
+        raise HTTPException(status_code=422, detail={"code": getattr(exc, "code", "PDF_PARSE_FAILED"), "message": str(exc)}) from exc
+    except PdfDownloadError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/api/papers", response_model=list[IngestedPaper])
+async def list_papers(request: Request) -> list[IngestedPaper]:
+    return request.app.state.database.list_papers(require_current_user(request).id)
 
 
 @router.get("/api/papers/{paper_id}", response_model=IngestedPaper)
@@ -247,12 +353,13 @@ async def get_reader(paper_id: str, request: Request) -> ReaderResponse:
     """Return the small reader payload; evidence bodies are loaded on demand."""
 
     owner_id = require_current_user(request).id
+    provider_configs = request.app.state.database.list_provider_configs(owner_id)
     paper = request.app.state.database.get_by_id(paper_id, owner_id)
     document = request.app.state.database.get_document(paper_id, owner_id)
     if paper is None or document is None:
         raise HTTPException(status_code=404, detail="Paper reader data not found.")
     analysis_record = request.app.state.database.get_analysis_record(paper_id, owner_id)
-    verification = request.app.state.verification_service.current(paper_id, owner_id)
+    verification = _verification_service(request, owner_id).current(paper_id, owner_id)
     source_path = request.app.state.database.get_source_pdf_path(paper_id, owner_id)
     source_available = _safe_source_path(request, source_path) is not None
     return ReaderResponse(
@@ -313,6 +420,9 @@ async def get_reader(paper_id: str, request: Request) -> ReaderResponse:
             ai_analysis_enabled=request.app.state.settings.ai_analysis_enabled,
             semantic_retrieval_enabled=request.app.state.settings.semantic_retrieval_enabled,
             research_agent_enabled=request.app.state.settings.research_agent_enabled,
+            provider_configured=bool(provider_configs) or bool(request.app.state.settings.ai_api_key) or request.app.state.settings.ai_provider.lower() in {"ollama", "ollama_local", "local_ollama", "mlx", "mlx_lm"},
+            provider_types=sorted({item.provider_type for item in provider_configs}) or ([request.app.state.settings.ai_provider] if request.app.state.settings.ai_provider else []),
+            supported_sources=["arxiv", "doi", "pmid", "pmcid", "scholarly_url", "citation_text", "bibtex", "ris", "pdf_upload"],
         ),
         interactive_paper=await _interactive_paper(request, paper_id, owner_id),
     )
@@ -363,7 +473,7 @@ async def extract_paper(paper_id: str, request: Request) -> PaperIR:
         raise HTTPException(status_code=503, detail="AI analysis is not enabled for this deployment.")
     owner_id = require_current_user(request).id
     try:
-        return await request.app.state.extraction_service.extract(paper_id, owner_id)
+        return await _extraction_service(request, owner_id).extract(paper_id, owner_id)
     except ResearchExtractionError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -375,7 +485,7 @@ async def generate_interactive_paper(paper_id: str, request: Request) -> Interac
     owner_id = require_current_user(request).id
     simplify = request.app.state.settings.ai_analysis_enabled
     try:
-        return await request.app.state.interactive_paper_service.generate(paper_id, owner_id, simplify=simplify)
+        return await _interactive_service(request, owner_id).generate(paper_id, owner_id, simplify=simplify)
     except InteractivePaperError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -386,9 +496,28 @@ async def get_interactive_paper(paper_id: str, request: Request) -> InteractiveP
 
     owner_id = require_current_user(request).id
     try:
-        return await request.app.state.interactive_paper_service.get_or_assemble(paper_id, owner_id)
+        return await _interactive_service(request, owner_id).get_or_assemble(paper_id, owner_id)
     except InteractivePaperError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/api/papers/{paper_id}/interactive/{block_id}/archify", response_class=HTMLResponse)
+async def render_interactive_archify(paper_id: str, block_id: str, request: Request) -> HTMLResponse:
+    """Render one validated Archify block as a self-contained reader artifact."""
+
+    owner_id = require_current_user(request).id
+    try:
+        paper = await _interactive_service(request, owner_id).get_or_assemble(paper_id, owner_id)
+    except InteractivePaperError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    block = next((item for item in paper.blocks if item.id == block_id), None)
+    if block is None or not block.archify_ir:
+        raise HTTPException(status_code=404, detail="Archify visualization is unavailable.")
+    try:
+        html = await render_archify_ir_async(block.archify_ir)
+    except (ArchifyAdapterError, OSError, TimeoutError) as exc:
+        raise HTTPException(status_code=503, detail="Archify visualization could not be rendered.") from exc
+    return HTMLResponse(content=html, headers={"X-PaperLens-Visualization": "archify-2.16.0", "X-Content-Type-Options": "nosniff"})
 
 
 @router.get("/api/papers/{paper_id}/analysis", response_model=PaperIR)
@@ -410,7 +539,7 @@ async def verify_paper(paper_id: str, request: Request) -> PaperVerificationResp
         raise HTTPException(status_code=503, detail="AI verification is not enabled for this deployment.")
     owner_id = require_current_user(request).id
     try:
-        return await request.app.state.verification_service.verify(paper_id, owner_id)
+        return await _verification_service(request, owner_id).verify(paper_id, owner_id)
     except PaperVerificationError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except PaperPersistenceError as exc:
@@ -425,7 +554,7 @@ async def get_verification(paper_id: str, request: Request) -> PaperVerification
     if request.app.state.database.get_by_id(paper_id, owner_id) is None:
         raise HTTPException(status_code=404, detail="Paper not found.")
     try:
-        return request.app.state.verification_service.current(paper_id, owner_id)
+        return _verification_service(request, owner_id).current(paper_id, owner_id)
     except PaperPersistenceError as exc:
         raise HTTPException(status_code=500, detail="The paper verification could not be loaded.") from exc
 
@@ -438,7 +567,7 @@ async def create_chat_session(paper_id: str, request: Request) -> ChatSessionCre
         raise HTTPException(status_code=503, detail="Paper Chat is not enabled for this deployment.")
     owner_id = require_current_user(request).id
     try:
-        session = request.app.state.chat_service.create_session(paper_id, owner_id)
+        session = _chat_service(request, owner_id).create_session(paper_id, owner_id)
         return ChatSessionCreateResponse(session_id=session.id, **session.model_dump(exclude={"id"}))
     except ChatSessionNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -450,7 +579,7 @@ async def create_chat_session(paper_id: str, request: Request) -> ChatSessionCre
 async def get_chat_session(paper_id: str, session_id: str, request: Request) -> ChatSessionResponse:
     owner_id = require_current_user(request).id
     try:
-        session, messages = request.app.state.chat_service.get_session(paper_id, session_id, owner_id)
+        session, messages = _chat_service(request, owner_id).get_session(paper_id, session_id, owner_id)
         return ChatSessionResponse(session=session, messages=messages)
     except ChatSessionNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -468,7 +597,7 @@ async def send_chat_message(paper_id: str, session_id: str, payload: ChatQuestio
         if cached is not None:
             return ChatAnswerResponse.model_validate(cached)
     try:
-        message = await request.app.state.chat_service.answer(paper_id, session_id, payload.question, owner_id)
+        message = await _chat_service(request, owner_id).answer(paper_id, session_id, payload.question, owner_id)
         assert message.status is not None
         response = ChatAnswerResponse(
             message_id=message.id,
@@ -657,9 +786,62 @@ async def get_research_report(run_id: str, request: Request) -> object:
 
 async def _interactive_paper(request: Request, paper_id: str, owner_id: str) -> InteractivePaper | None:
     try:
-        return await request.app.state.interactive_paper_service.get_or_assemble(paper_id, owner_id)
+        return await _interactive_service(request, owner_id).get_or_assemble(paper_id, owner_id)
     except InteractivePaperError:
         return None
+
+
+def _provider_context(request: Request, owner_id: str):
+    """Return the selected owner's provider runtime, or the legacy local default.
+
+    A saved provider replaces the process-level fallback.  If an owner has
+    provider rows but none has passed its bounded connection test, AI routes
+    fail closed rather than silently calling another user's or deployment's
+    provider.
+    """
+
+    records = request.app.state.database.list_provider_configs(owner_id)
+    if not records:
+        return None
+    record = next((item for item in records if item.enabled and item.last_test_status == "PASSED"), None)
+    if record is None:
+        raise HTTPException(status_code=503, detail="Test an enabled provider before starting AI analysis.")
+    try:
+        return runtime_provider(request.app.state.settings, record)
+    except ProviderSecretError as exc:
+        raise HTTPException(status_code=503, detail="The configured provider secret is unavailable.") from exc
+
+
+def _extraction_service(request: Request, owner_id: str) -> ResearchExtractionService:
+    context = _provider_context(request, owner_id)
+    if context is None:
+        return request.app.state.extraction_service
+    provider, settings = context
+    return ResearchExtractionService(request.app.state.database, provider, settings=settings)
+
+
+def _interactive_service(request: Request, owner_id: str) -> InteractivePaperService:
+    context = _provider_context(request, owner_id)
+    if context is None:
+        return request.app.state.interactive_paper_service
+    provider, settings = context
+    return InteractivePaperService(request.app.state.database, provider, settings=settings)
+
+
+def _verification_service(request: Request, owner_id: str) -> PaperVerificationService:
+    context = _provider_context(request, owner_id)
+    if context is None:
+        return request.app.state.verification_service
+    provider, settings = context
+    return PaperVerificationService(request.app.state.database, provider, settings=settings)
+
+
+def _chat_service(request: Request, owner_id: str) -> PaperChatService:
+    context = _provider_context(request, owner_id)
+    if context is None:
+        return request.app.state.chat_service
+    provider, settings = context
+    return PaperChatService(request.app.state.database, provider, settings=settings)
 
 
 def _safe_source_path(request: Request, source_path: object) -> Path | None:

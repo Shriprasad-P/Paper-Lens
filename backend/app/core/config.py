@@ -46,6 +46,9 @@ class Settings:
     ai_base_url: str = "https://api.openai.com/v1"
     ai_request_timeout: float = 60.0
     ai_max_retries: int = 2
+    vlm_enabled: bool = False
+    vlm_model: str = "lmstudio-community/Qwen3-VL-4B-Instruct-MLX-4bit"
+    vlm_python: str | None = None
     chat_retrieval_top_k: int = 8
     chat_max_context_chars: int = 12_000
     chat_min_relevance: float = 0.1
@@ -99,6 +102,7 @@ class Settings:
     auth_required: bool = False
     auth_cookie_name: str = "paperlens_session"
     auth_session_ttl_seconds: int = 60 * 60 * 24 * 7
+    provider_encryption_key: str | None = None
 
     _allowed_environments: ClassVar[frozenset[str]] = frozenset({"development", "test", "staging", "production"})
 
@@ -149,6 +153,9 @@ class Settings:
             ai_base_url=os.getenv("AI_BASE_URL", "http://127.0.0.1:11434/v1" if local_ai_provider else defaults.ai_base_url),
             ai_request_timeout=float(os.getenv("AI_REQUEST_TIMEOUT", str(defaults.ai_request_timeout))),
             ai_max_retries=int(os.getenv("AI_MAX_RETRIES", str(defaults.ai_max_retries))),
+            vlm_enabled=_as_bool(os.getenv("PAPERLENS_VLM_ENABLED", str(defaults.vlm_enabled))),
+            vlm_model=os.getenv("PAPERLENS_VLM_MODEL", defaults.vlm_model),
+            vlm_python=os.getenv("PAPERLENS_VLM_PYTHON") or None,
             chat_retrieval_top_k=max(1, min(int(os.getenv("CHAT_RETRIEVAL_TOP_K", str(defaults.chat_retrieval_top_k))), 20)),
             chat_max_context_chars=max(1_000, int(os.getenv("CHAT_MAX_CONTEXT_CHARS", str(defaults.chat_max_context_chars)))),
             chat_min_relevance=max(0.0, float(os.getenv("CHAT_MIN_RELEVANCE", str(defaults.chat_min_relevance)))),
@@ -212,6 +219,7 @@ class Settings:
             auth_required=_as_bool(auth_required_raw) if auth_required_raw is not None else environment.strip().lower() in {"staging", "production"},
             auth_cookie_name=os.getenv("PAPERLENS_AUTH_COOKIE_NAME", defaults.auth_cookie_name),
             auth_session_ttl_seconds=max(300, int(os.getenv("PAPERLENS_AUTH_SESSION_TTL_SECONDS", str(defaults.auth_session_ttl_seconds)))),
+            provider_encryption_key=os.getenv("PAPERLENS_PROVIDER_ENCRYPTION_KEY") or None,
         )
         return result
 
@@ -248,6 +256,14 @@ class Settings:
             raise ConfigurationError("PAPERLENS_ENVIRONMENT must be development, test, staging, or production.")
         if not self.database_url.startswith(("sqlite:", "postgresql", "postgres:")):
             raise ConfigurationError("PAPERLENS_DATABASE_URL must use SQLite or PostgreSQL.")
+        if environment in {"staging", "production"} and not self.provider_encryption_key:
+            # An in-memory staging database is used by the isolated regression
+            # suite and never persists provider secrets.  Keep that ephemeral
+            # harness usable while requiring encryption for every real shared
+            # deployment (including file-backed SQLite staging).
+            ephemeral_test_db = environment == "staging" and self.database_url == "sqlite:///:memory:"
+            if not ephemeral_test_db:
+                raise ConfigurationError("PAPERLENS_PROVIDER_ENCRYPTION_KEY is required in shared deployments.")
         parsed_ai_url = urlparse(self.ai_base_url)
         if parsed_ai_url.scheme not in {"http", "https"} or not parsed_ai_url.netloc:
             raise ConfigurationError("AI_BASE_URL must be an absolute HTTP(S) URL.")

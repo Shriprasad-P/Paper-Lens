@@ -77,6 +77,29 @@ class UserRecord(Base):
     disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class AIProviderConfigRecord(Base):
+    """Encrypted, owner-bound provider configuration metadata."""
+
+    __tablename__ = "ai_provider_configs"
+    __table_args__ = (UniqueConstraint("owner_id", "display_name", name="uq_ai_provider_owner_name"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    provider_type: Mapped[str] = mapped_column(String(32))
+    display_name: Mapped[str] = mapped_column(String(120))
+    base_url: Mapped[str] = mapped_column(Text)
+    generation_model: Mapped[str] = mapped_column(String(200))
+    embedding_model: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    encrypted_secret: Mapped[str] = mapped_column(Text, default="")
+    secret_version: Mapped[str] = mapped_column(String(32), default="fernet-v1")
+    secret_hint: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    enabled: Mapped[bool] = mapped_column(default=True)
+    last_tested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_test_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+
 class SessionRecord(Base):
     __tablename__ = "auth_sessions"
 
@@ -115,7 +138,12 @@ class PaperRecord(Base):
     categories: Mapped[list[str]] = mapped_column(JSON, default=list)
     source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     pdf_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Resolver-specific identifiers/provenance are kept together so DOI,
+    # PubMed, citation, and upload ingestion all round-trip through the same
+    # canonical PaperMetadata model without adding source-specific columns.
+    metadata_payload: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
     local_pdf_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="PENDING", index=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -562,6 +590,83 @@ class SQLDatabase:
             if user is None or user.disabled_at is not None:
                 return None
             return _to_user(user)
+
+    def list_provider_configs(self, owner_id: str = LEGACY_OWNER_ID) -> list[AIProviderConfigRecord]:
+        """Return provider metadata only for one authenticated owner."""
+
+        with self.session_factory() as session:
+            return list(session.scalars(select(AIProviderConfigRecord).where(AIProviderConfigRecord.owner_id == owner_id).order_by(AIProviderConfigRecord.created_at)).all())
+
+    def get_provider_config(self, config_id: str, owner_id: str = LEGACY_OWNER_ID) -> AIProviderConfigRecord | None:
+        with self.session_factory() as session:
+            return session.scalar(select(AIProviderConfigRecord).where(AIProviderConfigRecord.id == config_id, AIProviderConfigRecord.owner_id == owner_id))
+
+    def save_provider_config(
+        self,
+        *,
+        config_id: str,
+        owner_id: str,
+        provider_type: str,
+        display_name: str,
+        base_url: str,
+        generation_model: str,
+        embedding_model: str | None,
+        encrypted_secret: str,
+        secret_hint: str | None,
+        enabled: bool,
+        secret_version: str = "fernet-v1",
+    ) -> AIProviderConfigRecord:
+        try:
+            with self.session_factory.begin() as session:
+                record = session.scalar(select(AIProviderConfigRecord).where(AIProviderConfigRecord.id == config_id, AIProviderConfigRecord.owner_id == owner_id))
+                now = datetime.now(timezone.utc)
+                values = {
+                    "owner_id": owner_id,
+                    "provider_type": provider_type,
+                    "display_name": display_name,
+                    "base_url": base_url,
+                    "generation_model": generation_model,
+                    "embedding_model": embedding_model,
+                    "encrypted_secret": encrypted_secret,
+                    "secret_version": secret_version,
+                    "secret_hint": secret_hint,
+                    "enabled": enabled,
+                    "updated_at": now,
+                }
+                if record is None:
+                    record = AIProviderConfigRecord(id=config_id, created_at=now, **values)
+                    session.add(record)
+                else:
+                    for key, value in values.items():
+                        setattr(record, key, value)
+                session.flush()
+                return record
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The provider configuration could not be saved.") from exc
+
+    def update_provider_test(self, config_id: str, owner_id: str, *, status: str, tested_at: datetime) -> bool:
+        try:
+            with self.session_factory.begin() as session:
+                record = session.scalar(select(AIProviderConfigRecord).where(AIProviderConfigRecord.id == config_id, AIProviderConfigRecord.owner_id == owner_id))
+                if record is None:
+                    return False
+                record.last_test_status = status
+                record.last_tested_at = tested_at
+                record.updated_at = tested_at
+                return True
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The provider test result could not be saved.") from exc
+
+    def delete_provider_config(self, config_id: str, owner_id: str) -> bool:
+        try:
+            with self.session_factory.begin() as session:
+                record = session.scalar(select(AIProviderConfigRecord).where(AIProviderConfigRecord.id == config_id, AIProviderConfigRecord.owner_id == owner_id))
+                if record is None:
+                    return False
+                session.delete(record)
+                return True
+        except SQLAlchemyError as exc:
+            raise PaperPersistenceError("The provider configuration could not be revoked.") from exc
 
     def create_session(
         self,
@@ -1073,8 +1178,10 @@ class SQLDatabase:
             return _to_model(record) if record and record.status == "COMPLETED" else None
 
     def get_by_id(self, paper_id: str, owner_id: str = LEGACY_OWNER_ID) -> IngestedPaper | None:
-        with self.session_factory() as session:
+        with self.session_factory.begin() as session:
             record = session.scalar(select(PaperRecord).where(PaperRecord.id == paper_id, PaperRecord.owner_id == owner_id))
+            if record is not None and record.status == "COMPLETED":
+                record.last_opened_at = datetime.now(timezone.utc)
             return _to_model(record) if record and record.status == "COMPLETED" else None
 
     def list_papers(self, owner_id: str = LEGACY_OWNER_ID) -> list[IngestedPaper]:
@@ -1087,7 +1194,7 @@ class SQLDatabase:
             return [_to_model(record) for record in records]
 
     def create_placeholder(
-        self, *, paper_id: str, source_identity: str, arxiv_id: str, owner_id: str = LEGACY_OWNER_ID
+        self, *, paper_id: str, source_identity: str, arxiv_id: str, owner_id: str = LEGACY_OWNER_ID, source_type: str = "arxiv"
     ) -> None:
         try:
             with self.session_factory.begin() as session:
@@ -1100,6 +1207,7 @@ class SQLDatabase:
                             id=paper_id,
                             source_identity=_scoped_source_identity(source_identity, owner_id),
                             owner_id=owner_id,
+                            source_type=source_type,
                             arxiv_id=arxiv_id,
                             status="PENDING",
                         )
@@ -1116,6 +1224,7 @@ class SQLDatabase:
                 if record is None:
                     raise PaperPersistenceError("The paper could not be saved.")
                 record.arxiv_id = metadata.arxiv_id
+                record.source_type = metadata.source_type
                 record.title = metadata.title
                 record.authors = metadata.authors
                 record.abstract = metadata.abstract
@@ -1124,6 +1233,7 @@ class SQLDatabase:
                 record.categories = metadata.categories
                 record.source_url = metadata.source_url
                 record.pdf_url = metadata.pdf_url
+                record.metadata_payload = metadata.model_dump(mode="json")
                 record.status = status
                 record.error_message = None
         except PaperPersistenceError:
@@ -2084,17 +2194,8 @@ def _to_model(record: PaperRecord) -> IngestedPaper:
     return IngestedPaper(
         id=record.id,
         status=record.status,
-        metadata=PaperMetadata(
-            arxiv_id=record.arxiv_id,
-            title=record.title,
-            authors=list(record.authors or []),
-            abstract=record.abstract,
-            published_at=record.published_at,
-            updated_at=record.arxiv_updated_at,
-            categories=list(record.categories or []),
-            source_url=record.source_url,
-            pdf_url=record.pdf_url,
-        ),
+        last_opened_at=record.last_opened_at,
+        metadata=_metadata_from_record(record),
         sections=[
             ParsedSection(title=section.title, order=section.order, text=section.text)
             for section in record.sections
@@ -2123,17 +2224,7 @@ def _source_region(record: object) -> SourceRegion | None:
 def _to_document(record: DocumentRecord, paper: PaperRecord) -> StructuredDocument:
     if paper.title is None or paper.source_url is None or paper.pdf_url is None:
         raise PaperPersistenceError("The paper is not complete.")
-    metadata = PaperMetadata(
-        arxiv_id=paper.arxiv_id,
-        title=paper.title,
-        authors=list(paper.authors or []),
-        abstract=paper.abstract,
-        published_at=paper.published_at,
-        updated_at=paper.arxiv_updated_at,
-        categories=list(paper.categories or []),
-        source_url=paper.source_url,
-        pdf_url=paper.pdf_url,
-    )
+    metadata = _metadata_from_record(paper)
     sections = [
         PaperSection(
             id=section.id,
@@ -2178,6 +2269,27 @@ def _to_document(record: DocumentRecord, paper: PaperRecord) -> StructuredDocume
         equations=[PaperEquation.model_validate(item) for item in artifacts.get("equation", [])],
         references=[PaperReference.model_validate(item) for item in artifacts.get("reference", [])],
     )
+
+
+def _metadata_from_record(record: PaperRecord) -> PaperMetadata:
+    """Rehydrate canonical metadata, with a safe fallback for legacy rows."""
+
+    payload = dict(record.metadata_payload or {})
+    payload.update(
+        {
+            "source_type": record.source_type,
+            "arxiv_id": record.arxiv_id,
+            "title": record.title,
+            "authors": list(record.authors or []),
+            "abstract": record.abstract,
+            "published_at": record.published_at,
+            "updated_at": record.arxiv_updated_at,
+            "categories": list(record.categories or []),
+            "source_url": record.source_url,
+            "pdf_url": record.pdf_url,
+        }
+    )
+    return PaperMetadata.model_validate(payload)
 
 
 def _to_evidence(record: EvidenceRecord) -> Evidence:

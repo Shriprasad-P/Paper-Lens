@@ -30,9 +30,9 @@ test.describe("Phase 16A real staging", () => {
     await page.getByRole("button", { name: "Create workspace", exact: true }).click();
     await expect(page).toHaveURL(/\/workspaces\/workspace_/);
 
-    await page.goto("/");
-    await page.getByLabel("arXiv URL or identifier").fill("1406.2661");
-    await page.getByRole("button", { name: "Open visual reader" }).click();
+    await page.goto("/library");
+    await page.getByLabel("Paper identifier, citation, or URL").fill("1406.2661");
+    await page.getByRole("button", { name: "Open Interactive Paper" }).click();
     await page.waitForURL(paperIdPattern, { timeout: 180_000 });
     const paperMatch = page.url().match(paperIdPattern);
     const paperId = paperMatch?.[1];
@@ -58,9 +58,9 @@ test.describe("Phase 16A real staging", () => {
     await expect(page.getByRole("dialog")).toContainText("Evidence /");
     await page.getByRole("button", { name: "Close evidence" }).click();
 
-    await page.goto("/");
-    await page.getByLabel("arXiv URL or identifier").fill("not-an-arxiv-id");
-    await page.getByRole("button", { name: "Open visual reader" }).click();
+    await page.goto("/library");
+    await page.getByLabel("Paper identifier, citation, or URL").fill("not-an-arxiv-id");
+    await page.getByRole("button", { name: "Open Interactive Paper" }).click();
     await expect(page.locator(".error-card")).toContainText("could not prepare");
     await expect(page.locator(".error-card")).not.toContainText("Traceback");
 
