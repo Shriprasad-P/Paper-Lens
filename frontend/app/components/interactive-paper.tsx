@@ -10,6 +10,7 @@ import type { ReaderFigure, ReaderResponse, ReaderTable } from "../reader-models
 import type {
   ChatFocus,
   EquationExplanation,
+  FigureVisualAnalysis,
   InteractivePaper,
   InteractivePaperBlock,
   VisualDiagramIR,
@@ -100,9 +101,11 @@ function InteractivePaperBlockView({
             documentId={documentId}
             figure={figure}
             explanation={binding.simplified_explanation}
+            visualAnalysis={binding.visual_analysis}
             reconstructed={binding.reconstructed}
             onEvidence={onEvidence}
             onPage={onPage}
+            onAsk={onAsk}
           />
         ) : null;
       })}
@@ -365,22 +368,26 @@ function FigureCard({
   documentId,
   figure,
   explanation,
+  visualAnalysis,
   reconstructed,
   onEvidence,
   onPage,
+  onAsk,
 }: {
   paperId: string;
   documentId: string;
   figure: ReaderFigure;
   explanation: string | null;
+  visualAnalysis: FigureVisualAnalysis | null;
   reconstructed: boolean;
   onEvidence: (ids: string[], title: string) => void;
   onPage: (page: number | null) => void;
+  onAsk: (focus: ChatFocus) => void;
 }) {
   return (
     <article className="reader-card artifact-card">
       <div className="card-label">{reconstructed ? "PaperLens reconstruction" : "Original figure"}</div>
-      {figure.image_reference ? (
+      {figure.image_reference || figure.page !== null ? (
         <img
           className="artifact-image"
           src={apiUrl(`/api/papers/${encodeURIComponent(paperId)}/documents/${encodeURIComponent(documentId)}/figures/${encodeURIComponent(figure.id)}`)}
@@ -389,6 +396,29 @@ function FigureCard({
       ) : null}
       {figure.caption ? <p>{figure.caption}</p> : null}
       {explanation && explanation !== figure.caption ? <p className="claim-context">{explanation}</p> : null}
+      {visualAnalysis ? (
+        <div className="figure-vlm-analysis">
+          <div className="card-label">Qwen3-VL interpretation · {visualAnalysis.kind}</div>
+          <p>{visualAnalysis.summary}</p>
+          {visualAnalysis.findings.length ? (
+            <ul className="interactive-points">
+              {visualAnalysis.findings.map((finding) => <li key={finding}>{finding}</li>)}
+            </ul>
+          ) : null}
+          {visualAnalysis.diagram ? (
+            <VisualDiagram
+              diagram={visualAnalysis.diagram}
+              equations={[]}
+              figures={[]}
+              paperId={paperId}
+              blockId={`figure-${figure.id}`}
+              archify={false}
+              onEvidence={onEvidence}
+              onAsk={onAsk}
+            />
+          ) : null}
+        </div>
+      ) : null}
       <div className="artifact-meta">
         {figure.page !== null ? (
           <button type="button" onClick={() => onPage(figure.page)}>

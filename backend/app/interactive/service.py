@@ -22,6 +22,7 @@ from ..models.interactive_paper import (
 )
 from .assembler import analysis_fingerprint, assemble_interactive_paper, interactive_cache_key
 from .validator import validate_paper
+from ..extraction.vlm import analyze_figures_from_pdf
 
 
 class InteractivePaperError(Exception):
@@ -95,10 +96,28 @@ class InteractivePaperService:
             model=model_name,
             generation_mode=mode,
             embedding_model=self.settings.embedding_model,
+            vlm_model=self.settings.vlm_model if self.settings.vlm_enabled else None,
         )
         cached = self.database.get_interactive_paper_record(paper_id, owner_id)
         if cached is not None and cached[1] == cache_key:
             return cached[0]
+        visual_analyses = {}
+        if self.settings.vlm_enabled:
+            source = self.database.get_source_pdf_path(paper_id, owner_id)
+            root = Path(self.settings.paper_storage_path).expanduser().resolve()
+            if source is not None:
+                source = source.expanduser().resolve()
+                if source.is_file() and source.is_relative_to(root):
+                    try:
+                        visual_analyses = await analyze_figures_from_pdf(
+                            document,
+                            source,
+                            model=self.settings.vlm_model,
+                            python=self.settings.vlm_python,
+                            max_figures=self.settings.vlm_max_visuals,
+                        )
+                    except Exception:
+                        visual_analyses = {}
         paper = assemble_interactive_paper(
             document,
             analysis,
@@ -107,6 +126,7 @@ class InteractivePaperService:
             provider=provider_name,
             model=model_name,
             generation_mode=mode,
+            visual_analyses=visual_analyses,
         )
         self.database.save_interactive_paper(paper, owner_id=owner_id)
         if not simplify:

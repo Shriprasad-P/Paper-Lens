@@ -11,6 +11,9 @@ from backend.app.extraction.classifier import SectionClassification, SectionType
 from backend.app.extraction.extractors import MethodPayload
 from backend.app.extraction.service import ResearchExtractionService
 from backend.app.extraction.vlm import extract_method_from_pdf
+from backend.app.extraction.vlm import analyze_figures_from_pdf
+from backend.app.interactive.assembler import assemble_interactive_paper
+from backend.app.models.document import PaperFigure
 from backend.tests.test_extraction import FakeProvider, _document_fixture
 
 
@@ -62,6 +65,51 @@ class MethodVLMTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(visual.await_count, 1)
             self.assertEqual([step.label for step in analysis.method.steps], ["Encode", "Decode"])
             self.assertEqual(analysis.extraction["method"].model, settings.vlm_model)
+
+    async def test_figure_visual_is_grounded_and_rendered_as_workflow(self) -> None:
+        database, paper_id = _document_fixture()
+        document = database.get_document(paper_id)
+        assert document is not None
+        document.figures.append(
+            PaperFigure(
+                id="figure_001",
+                label="Figure 1",
+                caption="Overview of the proposed workflow.",
+                page=2,
+            )
+        )
+        response = {
+            "kind": "workflow",
+            "summary": "The figure passes encoded features to the decoder.",
+            "findings": ["The decoder produces the output mask."],
+            "evidence_ids": ["ev_0008"],
+            "nodes": [
+                {"label": "Encoder", "description": "Extracts features.", "evidence_ids": ["ev_0008"]},
+                {"label": "Decoder", "description": "Produces the output.", "evidence_ids": ["ev_0008"]},
+            ],
+            "relations": [{"source_node_index": 0, "target_node_index": 1, "relationship": "feeds", "evidence_ids": ["ev_0008"]}],
+        }
+        with patch("backend.app.extraction.vlm._infer", return_value=json.dumps(response)):
+            analyses = await analyze_figures_from_pdf(
+                document,
+                Path("unused.pdf"),
+                model="qwen",
+                python=None,
+            )
+        self.assertEqual(analyses["figure_001"].kind, "workflow")
+        self.assertEqual(analyses["figure_001"].relations[0].relationship, "feeds")
+        paper = assemble_interactive_paper(
+            document,
+            None,
+            available_ids={"ev_0008"},
+            cache_key="fixture",
+            provider="mock",
+            model="fixture",
+            visual_analyses=analyses,
+        )
+        figure_block = next(block for block in paper.blocks if block.type.value == "figure_explanation")
+        self.assertIsNotNone(figure_block.figures[0].visual_analysis)
+        self.assertEqual(figure_block.figures[0].visual_analysis.diagram.type.value, "pipeline")
 
 
 if __name__ == "__main__":

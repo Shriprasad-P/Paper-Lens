@@ -9,6 +9,7 @@ from typing import Any
 from uuid import uuid4
 
 import httpx
+import fitz
 from fastapi import APIRouter, HTTPException, Request, Response, UploadFile, File, status
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 
@@ -448,21 +449,45 @@ async def get_source(paper_id: str, request: Request) -> FileResponse:
 
 
 @router.get("/api/papers/{paper_id}/documents/{document_id}/figures/{figure_id}")
-async def get_figure_image(paper_id: str, document_id: str, figure_id: str, request: Request) -> FileResponse:
-    """Serve only a parser-recorded figure image below the configured paper root."""
+async def get_figure_image(paper_id: str, document_id: str, figure_id: str, request: Request) -> Response:
+    """Serve an extracted figure or a bounded render from its original PDF page."""
 
     owner_id = require_current_user(request).id
     document = request.app.state.database.get_document(paper_id, owner_id)
     if document is None or document.id != document_id:
         raise HTTPException(status_code=404, detail="Structured document not found.")
     figure = next((item for item in document.figures if item.id == figure_id), None)
-    if figure is None or not figure.image_reference:
+    if figure is None:
         raise HTTPException(status_code=404, detail="Figure image is unavailable.")
-    image_path = _safe_source_path(request, Path(figure.image_reference))
-    if image_path is None:
+    if figure.image_reference:
+        image_path = _safe_source_path(request, Path(figure.image_reference))
+        if image_path is None:
+            raise HTTPException(status_code=404, detail="Figure image is unavailable.")
+        media_type = mimetypes.guess_type(image_path.name)[0] or "application/octet-stream"
+        return FileResponse(image_path, media_type=media_type, filename=image_path.name, content_disposition_type="inline")
+    source_path = _safe_source_path(request, request.app.state.database.get_source_pdf_path(paper_id, owner_id))
+    if source_path is None or figure.page is None:
         raise HTTPException(status_code=404, detail="Figure image is unavailable.")
-    media_type = mimetypes.guess_type(image_path.name)[0] or "application/octet-stream"
-    return FileResponse(image_path, media_type=media_type, filename=image_path.name, content_disposition_type="inline")
+    try:
+        with fitz.open(source_path) as pdf:
+            if figure.page < 1 or figure.page > len(pdf):
+                raise HTTPException(status_code=404, detail="Figure image is unavailable.")
+            page = pdf[figure.page - 1]
+            clip = None
+            region = figure.source_region
+            if region is not None and region.x0 is not None and region.x1 is not None and region.y0 is not None and region.y1 is not None:
+                clip = fitz.Rect(
+                    max(0, region.x0 - 16),
+                    max(0, region.y0 - 16),
+                    min(page.rect.width, region.x1 + 16),
+                    min(page.rect.height, region.y1 + 16),
+                )
+            pixmap = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5), clip=clip, alpha=False)
+            return Response(content=pixmap.tobytes("png"), media_type="image/png", headers={"Cache-Control": "private, max-age=3600"})
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail="Figure image is unavailable.") from exc
 
 
 @router.post("/api/papers/{paper_id}/extract", response_model=PaperIR)

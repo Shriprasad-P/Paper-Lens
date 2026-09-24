@@ -55,7 +55,7 @@ GET  /api/papers/{paper_id}/analysis
 
 Extraction is provider-neutral and evidence-grounded. Configure an OpenAI-compatible provider with the `AI_*` variables in `.env.example`. Without credentials, the API records safe `FAILED`/`NO_EVIDENCE` component states rather than fabricating analysis.
 
-For local methodology-page vision analysis, set `PAPERLENS_VLM_ENABLED=true` in `.env`. Set `PAPERLENS_VLM_PYTHON` to a Python environment with `mlx-vlm` installed (the Smart Search VL virtualenv can be reused). PaperLens uses `lmstudio-community/Qwen3-VL-4B-Instruct-MLX-4bit` by default, validates cited steps and edges, and falls back to text extraction when the VLM cannot run.
+For local methodology and figure vision analysis, set `PAPERLENS_VLM_ENABLED=true` in `.env`. Set `PAPERLENS_VLM_PYTHON` to a Python environment with `mlx-vlm` installed (the Smart Search VL virtualenv can be reused). PaperLens uses `lmstudio-community/Qwen3-VL-4B-Instruct-MLX-4bit` by default, validates cited steps and visual findings, reconstructs workflow figures, keeps the original PDF page beside the interpretation, and falls back to text extraction when the VLM cannot run. `PAPERLENS_VLM_MAX_VISUALS` bounds the number of detected figures analyzed per paper.
 
 Phase 5 reader endpoints are:
 

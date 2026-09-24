@@ -3,6 +3,7 @@
 ## Local methodology VLM (2026-09-25)
 
 - [x] Use Smart Search VL's Qwen3-VL-4B MLX checkpoint for optional methodology-page analysis.
+- [x] Analyze detected chart, workflow, and diagram pages with grounded visual findings and reconstructed flow nodes beside the original PDF.
 - [x] Validate cited steps and relations before passing them to the existing workflow view.
 - [x] Keep text extraction when the local VLM cannot run or returns an invalid graph.
 

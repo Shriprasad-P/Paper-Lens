@@ -3,6 +3,7 @@
 ## Local methodology VLM (2026-09-25)
 
 - Optional `mlx-vlm` extraction uses the same `lmstudio-community/Qwen3-VL-4B-Instruct-MLX-4bit` checkpoint as Smart Search VL on a rendered method page.
+- The same pass analyzes up to the configured figure pages as charts, workflows, or diagrams, while the original PDF page remains available beside each result.
 - Validated, evidence-linked steps and edges feed the existing method workflow renderer; the text extractor remains the fallback.
 - Set `PAPERLENS_VLM_ENABLED=true` and `PAPERLENS_VLM_PYTHON` to a Python environment with `mlx-vlm` to use it. The model process is isolated from the API.
 

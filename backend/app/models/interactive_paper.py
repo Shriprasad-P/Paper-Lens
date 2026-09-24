@@ -104,6 +104,17 @@ class VisualDiagram(BaseModel):
     reconstructed: bool = True
 
 
+class FigureVisualAnalysis(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: str = Field(min_length=1)
+    summary: str = Field(min_length=1)
+    findings: list[str] = Field(default_factory=list)
+    diagram: VisualDiagram | None = None
+    evidence_ids: list[str] = Field(min_length=1)
+    origin: ProvenanceKind = ProvenanceKind.INFERRED
+
+
 class EquationTerm(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -136,6 +147,7 @@ class FigureBinding(BaseModel):
     simplified_explanation: str | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     reconstructed: bool = False
+    visual_analysis: FigureVisualAnalysis | None = None
 
 
 class TableHighlight(BaseModel):

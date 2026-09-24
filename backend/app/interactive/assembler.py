@@ -13,6 +13,7 @@ from ..models.interactive_paper import (
     EquationExplanation,
     EquationTerm,
     FigureBinding,
+    FigureVisualAnalysis,
     GenerationMode,
     InteractivePaper,
     InteractivePaperBlock,
@@ -28,6 +29,7 @@ from ..models.interactive_paper import (
 )
 from .validator import validate_paper
 from ..visualization.archify import ARCHIFY_COMMIT, ARCHIFY_VERSION, ArchifyAdapterError, paper_visual_graph, to_archify_ir
+from ..extraction.vlm import FigureVisualPayload
 
 _IMPORTANT_TABLE = re.compile(
     r"ablat|baseline|dataset|compar|result|accuracy|f1|bleu|auc|performance|benchmark",
@@ -55,6 +57,7 @@ def interactive_cache_key(
     model: str | None,
     generation_mode: GenerationMode,
     embedding_model: str | None = None,
+    vlm_model: str | None = None,
     visual_adapter_version: str = f"archify-{ARCHIFY_VERSION}@{ARCHIFY_COMMIT}",
 ) -> str:
     parts = [
@@ -68,6 +71,7 @@ def interactive_cache_key(
         provider or "",
         model or "",
         embedding_model or "",
+        vlm_model or "",
         visual_adapter_version,
         generation_mode.value,
     ]
@@ -83,6 +87,7 @@ def assemble_interactive_paper(
     provider: str | None,
     model: str | None,
     generation_mode: GenerationMode = GenerationMode.ASSEMBLER,
+    visual_analyses: dict[str, FigureVisualPayload] | None = None,
 ) -> InteractivePaper:
     blocks: list[InteractivePaperBlock] = []
     blocks.extend(_overview_blocks(document, analysis))
@@ -158,6 +163,7 @@ def assemble_interactive_paper(
                         figure_id=figure.id,
                         simplified_explanation=figure.caption,
                         evidence_ids=figure.evidence_ids,
+                        visual_analysis=_figure_visual_analysis(figure, (visual_analyses or {}).get(figure.id)),
                     )
                     for figure in leftover_figures
                 ],
@@ -330,7 +336,7 @@ def _method_block(analysis: PaperIR, document: StructuredDocument) -> Interactiv
     visual = VisualDiagram(type=DiagramType.PIPELINE, title="How the proposed method works", nodes=nodes, edges=edges)
     equations = [_equation_explanation(item, document, [node.id for node in nodes]) for item in analysis.equations[:4]]
     figures = [
-        FigureBinding(figure_id=figure.id, simplified_explanation=figure.caption, evidence_ids=figure.evidence_ids)
+        _figure_binding(figure, (visual_analyses or {}).get(figure.id))
         for figure in document.figures[:2]
         if figure.caption or figure.image_reference
     ]
@@ -387,6 +393,7 @@ def _experiment_block(analysis: PaperIR, document: StructuredDocument) -> Intera
         f"{experiment.name or 'The experiment'} measures {metrics} on {datasets}. "
         f"Baselines: {baselines}."
     )
+
     if experiment.setup:
         explanation = f"{explanation} {experiment.setup}"
     return InteractivePaperBlock(
@@ -401,6 +408,61 @@ def _experiment_block(analysis: PaperIR, document: StructuredDocument) -> Intera
         status=BlockStatus.READY,
         inferred=experiment.origin == StatementOrigin.MODEL_INFERRED,
         validator_status=ValidatorStatus.PASSED,
+    )
+
+
+def _figure_binding(figure: object, visual: FigureVisualPayload | None) -> FigureBinding:
+    return FigureBinding(
+        figure_id=figure.id,
+        simplified_explanation=figure.caption,
+        evidence_ids=figure.evidence_ids,
+        visual_analysis=_figure_visual_analysis(figure, visual),
+    )
+
+
+def _figure_visual_analysis(figure: object, visual: FigureVisualPayload | None) -> FigureVisualAnalysis | None:
+    if visual is None:
+        return None
+    diagram = None
+    if len(visual.nodes) >= 2 and visual.relations:
+        type_by_kind = {
+            "workflow": DiagramType.PIPELINE,
+            "architecture": DiagramType.ARCHITECTURE,
+            "diagram": DiagramType.FLOW,
+        }
+        diagram = VisualDiagram(
+            type=type_by_kind.get(visual.kind.lower(), DiagramType.FLOW),
+            title=f"Reconstructed {visual.kind}",
+            nodes=[
+                VisualNode(
+                    id=f"{figure.id}_node_{index:03d}",
+                    label=node.label,
+                    description=node.description,
+                    role=visual.kind,
+                    evidence_ids=node.evidence_ids or visual.evidence_ids,
+                    inferred=True,
+                    related_figure_ids=[figure.id],
+                )
+                for index, node in enumerate(visual.nodes)
+            ],
+            edges=[
+                VisualEdge(
+                    id=f"{figure.id}_edge_{index:03d}",
+                    source=f"{figure.id}_node_{relation.source_node_index:03d}",
+                    target=f"{figure.id}_node_{relation.target_node_index:03d}",
+                    label=relation.relationship,
+                    evidence_ids=relation.evidence_ids or visual.evidence_ids,
+                    inferred=True,
+                )
+                for index, relation in enumerate(visual.relations)
+            ],
+        )
+    return FigureVisualAnalysis(
+        kind=visual.kind,
+        summary=visual.summary,
+        findings=visual.findings,
+        diagram=diagram,
+        evidence_ids=visual.evidence_ids,
     )
 
 

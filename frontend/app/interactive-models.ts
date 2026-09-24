@@ -50,6 +50,15 @@ export type VisualDiagramIR = {
   reconstructed: boolean;
 };
 
+export type FigureVisualAnalysis = {
+  kind: string;
+  summary: string;
+  findings: string[];
+  diagram: VisualDiagramIR | null;
+  evidence_ids: string[];
+  origin: ProvenanceKind;
+};
+
 export type EquationTerm = {
   symbol: string;
   meaning: string;
@@ -76,6 +85,7 @@ export type FigureBinding = {
   simplified_explanation: string | null;
   evidence_ids: string[];
   reconstructed: boolean;
+  visual_analysis: FigureVisualAnalysis | null;
 };
 
 export type TableBinding = {

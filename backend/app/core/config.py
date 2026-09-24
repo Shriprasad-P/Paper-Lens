@@ -49,6 +49,7 @@ class Settings:
     vlm_enabled: bool = False
     vlm_model: str = "lmstudio-community/Qwen3-VL-4B-Instruct-MLX-4bit"
     vlm_python: str | None = None
+    vlm_max_visuals: int = 8
     chat_retrieval_top_k: int = 8
     chat_max_context_chars: int = 12_000
     chat_min_relevance: float = 0.1
@@ -156,6 +157,7 @@ class Settings:
             vlm_enabled=_as_bool(os.getenv("PAPERLENS_VLM_ENABLED", str(defaults.vlm_enabled))),
             vlm_model=os.getenv("PAPERLENS_VLM_MODEL", defaults.vlm_model),
             vlm_python=os.getenv("PAPERLENS_VLM_PYTHON") or None,
+            vlm_max_visuals=max(1, min(int(os.getenv("PAPERLENS_VLM_MAX_VISUALS", str(defaults.vlm_max_visuals))), 24)),
             chat_retrieval_top_k=max(1, min(int(os.getenv("CHAT_RETRIEVAL_TOP_K", str(defaults.chat_retrieval_top_k))), 20)),
             chat_max_context_chars=max(1_000, int(os.getenv("CHAT_MAX_CONTEXT_CHARS", str(defaults.chat_max_context_chars)))),
             chat_min_relevance=max(0.0, float(os.getenv("CHAT_MIN_RELEVANCE", str(defaults.chat_min_relevance)))),
